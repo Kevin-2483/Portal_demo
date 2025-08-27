@@ -1,3 +1,32 @@
+# Development environment
 .devenv/
 .vscode/
-.build/
+
+# Build directories
+build/
+**/bin/
+CMakeFiles/
+
+# Generated files
+compile_commands.json
+CMakeCache.txt
+
+# SCons build files
+*.os
+*.o
+.scons_node_count
+.sconf_temp
+.sconsign.dblite
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# IDE files
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp

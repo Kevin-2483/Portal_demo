@@ -1,0 +1,18 @@
+; 这是配置文件的开始
+[configuration]
+
+; 核心配置：入口符号
+; 这个名字必须和您在 register_types.cpp 中定义的 C 函数名完全一致
+entry_symbol = "godot_gdextension_init"
+
+; 兼容的 Godot 最低版本
+compatibility_minimum = "4.4"
+
+
+; 库文件路径配置
+[libraries]
+; 【请根据您的系统和编译配置，保留下面最符合的一行或多行】
+; 格式是 "平台.编译模式.CPU架构" = "res://路径/到/库文件"
+; 
+; 如果您在 macOS 上编译 (无论是 Intel x86_64 还是 Apple Silicon arm64)
+macos.debug.universal = "res://bin/libgdextension_bridge.macos.template_debug.framework/libgdextension_bridge.macos.template_debug"
