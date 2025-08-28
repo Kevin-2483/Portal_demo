@@ -2,3 +2,9 @@
 	path = portal_demo_godot/gdextension/godot-cpp
 	url = https://github.com/godotengine/godot-cpp.git
 	branch = 4.4
+[submodule "src/vendor/entt"]
+	path = src/vendor/entt
+	url = https://github.com/skypjack/entt.git
+[submodule "src/vendor/jolt"]
+	path = src/vendor/jolt
+	url = https://github.com/jrouwe/JoltPhysics.git
