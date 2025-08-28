@@ -11,5 +11,6 @@ config_version=5
 [application]
 
 config/name="portal_demo_godot"
+run/main_scene="uid://moohs5ffu3vo"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://icon.svg"

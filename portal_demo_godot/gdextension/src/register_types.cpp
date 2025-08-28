@@ -16,7 +16,7 @@ void initialize_gdextension_module(ModuleInitializationLevel p_level) {
 
     // 在这里注册我们所有自定义的 C++ 类
     ClassDB::register_class<GameCoreManager>();
-    ClassDB::register_class<RotatingCube>(true); // 注册 RotatingCube 类
+    ClassDB::register_class<RotatingCube>(); // 注册 RotatingCube 类
 }
 
 // 卸载模块时被调用

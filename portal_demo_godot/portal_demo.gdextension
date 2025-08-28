@@ -15,4 +15,4 @@ compatibility_minimum = "4.4"
 ; 格式是 "平台.编译模式.CPU架构" = "res://路径/到/库文件"
 ; 
 ; 如果您在 macOS 上编译 (无论是 Intel x86_64 还是 Apple Silicon arm64)
-macos.debug.universal = "res://bin/libgdextension_bridge.macos.template_debug.framework/libgdextension_bridge.macos.template_debug"
+macos.debug.universal = "res://bin/libgdextension_bridge.macos.template_debug.framework"
