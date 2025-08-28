@@ -5,12 +5,14 @@
 ## 特性
 
 ### 🚀 核心功能
+
 - **引擎無關**: 純 C++ 實現，不依賴任何特定遊戲引擎
 - **接口驅動**: 通過抽象接口與宿主應用程序交互
 - **數學精確**: 完整的傳送門數學變換計算
 - **高性能**: 優化的變換計算和狀態管理
 
 ### 🌀 傳送門特性
+
 - **雙面有效**: 傳送門雙向工作
 - **保持物理**: 穿過傳送門的物體保持動量和角動量
 - **比例縮放**: 支持不同大小傳送門間的縮放變換
@@ -18,6 +20,7 @@
 - **速度感知**: 支持移動傳送門的速度影響
 
 ### 🎯 設計原則
+
 - **職責分離**: 庫專注數學變換，引擎負責碰撞檢測
 - **易於集成**: 清晰的接口定義，易於適配到任何引擎
 - **可擴展**: 模塊化設計，支持自定義擴展
@@ -95,6 +98,7 @@ manager.update(delta_time);
 ### 必需接口
 
 #### IPhysicsQuery
+
 獲取物理世界的狀態信息：
 
 ```cpp
@@ -103,16 +107,17 @@ public:
     Portal::Transform get_entity_transform(Portal::EntityId entity_id) const override {
         // 返回實體的位置、旋轉、縮放
     }
-    
+
     Portal::PhysicsState get_entity_physics_state(Portal::EntityId entity_id) const override {
         // 返回實體的速度、角速度、質量
     }
-    
+
     // ... 實現其他方法
 };
 ```
 
 #### IPhysicsManipulator
+
 修改物理世界的狀態：
 
 ```cpp
@@ -121,32 +126,34 @@ public:
     void set_entity_transform(Portal::EntityId entity_id, const Portal::Transform& transform) override {
         // 設置實體的新位置和旋轉
     }
-    
+
     void set_entity_physics_state(Portal::EntityId entity_id, const Portal::PhysicsState& state) override {
         // 設置實體的新速度
     }
-    
+
     // ... 實現其他方法
 };
 ```
 
 #### IRenderQuery & IRenderManipulator
+
 處理渲染相關的查詢和操作。
 
 ### 可選接口
 
 #### IPortalEventHandler
+
 接收傳送門系統事件通知：
 
 ```cpp
 class MyEventHandler : public Portal::IPortalEventHandler {
 public:
-    void on_entity_teleport_start(Portal::EntityId entity_id, 
-                                Portal::PortalId source_portal, 
+    void on_entity_teleport_start(Portal::EntityId entity_id,
+                                Portal::PortalId source_portal,
                                 Portal::PortalId target_portal) override {
         // 實體開始傳送時觸發
     }
-    
+
     // ... 實現其他事件處理
 };
 ```
