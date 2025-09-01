@@ -1,0 +1,39 @@
+# Portal Core Library - Build Artifacts
+
+# SCons build directories
+build_*/
+.sconsign.dblite
+
+# Object files
+*.o
+*.os
+*.obj
+
+# Static libraries
+*.a
+*.lib
+
+# Executables
+test_*
+!test_*.cpp
+!test_*.h
+
+# SCons cache and temporary files
+.scons_node_count
+.sconf_temp/
+config.log
+
+# IDE and editor files
+*.swp
+*.swo
+*~
+.vscode/
+.clangd/
+
+# Platform specific
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.orig

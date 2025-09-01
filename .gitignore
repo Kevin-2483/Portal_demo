@@ -18,6 +18,10 @@ CMakeCache.txt
 .sconf_temp
 .sconsign.dblite
 
+# Portal Core Library build directories  
+src/core/portal_core/lib/build_*/
+src/core/portal_core/lib/.sconsign.dblite
+
 # macOS
 .DS_Store
 **/.DS_Store

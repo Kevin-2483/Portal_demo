@@ -1,4 +1,4 @@
-#include "../include/portal_types.h"
+#include "portal_types.h"
 #include <cmath>
 
 namespace Portal

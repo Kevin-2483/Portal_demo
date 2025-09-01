@@ -1,0 +1,227 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Portal Core Library SCons 构建脚本
+构建 portal_core 静态库和测试程序
+"""
+import os
+import sys
+import platform
+
+# 确保 SCons 和 Python 版本
+EnsureSConsVersion(4, 0)
+EnsurePythonVersion(3, 8)
+
+print("=== Portal Core Library 构建系统 ===")
+print(f"当前目录: {Dir('#').abspath}")
+
+# --- 默认构建参数 ---
+opts = Variables([], ARGUMENTS)
+opts.Add(EnumVariable("platform", "目标平台", "auto", allowed_values=("linux", "macos", "windows", "freebsd", "auto")))
+opts.Add(EnumVariable("arch", "目标架构", "auto", allowed_values=("x86_64", "arm64", "x86_32", "universal", "auto")))
+opts.Add(EnumVariable("target", "构建类型", "debug", allowed_values=("debug", "release")))
+opts.Add(BoolVariable("tests", "构建测试程序", True))
+opts.Add(BoolVariable("verbose", "详细输出", False))
+
+# --- 自动检测平台 ---
+def detect_platform():
+    """自动检测目标平台"""
+    system = platform.system()
+    if system == "Linux":
+        return "linux"
+    elif system == "Darwin":
+        return "macos"
+    elif system == "Windows":
+        return "windows"
+    elif system == "FreeBSD":
+        return "freebsd"
+    else:
+        print(f"未知平台: {system}")
+        return "linux"
+
+def detect_arch():
+    """自动检测目标架构"""
+    machine = platform.machine()
+    if machine in ["x86_64", "AMD64"]:
+        return "x86_64"
+    elif machine in ["arm64", "aarch64"]:
+        return "arm64"
+    elif machine in ["i386", "i686", "x86"]:
+        return "x86_32"
+    else:
+        print(f"未知架构: {machine}")
+        return "x86_64"
+
+# --- 创建基础环境 ---
+env = Environment(variables=opts, ENV=os.environ)
+
+# 自动设置平台和架构
+if env["platform"] == "auto":
+    env["platform"] = detect_platform()
+if env["arch"] == "auto":
+    env["arch"] = detect_arch()
+
+print(f"平台: {env['platform']}")
+print(f"架构: {env['arch']}")
+print(f"构建类型: {env['target']}")
+print(f"构建测试: {env['tests']}")
+
+# --- 配置编译器和标志 ---
+if env["platform"] == "macos":
+    env["CXX"] = "clang++"
+    env.Append(CXXFLAGS=["-std=c++17"])
+    
+    # 架构支持
+    if env["arch"] == "x86_64":
+        env.Append(CXXFLAGS=["-arch", "x86_64"])
+        env.Append(LINKFLAGS=["-arch", "x86_64"])
+    elif env["arch"] == "arm64":
+        env.Append(CXXFLAGS=["-arch", "arm64"])
+        env.Append(LINKFLAGS=["-arch", "arm64"])
+    elif env["arch"] == "universal":
+        env.Append(CXXFLAGS=["-arch", "x86_64", "-arch", "arm64"])
+        env.Append(LINKFLAGS=["-arch", "x86_64", "-arch", "arm64"])
+    
+    env.Append(LINKFLAGS=['-stdlib=libc++'])
+
+elif env["platform"] == "linux":
+    env["CXX"] = "g++"
+    env.Append(CXXFLAGS=["-std=c++17"])
+    
+    if env["arch"] == "x86_64":
+        env.Append(CXXFLAGS=["-m64"])
+        env.Append(LINKFLAGS=["-m64"])
+    elif env["arch"] == "x86_32":
+        env.Append(CXXFLAGS=["-m32"])
+        env.Append(LINKFLAGS=["-m32"])
+
+elif env["platform"] == "windows":
+    if os.name == "nt":
+        env["CXX"] = "cl"
+        env.Append(CXXFLAGS=["/std:c++17"])
+    else:
+        env["CXX"] = "x86_64-w64-mingw32-g++"
+        env.Append(CXXFLAGS=["-std=c++17"])
+
+# --- 配置构建类型 ---
+if env["target"] == "debug":
+    if env["platform"] == "windows" and os.name == "nt":
+        env.Append(CXXFLAGS=["/Od", "/Zi", "/MDd"])
+        env.Append(LINKFLAGS=["/DEBUG"])
+    else:
+        env.Append(CXXFLAGS=["-O0", "-g", "-DDEBUG"])
+        env.Append(LINKFLAGS=["-g"])
+    print("构建配置: 调试模式")
+else:  # release
+    if env["platform"] == "windows" and os.name == "nt":
+        env.Append(CXXFLAGS=["/O2", "/MD", "/DNDEBUG"])
+    else:
+        env.Append(CXXFLAGS=["-O3", "-DNDEBUG"])
+    print("构建配置: 发布模式")
+
+# --- 设置头文件搜索路径 ---
+env.Append(CPPPATH=[
+    Dir("include"),
+    Dir("include/core"),
+    Dir("include/interfaces"),  
+    Dir("include/math"),
+    Dir("include/rendering"),
+])
+
+# --- 设置构建目录 ---
+build_base = f"build_{env['platform']}_{env['arch']}_{env['target']}"
+build_dir = f"{build_base}"
+env.VariantDir(build_dir, ".", duplicate=0)
+print(f"构建目录: {build_dir}")
+
+# --- 收集库源文件 ---
+lib_sources = [
+    f"{build_dir}/src/portal_types.cpp",
+    f"{build_dir}/src/math/portal_math.cpp",
+    f"{build_dir}/src/core/portal.cpp",
+    f"{build_dir}/src/core/portal_center_of_mass.cpp",
+    f"{build_dir}/src/core/portal_manager.cpp",
+    f"{build_dir}/src/core/portal_teleport_manager.cpp",
+    f"{build_dir}/src/core/logical_entity_manager.cpp",
+    f"{build_dir}/src/rendering/multi_segment_clipping.cpp",
+]
+
+# 验证源文件是否存在
+missing_sources = []
+for src in lib_sources:
+    # 移除build_dir前缀来检查原始文件
+    original_src = src.replace(f"{build_dir}/", "")
+    if not os.path.exists(original_src):
+        missing_sources.append(original_src)
+
+if missing_sources:
+    print("警告: 以下源文件不存在:")
+    for src in missing_sources:
+        print(f"  - {src}")
+    # 过滤掉不存在的文件
+    lib_sources = [src for src in lib_sources if src.replace(f"{build_dir}/", "") not in missing_sources]
+
+print(f"库源文件数量: {len(lib_sources)}")
+
+# --- 构建静态库 ---
+lib_name = f"portal_core_{env['platform']}_{env['arch']}_{env['target']}"
+if env["platform"] == "windows":
+    lib_target = f"{build_dir}/lib{lib_name}.lib"
+else:
+    lib_target = f"{build_dir}/lib{lib_name}.a"
+
+print(f"构建目标库: {lib_target}")
+portal_lib = env.StaticLibrary(target=lib_target, source=lib_sources)
+
+# --- 构建测试程序 ---
+test_targets = []
+if env["tests"]:
+    print("\n=== 构建测试程序 ===")
+    
+    test_sources = [
+        "tests/test_mock_physics_integration.cpp",
+        "tests/test_chain_teleport.cpp", 
+        "tests/test_multi_segment_clipping_integrated.cpp",
+    ]
+    
+    for test_src in test_sources:
+        if os.path.exists(test_src):
+            test_name = os.path.splitext(os.path.basename(test_src))[0]
+            test_target = f"{build_dir}/{test_name}"
+            
+            print(f"构建测试: {test_name}")
+            test_prog = env.Program(
+                target=test_target,
+                source=[f"{build_dir}/{test_src}"],
+                LIBS=[portal_lib],
+                LIBPATH=[Dir(build_dir)]
+            )
+            test_targets.append(test_prog)
+        else:
+            print(f"警告: 测试文件不存在: {test_src}")
+
+# --- 设置默认目标和别名 ---
+Default(portal_lib)
+env.Alias("lib", portal_lib)
+if test_targets:
+    env.Alias("tests", test_targets)
+    env.Alias("all", [portal_lib] + test_targets)
+else:
+    env.Alias("all", portal_lib)
+
+# 清理目标
+env.Clean(".", [build_base + "*", "build_*"])
+
+print("\n=== 构建配置完成 ===")
+print("使用示例:")
+print("  scons                           # 构建库 (自动检测平台)")
+print("  scons platform=macos arch=arm64 # 构建 Apple Silicon 版本")  
+print("  scons platform=linux target=release # 构建 Linux 发布版")
+print("  scons tests=True                # 构建库和测试")
+print("  scons all                       # 构建所有目标")
+print("  scons -c                        # 清理构建文件")
+print()
+if env["verbose"]:
+    print("源文件列表:")
+    for src in lib_sources:
+        print(f"  - {src}")
