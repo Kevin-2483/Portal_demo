@@ -1,0 +1,44 @@
+[gd_scene load_steps=6 format=3 uid="uid://coxw67ql85o32"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_1dfi3"]
+size = Vector3(2, 2, 2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1hfja"]
+albedo_color = Color(0.8, 0.4, 0.2, 1)
+
+[sub_resource type="XRotationComponentResource" id="XRotationComponentResource_4nj2s"]
+
+[sub_resource type="YRotationComponentResource" id="YRotationComponentResource_ooprj"]
+speed = 10.0
+
+[sub_resource type="XRotationComponentResource" id="XRotationComponentResource_ooprj"]
+speed = 10.0
+
+[node name="NewArchitectureDemo" type="Node3D"]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.99686, -0.0791898, 0, 0.0791898, 0.99686, 0, 0, 10)
+
+[node name="ECSCube1" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.750923, -0.66039, 0, 0.66039, 0.750923, -3, 0, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ECSCube1"]
+mesh = SubResource("BoxMesh_1dfi3")
+surface_material_override/0 = SubResource("StandardMaterial3D_1hfja")
+
+[node name="ECSNode" type="ECSNode" parent="ECSCube1"]
+components = Array[Resource]([SubResource("XRotationComponentResource_4nj2s")])
+transform = Transform3D(1, 0, 0, 0, -0.506023, 0.86252, 0, -0.86252, -0.506023, 0, 0, 0)
+
+[node name="ECSCube2" type="Node3D" parent="."]
+transform = Transform3D(0.144174, 0.178973, 0.973233, -0.18126, 0.971644, -0.151829, -0.97281, -0.154518, 0.172527, 3, 0, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ECSCube2"]
+mesh = SubResource("BoxMesh_1dfi3")
+
+[node name="ECSNode" type="ECSNode" parent="ECSCube2"]
+components = Array[Resource]([SubResource("YRotationComponentResource_ooprj"), SubResource("XRotationComponentResource_ooprj")])
+transform = Transform3D(-0.996001, 0, -0.0893426, 0, 1, 0, 0.0893426, 0, -0.996001, 0, 0, 0)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.56973, 6.96987)

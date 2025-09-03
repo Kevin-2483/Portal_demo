@@ -1,108 +1,286 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-统一编译脚本 - Portal Demo 项目
-支持编译 godot-cpp、core 代码和 gdextension 代码
+统一编译脚本 - Portal Demo 项目 (优化版)
+将 godot-cpp 和 GDExtension 分离编译，避免不必要的重编译。
 """
 import os
 import sys
+from SCons.Script import (
+    ARGUMENTS,
+    Dir,
+    Glob,
+    SConscript,
+    Default,
+    Alias,
+    Clean,
+    Exit,
+    GetOption,
+    File,
+)
+from SCons.Util import flatten
+from SCons.Environment import Base as SConsEnvironmentBase
+
+# ==============================================================================
+# 自定义工具函数
+# ==============================================================================
+import collections
+
+
+def check_include_collisions(cpp_path_nodes, ignored_files=None):
+    """
+    检查 SCons CPPPATH 中的头文件重名冲突。
+
+    :param cpp_path_nodes: 从 SCons 环境中获取的 CPPPATH 列表 (通常是 Dir 节点)。
+    :param ignored_files: 一个可选的 set，包含要忽略检查的文件名。
+    :return: 返回一个字典，键是重名的文件名，值是找到该文件的路径列表。
+    """
+    if ignored_files is None:
+        ignored_files = {".DS_Store"}
+
+    print("\n--- 开始检查头文件路径冲突 ---")
+
+    header_extensions = {".h", ".hpp", ".hxx", ".hh"}
+
+    # --- [修正 V2]：使用 set 来自动处理重复的路径 ---
+    # defaultdict(set) 会为每个文件名创建一个空的集合 (set)
+    seen_headers = collections.defaultdict(set)
+
+    unique_paths = []
+    seen_paths = set()
+    for path_node in cpp_path_nodes:
+        abs_path = path_node.abspath
+        if abs_path not in seen_paths:
+            unique_paths.append(path_node)
+            seen_paths.add(abs_path)
+
+    for path_node in unique_paths:
+        dir_path = path_node.abspath
+        if not os.path.isdir(dir_path):
+            print(f"  - 警告: 包含路径不存在，跳过检查: {dir_path}")
+            continue
+
+        for root, _, files in os.walk(dir_path):
+            for filename in files:
+                if filename in ignored_files:
+                    continue
+
+                _, ext = os.path.splitext(filename)
+                if ext in header_extensions:
+                    full_path = os.path.join(root, filename)
+                    # --- [修正 V2]：使用 .add() 方法 ---
+                    # 如果 full_path 已经存在于 set 中，这次 add 操作不会产生任何效果。
+                    # 只有当一个新的、不同的 full_path 出现时，set 的大小才会增加。
+                    seen_headers[filename].add(full_path)
+
+    # 现在的逻辑是：只有当同一个文件名在多个 *不同的* 物理路径被找到时，
+    # 对应的 set 的长度才会大于1，这才是真正的冲突。
+    collisions = {
+        name: sorted(list(paths))
+        for name, paths in seen_headers.items()
+        if len(paths) > 1
+    }
+
+    if not collisions:
+        print("--- 检查完成：未发现头文件冲突。 ---")
+
+    return collisions
+
 
 # 确保 SCons 和 Python 版本
 EnsureSConsVersion(4, 0)
 EnsurePythonVersion(3, 8)
 
-print("=== Portal Demo 项目编译系统 ===")
+print("=== Portal Demo 项目编译系统 (优化版) ===")
 print(f"项目根目录: {Dir('#').abspath}")
 
-# --- 第一步：加载 godot-cpp 环境 ---
-# 从 godot-cpp 的 SConstruct 文件继承基础编译环境。
-# 这是标准做法，它会根据命令行参数（如 platform, target, arch）自动配置好大部分编译选项。
-print("\n=== 第一步：加载 godot-cpp 环境 ===")
-env = SConscript("portal_demo_godot/gdextension/godot-cpp/SConstruct")
-print("Godot-cpp 环境已加载。")
+# --- 设置默认编译参数 ---
+ARGUMENTS.setdefault("platform", "macos")
+ARGUMENTS.setdefault("arch", "universal")
+ARGUMENTS.setdefault("target", "template_debug")
 
-# --- 针对 macOS 的环境微调 ---
-if env["platform"] == "macos":
-    print("\n=== 正在为 macOS 环境进行微调 ===")
-    
-    # 确保链接到正确的 C++ 标准库。虽然通常是默认行为，但显式指定更安全。
-    env.Append(LINKFLAGS=['-stdlib=libc++'])
-    print("  - 已确保链接 -stdlib=libc++")
-    
-    # 这是一个在 macOS 上开发 GDExtension 时常用的链接器标志。
-    # 它告诉链接器，如果在编译时找不到某些符号（比如 Godot 引擎自身的函数），
-    # 不用报错，而是假设在运行时由主程序（Godot）提供。
-    env.Append(LINKFLAGS=['-Wl,-undefined,dynamic_lookup'])
-    print("  - 已添加 '-undefined,dynamic_lookup' 链接器标志")
+# ==============================================================================
+# 阶段一：调用 godot-cpp 构建脚本
+# ==============================================================================
+print("\n=== 阶段一：配置 godot-cpp 库 ===")
 
-# --- 第二步：配置项目编译环境 ---
-print("\n=== 第二步：配置项目编译环境 ===")
-
-# 显式设置 custom_api_file，这是 GDExtension 必需的
+# **-- [逻辑修正 V9 - 最终版] --**
+# 根据主人的指正，custom_api_file 是 godot-cpp 编译时进行代码生成所必需的。
+# 因此，必须在调用 SConscript 之前就将其设置好。
 api_file = "portal_demo_godot/gdextension/extension_api.json"
 if os.path.exists(api_file):
-    env["custom_api_file"] = api_file
-    print(f"使用 API 文件: {api_file}")
+    ARGUMENTS["custom_api_file"] = api_file
+    print(f"  - 发现 API 文件，将传递给 godot-cpp: {api_file}")
 else:
     print(f"错误: API 文件不存在: {api_file}")
     Exit(1)
 
-# 设置统一的 build 目录，将编译中间文件与源码分离
-build_dir = "build"
-env.VariantDir(build_dir, ".", duplicate=0)
-print(f"构建目录设置为: {build_dir}")
+godot_cpp_sconstruct_path = "portal_demo_godot/gdextension/godot-cpp/SConstruct"
+library_nodes = SConscript(godot_cpp_sconstruct_path)
 
-# 添加项目所需的头文件搜索路径
-env.Append(CPPPATH=[
-    Dir("portal_demo_godot/gdextension/include"),
-    Dir("core/include"),
-])
-print("项目头文件路径已设置。")
+if library_nodes and not GetOption("clean"):
+    # --- BUILD PATH ---
+    flat_nodes = flatten(library_nodes)
+    if not flat_nodes:
+        print("\n错误: godot-cpp SConscript 在构建模式下没有返回有效的构建目标。")
+        Exit(1)
 
-# --- 第三步：收集源文件 ---
-print("\n=== 第三步：收集源文件 ===")
-all_sources = Glob(f"{build_dir}/portal_demo_godot/gdextension/src/*.cpp") + \
-              Glob(f"{build_dir}/core/src/*.cpp")
+    # 新策略：
+    # 1. 从返回值中只获取唯一可靠的信息：编译环境对象。
+    # 2. 根据环境中的变量，精确地、确定地计算出 godot-cpp 库的目标路径。
+    env_base = None
+    # 尝试在返回值中直接找到环境对象
+    for node in flat_nodes:
+        if isinstance(node, SConsEnvironmentBase):
+            env_base = node
+            break
+    # 如果找不到，则假设返回的第一个元素是节点，并从节点获取环境
+    if not env_base:
+        if hasattr(flat_nodes[0], "get_env"):
+            env_base = flat_nodes[0].get_env()
 
-if not all_sources:
-    print("错误: 没有找到任何源文件！请检查路径。")
+    if not env_base:
+        print(f"\n致命错误: 无法从 godot-cpp SConscript 的返回值中推断出编译环境。")
+        Exit(1)
+
+    print("  - 已从 godot-cpp 获取基础编译环境。")
+
+    # 根据环境，手动构建我们期望的 godot-cpp 库的文件节点
+    godot_cpp_lib_name_stem = (
+        f"godot-cpp.{env_base['platform']}.{env_base['target']}.{env_base['arch']}"
+    )
+    godot_cpp_full_lib_name = (
+        f"{env_base['LIBPREFIX']}{godot_cpp_lib_name_stem}{env_base['LIBSUFFIX']}"
+    )
+    godot_cpp_library = File(
+        f"#portal_demo_godot/gdextension/godot-cpp/bin/{godot_cpp_full_lib_name}"
+    )
+
+    print("Godot-cpp 库已配置编译。")
+    print(f"  - 平台: {env_base['platform']}")
+    print(f"  - 架构: {env_base['arch']}")
+    print(f"  - 目标: {env_base['target']}")
+    print(f"  - 预期库文件: {godot_cpp_library.path}")
+
+    # ==============================================================================
+    # 阶段二：编译 GDExtension 插件
+    # ==============================================================================
+    print("\n=== 阶段二：配置 GDExtension 插件编译环境 ===")
+
+    # --- 2.1：为插件创建一个独立、干净的编译环境 ---
+    env_plugin = env_base.Clone()
+    print("已为插件创建独立的编译环境。")
+
+    # --- 2.2：配置插件环境 ---
+    build_dir = "build"
+    env_plugin.VariantDir(build_dir, ".", duplicate=0)
+    print(f"  - 构建目录设置为: {build_dir}")
+
+    env_plugin.Append(
+        CPPPATH=[
+            Dir("#portal_demo_godot/gdextension/godot-cpp/gen/include"),
+            Dir("#portal_demo_godot/gdextension/godot-cpp/include"),
+            Dir("#portal_demo_godot/gdextension/include"),
+            Dir("#portal_demo_godot/gdextension/ecs-components/include"),
+            Dir("#src/core"),
+            Dir("#src/core/components"),
+            Dir("#src/core/systems"),
+            Dir("#src/vendor/entt/single_include"),
+        ]
+    )
+    print("  - 插件头文件路径已设置。")
+    # --- [新增步骤]：检查头文件包含路径冲突 ---
+    header_collisions = check_include_collisions(env_plugin["CPPPATH"])
+    if header_collisions:
+        print("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("!!! 错误：检测到头文件重名冲突！")
+        print("!!! 以下文件在多个包含路径中被发现，这可能导致非预期的编译行为。")
+        print("!!! 请重命名文件或调整项目结构以消除歧义。")
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
+
+        for filename, paths in header_collisions.items():
+            print(f"  [冲突文件]: {filename}")
+            for path in paths:
+                print(f"    - 位于: {path}")
+            print("")  # 加一个空行分隔
+
+    env_plugin.Append(CXXFLAGS=["-std=c++17"])
+    print("  - C++ 标准设置为 C++17。")
+
+    # --- 2.3 (关键步骤): 配置链接器以使用 godot-cpp 库 ---
+    godot_cpp_bin_path = os.path.join(
+        Dir("#portal_demo_godot/gdextension/godot-cpp/bin").abspath
+    )
+    env_plugin.Append(LIBPATH=[godot_cpp_bin_path])
+    # 从我们自己构建的节点获取库名
+    godot_cpp_lib_name = godot_cpp_library.name.replace(
+        env_plugin["LIBPREFIX"], ""
+    ).replace(env_plugin["LIBSUFFIX"], "")
+    env_plugin.Append(LIBS=[godot_cpp_lib_name])
+    print(f"  - 配置链接器以使用库: {godot_cpp_lib_name}")
+
+    # --- 2.4：针对 macOS 的环境微调 ---
+    if env_plugin["platform"] == "macos":
+        env_plugin.Append(LINKFLAGS=["-stdlib=libc++", "-Wl,-undefined,dynamic_lookup"])
+        print("  - 已为 macOS 添加链接器标志。")
+
+    # --- 2.5：收集 *只属于插件* 的源文件 ---
+    # Glob 必须在 variant_dir (build_dir) 中执行，以确保中间文件被正确放置。
+    plugin_sources = (
+        Glob(f"{build_dir}/portal_demo_godot/gdextension/src/*.cpp")
+        + Glob(f"{build_dir}/portal_demo_godot/gdextension/ecs-components/src/*.cpp")
+        + Glob(f"{build_dir}/src/core/*.cpp")
+    )
+
+    if not plugin_sources:
+        print("错误: 没有找到任何插件源文件！请检查路径。")
+        Exit(1)
+    print(f"  - 总共找到 {len(plugin_sources)} 个插件源文件。")
+
+    # --- 2.6：定义最终的插件库目标 ---
+    plugin_library = None
+    if env_plugin["platform"] == "macos":
+        framework_name = f"libgdextension_bridge.{env_plugin['platform']}.{env_plugin['target']}.framework"
+        library_path = f"portal_demo_godot/bin/{framework_name}/libgdextension_bridge.{env_plugin['platform']}.{env_plugin['target']}"
+        plugin_library = env_plugin.SharedLibrary(
+            target=library_path, source=plugin_sources
+        )
+        print(f"  - macOS Framework 目标: {framework_name}")
+    else:
+        lib_name = (
+            f"libgdextension_bridge{env_plugin['suffix']}{env_plugin['SHLIBSUFFIX']}"
+        )
+        library_path = f"portal_demo_godot/bin/{lib_name}"
+        plugin_library = env_plugin.SharedLibrary(
+            target=library_path, source=plugin_sources
+        )
+        print(f"  - 共享库目标: {lib_name}")
+
+    # ==============================================================================
+    # 阶段三：定义最终构建目标和清理规则
+    # ==============================================================================
+    print("\n=== 阶段三：设置最终目标 ===")
+    env_plugin.Depends(plugin_library, godot_cpp_library)
+    print("  - 已设置插件对 godot-cpp 库的依赖。")
+
+    Default(plugin_library)
+    Alias("gdextension", plugin_library)
+    # **-- [逻辑修正 V10] --**
+    # 将要清理的目录用 Dir() 包装，使其成为 SCons 节点，确保被正确识别和删除。
+    Clean(
+        [plugin_library, godot_cpp_library],
+        [Dir("portal_demo_godot/bin"), Dir(build_dir)],
+    )
+    print("\n=== 编译配置完成 ===")
+
+elif not GetOption("clean"):
+    # --- BUILD ERROR PATH ---
+    print("\n错误: godot-cpp SConscript 没有返回任何构建目标。请检查子模块是否正确。")
     Exit(1)
-print(f"总共找到 {len(all_sources)} 个源文件。")
-
-# --- 第四步：配置目标库 ---
-print("\n=== 第四步：配置目标库 ===")
-library_path = ""
-library = None
-
-# 根据平台配置输出
-if env["platform"] == "macos":
-    framework_name = f"libgdextension_bridge.{env['platform']}.{env['target']}.framework"
-    library_path = f"portal_demo_godot/bin/{framework_name}/libgdextension_bridge.{env['platform']}.{env['target']}"
-    library = env.SharedLibrary(target=library_path, source=all_sources)
-    print(f"macOS Framework 目标: {framework_name}")
-
-elif env["platform"] == "ios":
-    lib_name_suffix = "simulator.a" if env.get("ios_simulator", False) else "a"
-    lib_name = f"libgdextension_bridge.{env['platform']}.{env['target']}.{lib_name_suffix}"
-    library_path = f"portal_demo_godot/bin/{lib_name}"
-    library = env.StaticLibrary(target=library_path, source=all_sources)
-    print(f"iOS 静态库目标: {lib_name}")
-
 else:
-    lib_name = f"libgdextension_bridge{env['suffix']}{env['SHLIBSUFFIX']}"
-    library_path = f"portal_demo_godot/bin/{lib_name}"
-    library = env.SharedLibrary(target=library_path, source=all_sources)
-    print(f"共享库目标: {lib_name}")
-
-# --- 第五步：设置默认目标和别名 ---
-Default(library)
-env.Alias("gdextension", library)
-env.Clean(".", ["portal_demo_godot/bin", build_dir])
-
-print("\n=== 编译配置完成 ===")
-print("使用示例:")
-print("  scons platform=macos arch=x86_64     # 编译 Intel 架构")
-print("  scons platform=macos arch=arm64      # 编译 Apple Silicon 架构")
-print("  scons platform=macos arch=universal  # 编译通用架构 (推荐)")
-print("  scons -c                             # 清理构建文件")
-
+    # --- CLEAN PATH ---
+    print("\n清理模式: 跳过编译配置，仅注册项目清理目标。")
+    # **-- [逻辑修正 V10] --**
+    # 同样，在清理模式下也要使用 Dir() 来确保目录被正确识别。
+    Clean("gdextension", [Dir("portal_demo_godot/bin"), Dir("build")])
+    print("\n=== 清理配置完成 ===")

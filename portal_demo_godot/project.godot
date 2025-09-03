@@ -11,6 +11,14 @@ config_version=5
 [application]
 
 config/name="portal_demo_godot"
-run/main_scene="uid://moohs5ffu3vo"
+run/main_scene="uid://ctttr7wwmrc6j"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+GameCore="*res://GameCore.tscn"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/ecs_editor_plugin/plugin.cfg")

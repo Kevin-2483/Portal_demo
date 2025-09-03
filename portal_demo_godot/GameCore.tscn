@@ -1,0 +1,3 @@
+[gd_scene format=3 uid="uid://ctttr7wwmrc6j"]
+
+[node name="GameCore" type="GameCoreManager"]
