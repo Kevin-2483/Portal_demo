@@ -1,139 +1,151 @@
 #ifndef MATH_TYPES_H
 #define MATH_TYPES_H
 
-#include <cmath>
+// 使用 JPH 的数学类型作为项目统一的数学库
+#include <Jolt/Jolt.h>
+#include <Jolt/Math/Vec3.h>
+#include <Jolt/Math/Quat.h>
+#include <Jolt/Math/DVec3.h>
+#include <Jolt/Math/Real.h>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
+JPH_SUPPRESS_WARNING_PUSH
+JPH_SUPPRESS_WARNINGS
 
 namespace portal_core
 {
+  // 前向聲明
+  class Vector3Extended;
+  class QuaternionExtended;
 
-  // 簡單的 3D 向量
-  struct Vector3
+  // 為了向後兼容，保留一些旧的接口扩展
+  class Vector3Extended : public JPH::Vec3
   {
-    float x, y, z;
+  public:
+    Vector3Extended() : JPH::Vec3() {}
+    Vector3Extended(float x, float y, float z) : JPH::Vec3(x, y, z) {}
+    Vector3Extended(const JPH::Vec3 &v) : JPH::Vec3(v) {}
 
-    Vector3() : x(0.0f), y(0.0f), z(0.0f) {}
-    Vector3(float x_, float y_, float z_) : x(x_), y(y_), z(z_) {}
+    // 提供与原来兼容的接口
+    float x() const { return GetX(); }
+    float y() const { return GetY(); }
+    float z() const { return GetZ(); }
 
-    Vector3 operator+(const Vector3 &other) const
+    Vector3Extended lerp(const Vector3Extended &other, float t) const
     {
-      return Vector3(x + other.x, y + other.y, z + other.z);
+      return Vector3Extended((*this) * (1.0f - t) + other * t);
     }
 
-    Vector3 operator-(const Vector3 &other) const
+    float dot(const Vector3Extended &other) const
     {
-      return Vector3(x - other.x, y - other.y, z - other.z);
+      return this->Dot(other);
     }
 
-    Vector3 operator*(float scalar) const
+    Vector3Extended cross(const Vector3Extended &other) const
     {
-      return Vector3(x * scalar, y * scalar, z * scalar);
+      return Vector3Extended(this->Cross(other));
     }
 
+    // 提供原来的length()方法名
     float length() const
     {
-      return std::sqrt(x * x + y * y + z * z);
+      return Length();
     }
 
-    Vector3 normalized() const
+    // 提供原来的normalized()方法名
+    Vector3Extended normalized() const
     {
-      float len = length();
-      if (len > 0.0f)
-      {
-        return Vector3(x / len, y / len, z / len);
-      }
-      return Vector3();
+      return Vector3Extended(Normalized());
     }
   };
 
-  // 簡單的四元數
-  struct Quaternion
+  // 扩展四元数类，提供向后兼容的接口
+  class QuaternionExtended : public JPH::Quat
   {
-    float w, x, y, z;
+  public:
+    QuaternionExtended() : JPH::Quat() {}
+    QuaternionExtended(float w, float x, float y, float z) : JPH::Quat(x, y, z, w) {} // 注意參數順序轉換
+    QuaternionExtended(const JPH::Quat &q) : JPH::Quat(q) {}
 
-    Quaternion() : w(1.0f), x(0.0f), y(0.0f), z(0.0f) {}
-    Quaternion(float w_, float x_, float y_, float z_) : w(w_), x(x_), y(y_), z(z_) {}
+    // 提供与原来兼容的接口
+    float w() const { return GetW(); }
+    float x() const { return GetX(); }
+    float y() const { return GetY(); }
+    float z() const { return GetZ(); }
 
-    // 從軸角創建四元數
-    static Quaternion from_axis_angle(const Vector3 &axis, float angle)
+    QuaternionExtended slerp(const QuaternionExtended &other, float t) const
     {
-      float half_angle = angle * 0.5f;
-      float sin_half = std::sin(half_angle);
-      float cos_half = std::cos(half_angle);
-
-      Vector3 normalized_axis = axis.normalized();
-      return Quaternion(
-          cos_half,
-          normalized_axis.x * sin_half,
-          normalized_axis.y * sin_half,
-          normalized_axis.z * sin_half);
+      return QuaternionExtended(this->SLERP(other, t));
     }
 
-    // 從歐拉角創建四元數
-    static Quaternion from_euler(const Vector3 &euler)
+    QuaternionExtended conjugate() const
     {
-      float cx = std::cos(euler.x * 0.5f);
-      float sx = std::sin(euler.x * 0.5f);
-      float cy = std::cos(euler.y * 0.5f);
-      float sy = std::sin(euler.y * 0.5f);
-      float cz = std::cos(euler.z * 0.5f);
-      float sz = std::sin(euler.z * 0.5f);
-
-      return Quaternion(
-          cx * cy * cz + sx * sy * sz,
-          sx * cy * cz - cx * sy * sz,
-          cx * sy * cz + sx * cy * sz,
-          cx * cy * sz - sx * sy * cz);
+      return QuaternionExtended(Conjugated());
     }
 
-    // 轉換為歐拉角
-    Vector3 to_euler() const
+    // 提供原来的normalized()方法名
+    QuaternionExtended normalized() const
     {
-      float sinr_cosp = 2 * (w * x + y * z);
-      float cosr_cosp = 1 - 2 * (x * x + y * y);
-      float roll = std::atan2(sinr_cosp, cosr_cosp);
-
-      float sinp = 2 * (w * y - z * x);
-      float pitch;
-      if (std::abs(sinp) >= 1)
-      {
-        pitch = std::copysign(M_PI / 2, sinp); // use 90 degrees if out of range
-      }
-      else
-      {
-        pitch = std::asin(sinp);
-      }
-
-      float siny_cosp = 2 * (w * z + x * y);
-      float cosy_cosp = 1 - 2 * (y * y + z * z);
-      float yaw = std::atan2(siny_cosp, cosy_cosp);
-
-      return Vector3(roll, pitch, yaw);
+      return QuaternionExtended(Normalized());
     }
 
-    Quaternion operator*(const Quaternion &other) const
+    // 从轴角创建四元数 - 保持原有接口
+    static QuaternionExtended from_axis_angle(const Vector3Extended &axis, float angle)
     {
-      return Quaternion(
-          w * other.w - x * other.x - y * other.y - z * other.z,
-          w * other.x + x * other.w + y * other.z - z * other.y,
-          w * other.y - x * other.z + y * other.w + z * other.x,
-          w * other.z + x * other.y - y * other.x + z * other.w);
+      return QuaternionExtended(JPH::Quat::sRotation(axis.Normalized(), angle));
     }
 
-    Quaternion normalized() const
+    // 从欧拉角创建四元数 - 保持原有接口
+    static QuaternionExtended from_euler(const Vector3Extended &euler)
     {
-      float len = std::sqrt(w * w + x * x + y * y + z * z);
-      if (len > 0.0f)
-      {
-        return Quaternion(w / len, x / len, y / len, z / len);
-      }
-      return Quaternion();
+      // 按照 XYZ 顺序应用旋转
+      JPH::Quat qx = JPH::Quat::sRotation(JPH::Vec3::sAxisX(), euler.GetX());
+      JPH::Quat qy = JPH::Quat::sRotation(JPH::Vec3::sAxisY(), euler.GetY());
+      JPH::Quat qz = JPH::Quat::sRotation(JPH::Vec3::sAxisZ(), euler.GetZ());
+      return QuaternionExtended(qz * qy * qx);
+    }
+
+    // 静态工厂方法 - 支持更多创建方式
+    static QuaternionExtended FromEuler(const Vector3Extended &euler)
+    {
+      return from_euler(euler);
+    }
+
+    // 转换为欧拉角 - 保持原有接口
+    Vector3Extended to_euler() const
+    {
+      JPH::Vec3 euler = GetEulerAngles();
+      return Vector3Extended(euler);
+    }
+
+    // 获取欧拉角 - 提供另一个名称
+    Vector3Extended GetEulerAngles() const
+    {
+      return to_euler();
     }
   };
+
+  // 使用 JPH 的数学类型作为基础类型
+  using Vector3 = Vector3Extended;       // 使用擴展版本以獲得便利方法
+  using DVectorRe3 = JPH::DVec3;         // 双精度向量，用于精确位置计算
+  using RealVector3 = JPH::RVec3;        // 实数向量，JPH中用于位置的类型
+  using Quaternion = QuaternionExtended; // 使用擴展版本
+
+  // 类型别名，用于物理系统和向后兼容
+  using Vec3 = Vector3Extended;    // 直接使用擴展的Vec3
+  using Quat = QuaternionExtended; // 直接使用擴展的Quat
+  using RVec3 = JPH::RVec3;        // 用于位置的实数向量
+  using DVec3 = JPH::DVec3;        // 双精度向量
+
+  // 数学常量，与JPH兼容
+  namespace Math
+  {
+    static constexpr float PI = JPH::JPH_PI;
+    static constexpr float HALF_PI = JPH::JPH_PI * 0.5f;
+    static constexpr float TWO_PI = JPH::JPH_PI * 2.0f;
+  }
 
 } // namespace portal_core
+
+JPH_SUPPRESS_WARNING_POP
 
 #endif // MATH_TYPES_H

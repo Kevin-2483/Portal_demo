@@ -2,6 +2,9 @@
 #include "systems/x_rotation_system.h"
 #include "systems/y_rotation_system.h"
 #include "systems/z_rotation_system.h"
+#include "systems/physics_system.h"
+#include "systems/physics_command_system.h"
+#include <iostream>
 
 namespace portal_core
 {
@@ -18,12 +21,51 @@ namespace portal_core
     if (!instance_)
     {
       instance_ = std::make_unique<PortalGameWorld>();
+      
+      // 註冊物理系統
+      register_physics_systems();
+      
+      // 初始化系統管理器
+      instance_->system_manager_.initialize();
+      std::cout << "PortalGameWorld: Instance created and systems initialized." << std::endl;
     }
   }
 
   void PortalGameWorld::destroy_instance()
   {
     instance_.reset();
+  }
+
+  void PortalGameWorld::register_physics_systems()
+  {
+    // 註冊物理命令系統（在物理系統之前執行）
+    SystemRegistry::register_system(
+      "PhysicsCommandSystem",
+      create_physics_command_system,
+      {},  // 沒有依賴
+      {},  // 沒有衝突
+      10   // 較高優先級，早執行
+    );
+    
+    // 註冊物理系統
+    SystemRegistry::register_system(
+      "PhysicsSystem", 
+      create_physics_system,
+      {"PhysicsCommandSystem"},  // 依賴物理命令系統
+      {},                        // 沒有衝突
+      20                         // 中等優先級
+    );
+    
+    // 註冊物理查詢系統（在物理系統之後執行）
+    SystemRegistry::register_system(
+      "PhysicsQuerySystem",
+      create_physics_query_system,
+      {"PhysicsSystem"},  // 依賴物理系統
+      {},                 // 沒有衝突
+      30                  // 較低優先級，晚執行
+    );
+    
+    std::cout << "PortalGameWorld: Physics systems registered." << std::endl;
   }
 
   entt::entity PortalGameWorld::create_entity()
@@ -96,17 +138,8 @@ namespace portal_core
 
   void PortalGameWorld::update_systems(float delta_time)
   {
-    // 新的架構：使用分離的旋轉系統
-
-    // 更新所有軸的旋轉系統
-    portal_core::XRotationSystem::update(registry_, delta_time);
-    portal_core::YRotationSystem::update(registry_, delta_time);
-    portal_core::ZRotationSystem::update(registry_, delta_time);
-
-    // 這裡可以添加更多系統的更新
-    // PhysicsSystem::update(registry_, delta_time);
-    // CollisionSystem::update(registry_, delta_time);
-    // etc.
+    // 使用 SystemManager 和 entt::organizer 來管理系統執行
+    system_manager_.update_systems(registry_, delta_time);
   }
 
 } // namespace portal_core

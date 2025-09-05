@@ -34,9 +34,9 @@ void ECSNode::_bind_methods()
   ClassDB::bind_method(D_METHOD("_update_ecs_components_deferred"), &ECSNode::_update_ecs_components_deferred);
   ClassDB::bind_method(D_METHOD("_on_core_initialized"), &ECSNode::_on_core_initialized);
   ClassDB::bind_method(D_METHOD("_on_core_shutdown"), &ECSNode::_on_core_shutdown);
-  ClassDB::bind_method(D_METHOD("_on_reset_ecs_nodes"), &ECSNode::_on_reset_ecs_nodes);  // 新增
-  ClassDB::bind_method(D_METHOD("_on_clear_ecs_nodes"), &ECSNode::_on_clear_ecs_nodes);  // 新增
-  ClassDB::bind_method(D_METHOD("is_entity_created"), &ECSNode::is_entity_created);      // 新增
+  ClassDB::bind_method(D_METHOD("_on_reset_ecs_nodes"), &ECSNode::_on_reset_ecs_nodes); // 新增
+  ClassDB::bind_method(D_METHOD("_on_clear_ecs_nodes"), &ECSNode::_on_clear_ecs_nodes); // 新增
+  ClassDB::bind_method(D_METHOD("is_entity_created"), &ECSNode::is_entity_created);     // 新增
 
   // 添加編輯器通知支持
   ClassDB::bind_method(D_METHOD("_notification", "what"), &ECSNode::_notification);
@@ -62,24 +62,24 @@ ECSNode::~ECSNode()
 void ECSNode::_ready()
 {
   UtilityFunctions::print("ECSNode: _ready called");
-  
+
   Engine *engine = Engine::get_singleton();
   bool is_editor = engine && engine->is_editor_hint();
-  
+
   if (is_editor)
   {
     UtilityFunctions::print("ECSNode: Running in editor mode - connecting to event bus");
-    
+
     // 编辑器模式：连接到插件事件总线
     connect_to_event_bus();
   }
   else
   {
     UtilityFunctions::print("ECSNode: Running in runtime mode - using direct connection");
-    
+
     // 运行时模式：保持原有逻辑，直接连接 GameCoreManager
     connect_to_game_core_manager();
-    
+
     // 如果 GameCore 已經初始化，直接創建實體
     if (is_game_core_ready())
     {
@@ -91,7 +91,7 @@ void ECSNode::_ready()
       UtilityFunctions::print("ECSNode: GameCore not ready, waiting for initialization signal");
     }
   }
-  
+
   connect_resource_signals();
 }
 
@@ -99,7 +99,7 @@ void ECSNode::_process(double delta)
 {
   // 🚀 全新的通用框架：不再硬編碼任何特定邏輯！
   // 每一幀，遍歷所有組件資源，命令它們自己進行數據同步
-  
+
   if (!entity_created)
   {
     return;
@@ -156,7 +156,7 @@ void ECSNode::_notification(int p_what)
   case NOTIFICATION_ENTER_TREE:
     // 進入場景樹時重新清理可能失效的緩存
     invalidate_cache();
-    
+
     // 確保資源信號連接（防止場景切換後丟失）
     connect_resource_signals();
     break;
@@ -192,10 +192,10 @@ void ECSNode::_notification(int p_what)
 void ECSNode::_exit_tree()
 {
   UtilityFunctions::print("ECSNode: _exit_tree called");
-  
+
   Engine *engine = Engine::get_singleton();
   bool is_editor = engine && engine->is_editor_hint();
-  
+
   if (is_editor)
   {
     // 编辑器模式：断开事件总线连接
@@ -206,7 +206,7 @@ void ECSNode::_exit_tree()
     // 运行时模式：断开直接连接
     disconnect_from_game_core_manager();
   }
-  
+
   destroy_ecs_entity();
 }
 
@@ -298,7 +298,7 @@ void ECSNode::create_ecs_entity()
 
       transform_comp.position = portal_core::Vector3(pos.x, pos.y, pos.z);
       transform_comp.rotation = portal_core::Quaternion::from_euler(portal_core::Vector3(rot.x, rot.y, rot.z));
-      
+
       if (!target_node_path.is_empty())
       {
         UtilityFunctions::print("ECSNode: Initialized transform from target Node3D: ", target_node_path);
@@ -533,7 +533,7 @@ void ECSNode::_update_ecs_components()
 
   // 直接使用简化的方法获取 GameCoreManager
   GameCoreManager *manager_instance = get_game_core_manager_efficient();
-  
+
   if (!manager_instance)
   {
     UtilityFunctions::print("ECSNode: Error - Cannot get GameCoreManager from autoload. Update aborted.");
@@ -569,7 +569,7 @@ void ECSNode::_update_ecs_components_deferred()
 GameCoreManager *ECSNode::get_game_core_manager_efficient()
 {
   // 如果缓存有效，直接返回
-  if (cache_valid && cached_game_core_manager && 
+  if (cache_valid && cached_game_core_manager &&
       Object::cast_to<GameCoreManager>(cached_game_core_manager))
   {
     return cached_game_core_manager;
@@ -577,7 +577,7 @@ GameCoreManager *ECSNode::get_game_core_manager_efficient()
 
   Engine *engine = Engine::get_singleton();
   bool is_editor = engine && engine->is_editor_hint();
-  
+
   if (is_editor)
   {
     // 编辑器模式：通过事件总线获取实例
@@ -589,7 +589,7 @@ GameCoreManager *ECSNode::get_game_core_manager_efficient()
       {
         Variant result = event_bus->call("get_current_game_core");
         cached_game_core_manager = Object::cast_to<GameCoreManager>(result);
-        
+
         if (cached_game_core_manager)
         {
           cache_valid = true;
@@ -598,7 +598,7 @@ GameCoreManager *ECSNode::get_game_core_manager_efficient()
         }
       }
     }
-    
+
     // 编辑器模式下如果找不到，返回 null（避免错误）
     return nullptr;
   }
@@ -606,7 +606,7 @@ GameCoreManager *ECSNode::get_game_core_manager_efficient()
   {
     // 运行时模式：直接通过 autoload 获取
     cached_game_core_manager = get_node<GameCoreManager>("/root/GameCore");
-    
+
     if (cached_game_core_manager)
     {
       cache_valid = true;
@@ -633,7 +633,7 @@ void ECSNode::invalidate_cache()
 bool ECSNode::is_game_core_ready() const
 {
   // 首先檢查是否能找到 GameCoreManager
-  GameCoreManager *manager = const_cast<ECSNode*>(this)->get_game_core_manager_efficient();
+  GameCoreManager *manager = const_cast<ECSNode *>(this)->get_game_core_manager_efficient();
   if (!manager)
   {
     return false;
@@ -675,33 +675,33 @@ void ECSNode::connect_to_event_bus()
       event_bus->call("register_ecs_node", this);
       UtilityFunctions::print("ECSNode: Registered to event bus");
     }
-    
+
     // 連接核心狀態信號
     if (!event_bus->is_connected("game_core_initialized", Callable(this, "_on_core_initialized")))
     {
       event_bus->connect("game_core_initialized", Callable(this, "_on_core_initialized"));
       UtilityFunctions::print("ECSNode: Connected to ECSEventBus.game_core_initialized signal");
     }
-    
+
     if (!event_bus->is_connected("game_core_shutdown", Callable(this, "_on_core_shutdown")))
     {
       event_bus->connect("game_core_shutdown", Callable(this, "_on_core_shutdown"));
       UtilityFunctions::print("ECSNode: Connected to ECSEventBus.game_core_shutdown signal");
     }
-    
+
     // 連接控制信號
     if (!event_bus->is_connected("reset_ecs_nodes", Callable(this, "_on_reset_ecs_nodes")))
     {
       event_bus->connect("reset_ecs_nodes", Callable(this, "_on_reset_ecs_nodes"));
       UtilityFunctions::print("ECSNode: Connected to ECSEventBus.reset_ecs_nodes signal");
     }
-    
+
     if (!event_bus->is_connected("clear_ecs_nodes", Callable(this, "_on_clear_ecs_nodes")))
     {
       event_bus->connect("clear_ecs_nodes", Callable(this, "_on_clear_ecs_nodes"));
       UtilityFunctions::print("ECSNode: Connected to ECSEventBus.clear_ecs_nodes signal");
     }
-    
+
     // 請求廣播當前狀態（如果 GameCore 已經準備就緒）
     if (event_bus->has_method("broadcast_current_state"))
     {
@@ -733,26 +733,26 @@ void ECSNode::disconnect_from_event_bus()
       event_bus->call("unregister_ecs_node", this);
       UtilityFunctions::print("ECSNode: Unregistered from event bus");
     }
-    
+
     // 斷開所有信號連接
     if (event_bus->is_connected("game_core_initialized", Callable(this, "_on_core_initialized")))
     {
       event_bus->disconnect("game_core_initialized", Callable(this, "_on_core_initialized"));
       UtilityFunctions::print("ECSNode: Disconnected from ECSEventBus.game_core_initialized signal");
     }
-    
+
     if (event_bus->is_connected("game_core_shutdown", Callable(this, "_on_core_shutdown")))
     {
       event_bus->disconnect("game_core_shutdown", Callable(this, "_on_core_shutdown"));
       UtilityFunctions::print("ECSNode: Disconnected from ECSEventBus.game_core_shutdown signal");
     }
-    
+
     if (event_bus->is_connected("reset_ecs_nodes", Callable(this, "_on_reset_ecs_nodes")))
     {
       event_bus->disconnect("reset_ecs_nodes", Callable(this, "_on_reset_ecs_nodes"));
       UtilityFunctions::print("ECSNode: Disconnected from ECSEventBus.reset_ecs_nodes signal");
     }
-    
+
     if (event_bus->is_connected("clear_ecs_nodes", Callable(this, "_on_clear_ecs_nodes")))
     {
       event_bus->disconnect("clear_ecs_nodes", Callable(this, "_on_clear_ecs_nodes"));
@@ -773,7 +773,7 @@ void ECSNode::connect_to_game_core_manager()
       manager->connect("core_initialized", Callable(this, "_on_core_initialized"));
       UtilityFunctions::print("ECSNode: Connected to GameCoreManager.core_initialized signal");
     }
-    
+
     // 連接關閉信號
     if (!manager->is_connected("core_shutdown", Callable(this, "_on_core_shutdown")))
     {
@@ -798,7 +798,7 @@ void ECSNode::disconnect_from_game_core_manager()
       cached_game_core_manager->disconnect("core_initialized", Callable(this, "_on_core_initialized"));
       UtilityFunctions::print("ECSNode: Disconnected from GameCoreManager.core_initialized signal");
     }
-    
+
     // 斷開關閉信號
     if (cached_game_core_manager->is_connected("core_shutdown", Callable(this, "_on_core_shutdown")))
     {
@@ -812,11 +812,11 @@ void ECSNode::disconnect_from_game_core_manager()
 void ECSNode::_on_core_initialized()
 {
   UtilityFunctions::print("ECSNode: Received core_initialized signal");
-  
+
   if (!entity_created && is_inside_tree())
   {
     create_ecs_entity();
-    
+
     // 如果實體創建成功，應用組件
     if (entity_created)
     {
@@ -829,10 +829,10 @@ void ECSNode::_on_core_initialized()
 void ECSNode::_on_core_shutdown()
 {
   UtilityFunctions::print("ECSNode: Received core_shutdown signal");
-  
+
   // 清理實體
   destroy_ecs_entity();
-  
+
   // 清理緩存
   invalidate_cache();
 }
@@ -841,14 +841,14 @@ void ECSNode::_on_core_shutdown()
 void ECSNode::_on_reset_ecs_nodes()
 {
   UtilityFunctions::print("ECSNode: Received reset_ecs_nodes signal - resetting state");
-  
+
   // 重置狀態標誌
   entity_created = false;
   entity = entt::null;
-  
+
   // 清理緩存
   invalidate_cache();
-  
+
   // 如果在場景樹中，嘗試重新初始化
   if (is_inside_tree())
   {
@@ -868,10 +868,10 @@ void ECSNode::_on_reset_ecs_nodes()
 void ECSNode::_on_clear_ecs_nodes()
 {
   UtilityFunctions::print("ECSNode: Received clear_ecs_nodes signal - clearing entity");
-  
+
   // 強制銷毀實體
   destroy_ecs_entity();
-  
+
   // 清理緩存
   invalidate_cache();
 }
@@ -884,12 +884,12 @@ bool ECSNode::is_entity_created() const
 
 // 新增：獲取有效的目標節點（優先使用 target_node_path，否則使用父節點）
 // 🌟 修改：現在返回通用的 Node* 以支持任何類型的 Godot 節點
-Node* ECSNode::get_effective_target_node()
+Node *ECSNode::get_effective_target_node()
 {
   // 如果指定了 target_node_path，優先使用它
   if (!target_node_path.is_empty())
   {
-    Node *target_node = get_node<Node>(target_node_path);  // 修改：使用 Node 而不是 Node3D
+    Node *target_node = get_node<Node>(target_node_path); // 修改：使用 Node 而不是 Node3D
     if (target_node)
     {
       return target_node;
@@ -899,14 +899,14 @@ Node* ECSNode::get_effective_target_node()
       UtilityFunctions::print_rich("[color=orange]ECSNode: Target node not found at path: ", target_node_path, ", falling back to parent node[/color]");
     }
   }
-  
+
   // 如果沒有指定 target_node_path 或指定的路徑無效，則使用父節點
   Node *parent_node = get_parent();
   if (parent_node)
   {
-    return parent_node;  // 修改：直接返回父節點，不再限制為 Node3D
+    return parent_node; // 修改：直接返回父節點，不再限制為 Node3D
   }
-  
+
   // 如果既沒有有效的 target_node_path，也沒有父節點，則返回 nullptr
   return nullptr;
 }

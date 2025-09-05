@@ -4,6 +4,7 @@
 #include <cmath>
 #include "entt/entt.hpp"
 #include "../components/z_rotation_component.h"
+#include "../system_base.h"
 
 namespace portal_core
 {
@@ -12,7 +13,7 @@ namespace portal_core
    * Z軸旋轉系統 - 專門處理 Z 軸旋轉邏輯
    * 🌟 現在完全自主管理 Z 軸旋轉狀態，不依賴 TransformComponent
    */
-  class ZRotationSystem
+  class ZRotationSystem : public ISystem
   {
   public:
     /**
@@ -20,7 +21,7 @@ namespace portal_core
      * @param registry ECS 注册表
      * @param delta_time 自上一幀以來的時間（秒）
      */
-    static void update(entt::registry &registry, float delta_time)
+    void update(entt::registry &registry, float delta_time) override
     {
       // 🎯 新策略：只需要 ZRotationComponent，不依賴 TransformComponent
       auto view = registry.view<ZRotationComponent>();
@@ -51,6 +52,19 @@ namespace portal_core
         printf("ZRotationSystem: Updated %zu entities with Z-axis rotation\n", entity_count);
       }
     }
+
+    const char* get_name() const override
+    {
+      return "ZRotationSystem";
+    }
+
+    std::vector<std::string> get_dependencies() const override
+    {
+      return {}; // Z軸旋轉系統沒有依賴
+    }
   };
+
+  // 自動註冊系統
+  REGISTER_SYSTEM_SIMPLE(ZRotationSystem, 102);
 
 } // namespace portal_core

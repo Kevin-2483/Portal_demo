@@ -2,22 +2,33 @@
 #define ROTATION_SYSTEM_H
 
 #include <entt/entt.hpp>
-#include "transform_component.h"
+#include "../components/transform_component.h"
+#include "../system_base.h"
 
 namespace portal_core
 {
 
-  class RotationSystem
+  /**
+   * 通用旋轉系統
+   * 處理具有 TransformComponent 和 RotationComponent 的實體
+   */
+  class RotationSystem : public ISystem
   {
   public:
-    static void update(entt::registry &registry, float delta_time)
+    RotationSystem() = default;
+    virtual ~RotationSystem() = default;
+
+    // ISystem 接口實現
+    bool initialize() override { return true; }
+    void cleanup() override {}
+
+    void update(entt::registry& registry, float delta_time) override
     {
       // 更新所有具有 TransformComponent 和 RotationComponent 的實體
       auto view = registry.view<TransformComponent, RotationComponent>();
 
       for (auto [entity, transform, rotation_comp] : view.each())
       {
-
         if (!rotation_comp.enabled)
         {
           continue;
@@ -60,6 +71,9 @@ namespace portal_core
       }
     }
   };
+
+  // 自動註冊系統
+  REGISTER_SYSTEM_SIMPLE(RotationSystem, 50);
 
 } // namespace portal_core
 

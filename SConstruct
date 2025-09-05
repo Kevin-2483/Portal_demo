@@ -186,6 +186,7 @@ if library_nodes and not GetOption("clean"):
             Dir("#src/core/components"),
             Dir("#src/core/systems"),
             Dir("#src/vendor/entt/single_include"),
+            Dir("#src/vendor/jolt"),
         ]
     )
     print("  - 插件头文件路径已设置。")
@@ -226,11 +227,118 @@ if library_nodes and not GetOption("clean"):
 
     # --- 2.5：收集 *只属于插件* 的源文件 ---
     # Glob 必须在 variant_dir (build_dir) 中执行，以确保中间文件被正确放置。
+
+    # 收集 Portal 項目源文件
     plugin_sources = (
         Glob(f"{build_dir}/portal_demo_godot/gdextension/src/*.cpp")
         + Glob(f"{build_dir}/portal_demo_godot/gdextension/ecs-components/src/*.cpp")
         + Glob(f"{build_dir}/src/core/*.cpp")
+        + Glob(f"{build_dir}/src/core/systems/*.cpp")
     )
+
+    # 收集所有 Jolt Physics 源文件（遞歸搜尋所有子目錄）
+    import os
+
+    jolt_base_dir = "src/vendor/jolt/Jolt"
+    jolt_sources = []
+
+    # 要排除的目錄（真正的可選組件）
+    excluded_dirs = {
+        # 'Renderer',  # 調試渲染器可能被其他組件依賴，暫時保留
+        # 'Skeleton',  # 骨骼系統被其他組件依賴，需要保留
+    }
+
+    # 遍歷所有 Jolt 子目錄並收集 .cpp 文件
+    for root, dirs, files in os.walk(jolt_base_dir):
+        # 檢查是否在排除目錄中
+        rel_path = os.path.relpath(root, jolt_base_dir)
+        if any(excluded_dir in rel_path for excluded_dir in excluded_dirs):
+            continue
+
+        # 轉換為相對於 build_dir 的路徑
+        rel_root = os.path.relpath(root, ".")
+        build_root = os.path.join(build_dir, rel_root)
+
+        # 添加該目錄下的所有 .cpp 文件
+        cpp_files = [f for f in files if f.endswith(".cpp")]
+        for cpp_file in cpp_files:
+            jolt_sources.append(File(os.path.join(build_root, cpp_file)))
+
+    # 合併所有源文件
+    plugin_sources += jolt_sources
+
+    print(f"  - 收集到 {len(jolt_sources)} 個 Jolt Physics 源文件")
+    print(f"  - Portal 項目源文件數量: {len(plugin_sources) - len(jolt_sources)}")
+    print(f"  - 總源文件數量: {len(plugin_sources)}")
+
+    # ==============================================================================
+    # 阶段 2.5.2：编译测试程序
+    # ==============================================================================
+    print("\n=== 配置测试程序编译 ===")
+    
+    # 检查测试源文件是否存在
+    test_file_exists = os.path.exists("src/core/tests/test_ecs_physics_core_fixed.cpp")
+    if test_file_exists:
+        # 测试程序源文件
+        test_sources = [
+            f"{build_dir}/src/core/tests/test_ecs_physics_core_fixed.cpp",
+            # 需要的核心源文件
+            f"{build_dir}/src/core/physics_world_manager.cpp",
+            f"{build_dir}/src/core/portal_game_world.cpp",
+            f"{build_dir}/src/core/systems/physics_system.cpp",
+            f"{build_dir}/src/core/systems/physics_command_system.cpp",
+        ]
+        
+        # 使用和主程序完全相同的编译环境（不要Clone，直接使用）
+        env_test = env_plugin
+        
+        # 添加 Jolt 源文件到测试
+        test_sources += [str(src) for src in jolt_sources]
+        
+        # 编译测试程序 - 使用和主程序相同的设置
+        test_program = env_test.Program(
+            target=f"{build_dir}/test_ecs_physics_core",
+            source=test_sources
+        )
+        
+        print(f"  - 测试程序目标: {build_dir}/test_ecs_physics_core")
+        print(f"  - 测试源文件数量: {len(test_sources)}")
+        print("  - 使用和主程序相同的编译环境")
+        
+        print("  - 测试程序编译配置完成")
+    else:
+        print("  - 警告: 测试文件不存在，跳过测试编译")
+
+    # --- 2.5.1：Jolt Physics 編譯設定 ---
+    # 添加 Jolt 特定的編譯器定義
+    env_plugin.Append(
+        CPPDEFINES=[
+            "JPH_OBJECT_STREAM",  # 啟用對象序列化
+            "JPH_DISABLE_TEMP_ALLOCATOR",  # 禁用臨時分配器（與 Godot 兼容）
+            "JPH_DISABLE_CUSTOM_ALLOCATOR",  # 禁用自定義分配器（與 Godot 兼容）
+        ]
+    )
+
+    # 根據編譯目標添加適當的定義
+    if env_plugin.get("target") == "template_debug":
+        env_plugin.Append(
+            CPPDEFINES=[
+                "JPH_ENABLE_ASSERTS",  # 調試版本啟用斷言
+                "JPH_FLOATING_POINT_EXCEPTIONS_ENABLED",
+            ]
+        )
+
+    # macOS 特定設定
+    if env_plugin["platform"] == "macos":
+        # 移除 JPH_PLATFORM_MACOS 定義，讓 Jolt 自動檢測
+        # env_plugin.Append(CPPDEFINES=['JPH_PLATFORM_MACOS'])
+        # 為 Jolt 添加 macOS 特定的優化（如果支援）
+        try:
+            env_plugin.Append(CXXFLAGS=["-msse4.1"])  # SIMD 優化
+        except:
+            pass  # 如果不支援則跳過
+
+    print("  - 已配置 Jolt Physics 編譯設定")
 
     if not plugin_sources:
         print("错误: 没有找到任何插件源文件！请检查路径。")
@@ -263,7 +371,13 @@ if library_nodes and not GetOption("clean"):
     env_plugin.Depends(plugin_library, godot_cpp_library)
     print("  - 已设置插件对 godot-cpp 库的依赖。")
 
-    Default(plugin_library)
+    # 將測試程序加入預設編譯目標
+    default_targets = [plugin_library]
+    if test_file_exists and 'test_program' in locals():
+        default_targets.append(test_program)
+        print("  - 测试程序已加入默认编译目标")
+    
+    Default(default_targets)
     Alias("gdextension", plugin_library)
     # **-- [逻辑修正 V10] --**
     # 将要清理的目录用 Dir() 包装，使其成为 SCons 节点，确保被正确识别和删除。

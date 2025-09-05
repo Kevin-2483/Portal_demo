@@ -4,6 +4,7 @@
 #include <entt/entt.hpp>
 #include <memory>
 #include <unordered_map>
+#include "system_manager.h"
 
 namespace portal_core
 {
@@ -12,6 +13,7 @@ namespace portal_core
   {
   private:
     entt::registry registry_;
+    SystemManager system_manager_;
     static std::unique_ptr<PortalGameWorld> instance_;
 
     // 映射：Godot 節點ID <-> Entt 實體ID
@@ -42,8 +44,17 @@ namespace portal_core
     entt::entity get_entt_entity(uint64_t godot_id) const;
     uint64_t get_godot_id(entt::entity entity) const;
 
-    // 系統更新 - 新的架構使用分離的系統
+    // 系統更新 - 使用 SystemManager 和 entt::organizer
     void update_systems(float delta_time);
+    
+    // 系統管理器訪問
+    SystemManager& get_system_manager() { return system_manager_; }
+    const SystemManager& get_system_manager() const { return system_manager_; }
+
+    // 註冊物理系統
+    static void register_physics_systems();
+
+  private:
   };
 
 } // namespace portal_core

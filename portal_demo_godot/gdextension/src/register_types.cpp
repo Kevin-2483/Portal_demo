@@ -1,7 +1,7 @@
 #include "register_types.h"
-#include "game_core_manager.h"             // 引入遊戲核心管理器
-#include "ecs_node.h"                      // 通用 ECS 節點
-#include "ecs_component_resource.h"        // ECS組件資源基類
+#include "game_core_manager.h"      // 引入遊戲核心管理器
+#include "ecs_node.h"               // 通用 ECS 節點
+#include "ecs_component_resource.h" // ECS組件資源基類
 #include "component_registrar.h"
 
 #include <gdextension_interface.h>

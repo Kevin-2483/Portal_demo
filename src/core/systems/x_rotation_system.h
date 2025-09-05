@@ -4,6 +4,7 @@
 #include <cmath>
 #include "entt/entt.hpp"
 #include "../components/x_rotation_component.h"
+#include "../system_base.h"
 
 namespace portal_core
 {
@@ -12,7 +13,7 @@ namespace portal_core
    * X軸旋轉系統 - 專門處理 X 軸旋轉邏輯
    * 🌟 現在完全自主管理 X 軸旋轉狀態，不依賴 TransformComponent
    */
-  class XRotationSystem
+  class XRotationSystem : public ISystem
   {
   public:
     /**
@@ -20,7 +21,7 @@ namespace portal_core
      * @param registry ECS 注册表
      * @param delta_time 自上一幀以來的時間（秒）
      */
-    static void update(entt::registry &registry, float delta_time)
+    void update(entt::registry &registry, float delta_time) override
     {
       // 🎯 新策略：只需要 XRotationComponent，不依賴 TransformComponent
       auto view = registry.view<XRotationComponent>();
@@ -51,6 +52,19 @@ namespace portal_core
         printf("XRotationSystem: Updated %zu entities with X-axis rotation\n", entity_count);
       }
     }
+
+    const char* get_name() const override
+    {
+      return "XRotationSystem";
+    }
+
+    std::vector<std::string> get_dependencies() const override
+    {
+      return {}; // X軸旋轉系統沒有依賴
+    }
   };
+
+  // 自動註冊系統
+  REGISTER_SYSTEM_SIMPLE(XRotationSystem, 100);
 
 } // namespace portal_core

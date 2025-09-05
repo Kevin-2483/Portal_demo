@@ -1,0 +1,150 @@
+[gd_scene load_steps=12 format=3 uid="uid://c7ilvgiaaeo0"]
+
+[ext_resource type="Material" uid="uid://bj8k2mam3n4o5" path="res://materials/ground_material.tres" id="1_ground"]
+[ext_resource type="Material" uid="uid://dad0e1f2g3h4i" path="res://materials/sphere_material.tres" id="2_sphere"]
+[ext_resource type="Material" uid="uid://0bt5jyw2m8r" path="res://materials/box_material.tres" id="3_box"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_1d6j8"]
+size = Vector3(10, 0.4, 10)
+
+[sub_resource type="PhysicsBodyComponentResource" id="PhysicsBodyComponentResource_x5o7s"]
+body_type = 0
+shape_size = Vector3(5, 0.2, 5)
+
+[sub_resource type="SphereMesh" id="SphereMesh_3k4l5"]
+
+[sub_resource type="PhysicsBodyComponentResource" id="PhysicsBodyComponentResource_2y8vu"]
+shape_type = 1
+shape_size = Vector3(0.5, 0.5, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_small"]
+size = Vector3(0.8, 0.8, 0.8)
+
+[sub_resource type="XRotationComponentResource" id="XRotationComponentResource_x5o7s"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_6m9n2"]
+height = 1.5
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_7p8q4"]
+top_radius = 0.4
+bottom_radius = 0.4
+height = 1.2
+
+[node name="PhysicsTestScene" type="Node3D"]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 8, 12)
+fov = 60.0
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 0, 4, 0)
+shadow_enabled = true
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+mesh = SubResource("BoxMesh_1d6j8")
+surface_material_override/0 = ExtResource("1_ground")
+
+[node name="GroundECS" type="ECSNode" parent="Ground"]
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_x5o7s")])
+
+[node name="TestObjects" type="Node3D" parent="."]
+
+[node name="Sphere1" type="MeshInstance3D" parent="TestObjects"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 3, 0)
+mesh = SubResource("SphereMesh_3k4l5")
+surface_material_override/0 = ExtResource("2_sphere")
+
+[node name="SphereECS" type="ECSNode" parent="TestObjects/Sphere1"]
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_2y8vu")])
+
+[node name="Sphere2" type="MeshInstance3D" parent="TestObjects"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 4, 0)
+mesh = SubResource("SphereMesh_3k4l5")
+surface_material_override/0 = ExtResource("2_sphere")
+
+[node name="SphereECS" type="ECSNode" parent="TestObjects/Sphere2"]
+
+[node name="Box1" type="MeshInstance3D" parent="TestObjects"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 3.5, 0)
+mesh = SubResource("BoxMesh_small")
+surface_material_override/0 = ExtResource("3_box")
+
+[node name="BoxECS" type="ECSNode" parent="TestObjects/Box1"]
+
+[node name="Box2" type="MeshInstance3D" parent="TestObjects"]
+transform = Transform3D(1, 0, 0, 0, 0.444658, -0.895701, 0, 0.895701, 0.444658, 3, 4.2, 0)
+mesh = SubResource("BoxMesh_small")
+surface_material_override/0 = ExtResource("3_box")
+
+[node name="BoxECS" type="ECSNode" parent="TestObjects/Box2"]
+components = Array[Resource]([SubResource("XRotationComponentResource_x5o7s")])
+
+[node name="Capsule1" type="MeshInstance3D" parent="TestObjects"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 5, 2)
+mesh = SubResource("CapsuleMesh_6m9n2")
+
+[node name="CapsuleECS" type="ECSNode" parent="TestObjects/Capsule1"]
+
+[node name="Cylinder1" type="MeshInstance3D" parent="TestObjects"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 5.5, -2)
+mesh = SubResource("CylinderMesh_7p8q4")
+
+[node name="CylinderECS" type="ECSNode" parent="TestObjects/Cylinder1"]
+
+[node name="Platforms" type="Node3D" parent="."]
+
+[node name="Platform1" type="MeshInstance3D" parent="Platforms"]
+transform = Transform3D(0.5, 0, 0, 0, 0.1, 0, 0, 0, 0.5, -4, 1.5, -4)
+mesh = SubResource("BoxMesh_1d6j8")
+surface_material_override/0 = ExtResource("1_ground")
+
+[node name="PlatformECS" type="ECSNode" parent="Platforms/Platform1"]
+
+[node name="Platform2" type="MeshInstance3D" parent="Platforms"]
+transform = Transform3D(0.5, 0, 0, 0, 0.1, 0, 0, 0, 0.5, 4, 2, 4)
+mesh = SubResource("BoxMesh_1d6j8")
+surface_material_override/0 = ExtResource("1_ground")
+
+[node name="PlatformECS" type="ECSNode" parent="Platforms/Platform2"]
+
+[node name="Ramp" type="MeshInstance3D" parent="Platforms"]
+transform = Transform3D(0.5, 0, 0, 0, 0.866025, 0.5, 0, -0.05, 0.866025, 0, 1, -2)
+mesh = SubResource("BoxMesh_1d6j8")
+surface_material_override/0 = ExtResource("1_ground")
+
+[node name="RampECS" type="ECSNode" parent="Platforms/Ramp"]
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Instructions" type="Label" parent="UI"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -120.0
+offset_right = 600.0
+offset_bottom = -10.0
+grow_vertical = 0
+text = "物理測試場景
+
+說明：
+1. 地面和平台 - 適合設置為 Static 物理體
+2. 球體、盒子、膠囊、圓柱 - 適合設置為 Dynamic 物理體
+3. 選擇任意 ECSNode，在檢查器中添加 PhysicsBodyComponentResource
+4. 配置物理屬性後運行場景觀察物理模擬效果
+5. 可選添加 PhysicsCommandComponentResource 來測試物理命令
+
+提示：
+- 記得為地面設置較大的盒子形狀
+- 為動態物體設置適當的質量和阻尼
+- 可以嘗試不同的摩擦力和彈性值"
+autowrap_mode = 2
