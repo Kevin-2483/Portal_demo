@@ -2,8 +2,13 @@
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
+#include <godot_cpp/classes/node3d.hpp>
 #include "game_core_manager.h"
 #include "component_registrar.h"
+
+// Include the necessary C++ ECS components
+#include "transform_component.h"
+#include "physics_body_component.h"
 
 using namespace godot;
 
@@ -301,8 +306,38 @@ String PhysicsBodyComponentResource::get_component_type_name() const
 
 void PhysicsBodyComponentResource::sync_to_node(entt::registry& registry, entt::entity entity, Node* target_node)
 {
-    // 暫時不做任何同步，因為物理體位置由物理引擎管理
-    // 如果需要，可以在這裡實現位置同步邏輯
+    // 只对动态物体进行位置同步
+    if (body_type != 1) { // 1 = Dynamic
+        return;
+    }
+    
+    // 检查目标节点是否是 Node3D
+    Node3D* node3d = Object::cast_to<Node3D>(target_node);
+    if (!node3d) {
+        return;
+    }
+    
+    // 获取物理体组件
+    auto* physics_body = registry.try_get<portal_core::PhysicsBodyComponent>(entity);
+    if (!physics_body || !physics_body->is_valid()) {
+        return;
+    }
+    
+    // 获取Transform组件（物理系统会更新这个组件）
+    auto* transform_comp = registry.try_get<portal_core::TransformComponent>(entity);
+    if (!transform_comp) {
+        return;
+    }
+    
+    // 将 C++ Transform 转换为 Godot Transform
+    Vector3 godot_position(transform_comp->position.x(), transform_comp->position.y(), transform_comp->position.z());
+    Quaternion godot_rotation(transform_comp->rotation.x(), transform_comp->rotation.y(), transform_comp->rotation.z(), transform_comp->rotation.w());
+    Vector3 godot_scale(transform_comp->scale.x(), transform_comp->scale.y(), transform_comp->scale.z());
+    
+    // 更新 Godot 节点的变换
+    node3d->set_position(godot_position);
+    node3d->set_quaternion(godot_rotation);
+    node3d->set_scale(godot_scale);
 }
 
 // 便利方法

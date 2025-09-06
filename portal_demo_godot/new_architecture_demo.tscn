@@ -20,7 +20,7 @@ speed = 10.0
 transform = Transform3D(1, 0, 0, 0, 0.99686, -0.0791898, 0, 0.0791898, 0.99686, 0, 0, 10)
 
 [node name="ECSCube1" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.512639, -0.858605, 0, 0.858605, 0.512639, -3, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 0.882927, -0.469511, 0, 0.469511, 0.882927, -3, 0, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="ECSCube1"]
 mesh = SubResource("BoxMesh_1dfi3")
@@ -30,7 +30,7 @@ surface_material_override/0 = SubResource("StandardMaterial3D_1hfja")
 components = Array[Resource]([SubResource("XRotationComponentResource_4nj2s")])
 
 [node name="ECSCube2" type="Node3D" parent="."]
-transform = Transform3D(-0.723222, 0.489893, 0.48678, 0.113904, -0.610583, 0.783718, 0.681159, 0.622248, 0.385786, 3, 0, 0)
+transform = Transform3D(0.00669097, -0.985173, -0.171431, 0.0319255, -0.171137, 0.98473, -0.999469, -0.0120618, 0.030307, 3, 0, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="ECSCube2"]
 mesh = SubResource("BoxMesh_1dfi3")

@@ -1,6 +1,7 @@
 # Development environment
 .devenv/
 .vscode/
+.specstory/
 
 # Build directories
 build/

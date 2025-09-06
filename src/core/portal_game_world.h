@@ -46,13 +46,10 @@ namespace portal_core
 
     // 系統更新 - 使用 SystemManager 和 entt::organizer
     void update_systems(float delta_time);
-    
-    // 系統管理器訪問
-    SystemManager& get_system_manager() { return system_manager_; }
-    const SystemManager& get_system_manager() const { return system_manager_; }
 
-    // 註冊物理系統
-    static void register_physics_systems();
+    // 系統管理器訪問
+    SystemManager &get_system_manager() { return system_manager_; }
+    const SystemManager &get_system_manager() const { return system_manager_; }
 
   private:
   };

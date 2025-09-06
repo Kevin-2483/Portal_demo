@@ -21,10 +21,10 @@ namespace portal_core
     if (!instance_)
     {
       instance_ = std::make_unique<PortalGameWorld>();
-      
-      // 註冊物理系統
-      register_physics_systems();
-      
+
+      // 不再需要手动注册系统！
+      // 所有系统都通过自包含的静态注册自动注册
+
       // 初始化系統管理器
       instance_->system_manager_.initialize();
       std::cout << "PortalGameWorld: Instance created and systems initialized." << std::endl;
@@ -33,39 +33,16 @@ namespace portal_core
 
   void PortalGameWorld::destroy_instance()
   {
-    instance_.reset();
-  }
+    if (instance_)
+    {
+      // 在销毁实例之前，重置系统管理器
+      // 新的reset方法会清理并重新注册所有静态系统
+      instance_->system_manager_.reset();
+      std::cout << "PortalGameWorld: SystemManager reset completed." << std::endl;
+    }
 
-  void PortalGameWorld::register_physics_systems()
-  {
-    // 註冊物理命令系統（在物理系統之前執行）
-    SystemRegistry::register_system(
-      "PhysicsCommandSystem",
-      create_physics_command_system,
-      {},  // 沒有依賴
-      {},  // 沒有衝突
-      10   // 較高優先級，早執行
-    );
-    
-    // 註冊物理系統
-    SystemRegistry::register_system(
-      "PhysicsSystem", 
-      create_physics_system,
-      {"PhysicsCommandSystem"},  // 依賴物理命令系統
-      {},                        // 沒有衝突
-      20                         // 中等優先級
-    );
-    
-    // 註冊物理查詢系統（在物理系統之後執行）
-    SystemRegistry::register_system(
-      "PhysicsQuerySystem",
-      create_physics_query_system,
-      {"PhysicsSystem"},  // 依賴物理系統
-      {},                 // 沒有衝突
-      30                  // 較低優先級，晚執行
-    );
-    
-    std::cout << "PortalGameWorld: Physics systems registered." << std::endl;
+    instance_.reset();
+    std::cout << "PortalGameWorld: Instance destroyed." << std::endl;
   }
 
   entt::entity PortalGameWorld::create_entity()
