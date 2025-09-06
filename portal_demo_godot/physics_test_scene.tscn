@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://c7ilvgiaaeo0"]
+[gd_scene load_steps=17 format=3 uid="uid://c7ilvgiaaeo0"]
 
 [ext_resource type="Material" uid="uid://bj8k2mam3n4o5" path="res://materials/ground_material.tres" id="1_ground"]
 [ext_resource type="Material" uid="uid://dad0e1f2g3h4i" path="res://materials/sphere_material.tres" id="2_sphere"]
@@ -9,31 +9,75 @@ size = Vector3(10, 0.4, 10)
 
 [sub_resource type="PhysicsBodyComponentResource" id="PhysicsBodyComponentResource_x5o7s"]
 body_type = 0
-shape_size = Vector3(5, 0.2, 5)
+shape_size = Vector3(10, 0.4, 10)
 
 [sub_resource type="SphereMesh" id="SphereMesh_3k4l5"]
 
 [sub_resource type="PhysicsBodyComponentResource" id="PhysicsBodyComponentResource_2y8vu"]
 shape_type = 1
 shape_size = Vector3(0.5, 0.5, 0.5)
+friction = 0.1
+restitution = 0.9
+density = 500.0
+linear_damping = 0.01
+angular_damping = 0.01
+
+[sub_resource type="PhysicsBodyComponentResource" id="PhysicsBodyComponentResource_sphere2"]
+shape_type = 1
+shape_size = Vector3(0.5, 0.5, 0.5)
+friction = 0.3
+restitution = 0.7
+density = 800.0
+linear_damping = 0.02
+angular_damping = 0.02
 
 [sub_resource type="BoxMesh" id="BoxMesh_small"]
 size = Vector3(0.8, 0.8, 0.8)
+
+[sub_resource type="PhysicsBodyComponentResource" id="PhysicsBodyComponentResource_ohoit"]
+shape_size = Vector3(0.8, 0.8, 0.8)
+friction = 0.8
+restitution = 0.2
+
+[sub_resource type="PhysicsBodyComponentResource" id="PhysicsBodyComponentResource_box2"]
+shape_size = Vector3(0.8, 0.8, 0.8)
+friction = 0.6
+restitution = 0.4
+density = 1200.0
+linear_damping = 0.08
+angular_damping = 0.08
 
 [sub_resource type="XRotationComponentResource" id="XRotationComponentResource_x5o7s"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_6m9n2"]
 height = 1.5
 
+[sub_resource type="PhysicsBodyComponentResource" id="PhysicsBodyComponentResource_capsule"]
+shape_type = 2
+shape_size = Vector3(0.5, 1.5, 0.5)
+friction = 0.4
+restitution = 0.6
+density = 700.0
+linear_damping = 0.03
+angular_damping = 0.03
+
 [sub_resource type="CylinderMesh" id="CylinderMesh_7p8q4"]
 top_radius = 0.4
 bottom_radius = 0.4
 height = 1.2
 
+[sub_resource type="PhysicsBodyComponentResource" id="PhysicsBodyComponentResource_cylinder"]
+shape_size = Vector3(0.8, 1.2, 0.8)
+friction = 0.7
+restitution = 0.3
+density = 1500.0
+linear_damping = 0.06
+angular_damping = 0.06
+
 [node name="PhysicsTestScene" type="Node3D"]
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 8, 12)
+transform = Transform3D(1, 0, 0, 0, 0.999569, -0.0293697, 0, 0.0293697, 0.999569, 0, 0.560416, 12)
 fov = 60.0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
@@ -51,7 +95,7 @@ components = Array[Resource]([SubResource("PhysicsBodyComponentResource_x5o7s")]
 [node name="TestObjects" type="Node3D" parent="."]
 
 [node name="Sphere1" type="MeshInstance3D" parent="TestObjects"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 3, 0)
+transform = Transform3D(-1, -6.42604e-08, -5.92734e-08, 0, 0.678009, -0.735054, 8.74228e-08, -0.735054, -0.678009, -1.37195, 16.119, 0)
 mesh = SubResource("SphereMesh_3k4l5")
 surface_material_override/0 = ExtResource("2_sphere")
 
@@ -64,56 +108,37 @@ mesh = SubResource("SphereMesh_3k4l5")
 surface_material_override/0 = ExtResource("2_sphere")
 
 [node name="SphereECS" type="ECSNode" parent="TestObjects/Sphere2"]
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_sphere2")])
 
 [node name="Box1" type="MeshInstance3D" parent="TestObjects"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 3.5, 0)
+transform = Transform3D(-0.999996, 8.7931e-08, -0.00277956, -8.74228e-08, -1, -1.82966e-07, -0.00277956, -1.82723e-07, 0.999996, 1.00002, 3.94353, -3.76408e-06)
 mesh = SubResource("BoxMesh_small")
 surface_material_override/0 = ExtResource("3_box")
 
 [node name="BoxECS" type="ECSNode" parent="TestObjects/Box1"]
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_ohoit")])
 
 [node name="Box2" type="MeshInstance3D" parent="TestObjects"]
-transform = Transform3D(1, 0, 0, 0, 0.444658, -0.895701, 0, 0.895701, 0.444658, 3, 4.2, 0)
+transform = Transform3D(1, 0, 0, 0, 0.997541, -0.0700893, 0, 0.0700893, 0.997541, 3, 4.2, 0)
 mesh = SubResource("BoxMesh_small")
 surface_material_override/0 = ExtResource("3_box")
 
 [node name="BoxECS" type="ECSNode" parent="TestObjects/Box2"]
-components = Array[Resource]([SubResource("XRotationComponentResource_x5o7s")])
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_box2"), SubResource("XRotationComponentResource_x5o7s")])
 
 [node name="Capsule1" type="MeshInstance3D" parent="TestObjects"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 5, 2)
 mesh = SubResource("CapsuleMesh_6m9n2")
 
 [node name="CapsuleECS" type="ECSNode" parent="TestObjects/Capsule1"]
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_capsule")])
 
 [node name="Cylinder1" type="MeshInstance3D" parent="TestObjects"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 5.5, -2)
 mesh = SubResource("CylinderMesh_7p8q4")
 
 [node name="CylinderECS" type="ECSNode" parent="TestObjects/Cylinder1"]
-
-[node name="Platforms" type="Node3D" parent="."]
-
-[node name="Platform1" type="MeshInstance3D" parent="Platforms"]
-transform = Transform3D(0.5, 0, 0, 0, 0.1, 0, 0, 0, 0.5, -4, 1.5, -4)
-mesh = SubResource("BoxMesh_1d6j8")
-surface_material_override/0 = ExtResource("1_ground")
-
-[node name="PlatformECS" type="ECSNode" parent="Platforms/Platform1"]
-
-[node name="Platform2" type="MeshInstance3D" parent="Platforms"]
-transform = Transform3D(0.5, 0, 0, 0, 0.1, 0, 0, 0, 0.5, 4, 2, 4)
-mesh = SubResource("BoxMesh_1d6j8")
-surface_material_override/0 = ExtResource("1_ground")
-
-[node name="PlatformECS" type="ECSNode" parent="Platforms/Platform2"]
-
-[node name="Ramp" type="MeshInstance3D" parent="Platforms"]
-transform = Transform3D(0.5, 0, 0, 0, 0.866025, 0.5, 0, -0.05, 0.866025, 0, 1, -2)
-mesh = SubResource("BoxMesh_1d6j8")
-surface_material_override/0 = ExtResource("1_ground")
-
-[node name="RampECS" type="ECSNode" parent="Platforms/Ramp"]
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_cylinder")])
 
 [node name="UI" type="Control" parent="."]
 layout_mode = 3

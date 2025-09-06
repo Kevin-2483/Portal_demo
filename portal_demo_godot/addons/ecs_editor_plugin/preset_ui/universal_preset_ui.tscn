@@ -1,0 +1,73 @@
+[gd_scene load_steps=2 format=3 uid="uid://bdqvh4ypu5vg8"]
+
+[ext_resource type="Script" path="res://addons/ecs_editor_plugin/preset_ui/universal_preset_ui.gd" id="1_1xv3m"]
+
+[node name="UniversalPresetUI" type="MarginContainer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = -26.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_1xv3m")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="HeaderContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="PresetLabel" type="Label" parent="VBoxContainer/HeaderContainer"]
+layout_mode = 2
+text = "Presets:"
+horizontal_alignment = 1
+
+[node name="PresetOptions" type="OptionButton" parent="VBoxContainer/HeaderContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "Select a preset to load"
+
+[node name="ButtonContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="LoadButton" type="Button" parent="VBoxContainer/ButtonContainer"]
+layout_mode = 2
+text = "Load"
+tooltip_text = "Load the selected preset"
+
+[node name="SaveButton" type="Button" parent="VBoxContainer/ButtonContainer"]
+layout_mode = 2
+text = "Save As..."
+tooltip_text = "Save current settings as a new preset"
+
+[node name="DeleteButton" type="Button" parent="VBoxContainer/ButtonContainer"]
+layout_mode = 2
+text = "Delete"
+tooltip_text = "Delete the selected preset"
+
+[node name="ResetButton" type="Button" parent="VBoxContainer/ButtonContainer"]
+layout_mode = 2
+text = "Reset"
+tooltip_text = "Reset all properties to default values"
+
+[node name="AutoFillContainer" type="VBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="AutoFillLabel" type="Label" parent="VBoxContainer/AutoFillContainer"]
+layout_mode = 2
+text = "Auto Fill from Target Node:"
+horizontal_alignment = 1
+
+[node name="AutoFillButtonContainer" type="HBoxContainer" parent="VBoxContainer/AutoFillContainer"]
+layout_mode = 2
+
+[node name="WarningContainer" type="VBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="WarningLabel" type="RichTextLabel" parent="VBoxContainer/WarningContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 60)
+bbcode_enabled = true
+text = ""
+fit_content = true

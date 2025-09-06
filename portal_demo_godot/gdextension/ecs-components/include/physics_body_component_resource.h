@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ecs_component_resource.h"
+#include "ipresettable_resource.h"  // 改为继承自可预设资源接口
 #include <godot_cpp/classes/resource.hpp>
 #include <godot_cpp/classes/ref.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
@@ -14,10 +14,12 @@ using namespace godot;
  * 物理體組件資源
  * 讓設計師可以在 Godot 編輯器中配置物理體屬性
  * 包括形狀、質量、阻尼、碰撞過濾等所有物理參數
+ * 
+ * 继承自 IPresettableResource，自动获得预设保存/加载功能
  */
-class PhysicsBodyComponentResource : public ECSComponentResource
+class PhysicsBodyComponentResource : public IPresettableResource
 {
-    GDCLASS(PhysicsBodyComponentResource, ECSComponentResource)
+    GDCLASS(PhysicsBodyComponentResource, IPresettableResource)
 
 private:
     // 物理體類型
@@ -168,6 +170,19 @@ public:
     void set_kinematic_body();
     void set_trigger_body();
 
+    // 重写预设相关方法，提供更友好的显示名称
+    virtual String get_preset_display_name() const override {
+        return "Physics Body";
+    }
+
+    // 约束验证方法
+    Array validate_constraints() const;
+    String get_constraint_warnings() const override;
+
+    // 实现 IPresettableResource 接口的自动填充功能
+    virtual Array get_auto_fill_capabilities() const override;
+    virtual Dictionary auto_fill_from_node(Node* target_node, const String& capability_name = "") override;
+
 private:
     // 輔助方法
     portal_core::PhysicsBodyType get_cpp_body_type() const;
@@ -175,4 +190,15 @@ private:
     portal_core::PhysicsMaterial create_cpp_material() const;
     void apply_properties_to_cpp_component(portal_core::PhysicsBodyComponent& cpp_component) const;
     void sync_from_cpp_component(const portal_core::PhysicsBodyComponent& cpp_component);
+    
+    // 屬性變化處理
+    void _on_property_changed();
+
+    // 自动填充辅助方法
+    Dictionary auto_fill_from_mesh_instance(Node* node);
+    Dictionary auto_fill_from_collision_shape(Node* node);
+    Dictionary auto_fill_from_rigid_body(Node* node);
+    Dictionary auto_fill_from_static_body(Node* node);
+    Vector3 calculate_mesh_bounds(Node* mesh_instance);
+    bool extract_collision_shape_data(Node* collision_shape, int& shape_type_out, Vector3& size_out);
 };

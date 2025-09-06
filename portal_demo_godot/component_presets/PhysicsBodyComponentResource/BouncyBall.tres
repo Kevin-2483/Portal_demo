@@ -1,0 +1,30 @@
+[gd_resource type="PhysicsBodyComponentResource" format=3]
+
+[resource]
+body_type = 1
+shape_type = 1
+shape_size = Vector3(0.5, 0.5, 0.5)
+friction = 0.1
+restitution = 0.9
+density = 500.0
+mass = 0.5
+center_of_mass = Vector3(0, 0, 0)
+linear_velocity = Vector3(0, 0, 0)
+angular_velocity = Vector3(0, 0, 0)
+linear_damping = 0.02
+angular_damping = 0.1
+gravity_scale = 1.0
+is_active = true
+allow_sleeping = true
+enable_ccd = true
+lock_linear_x = false
+lock_linear_y = false
+lock_linear_z = false
+lock_angular_x = false
+lock_angular_y = false
+lock_angular_z = false
+max_linear_velocity = 500.0
+max_angular_velocity = 47.1
+collision_layer = 1
+collision_mask = 4294967295
+collision_group = 0

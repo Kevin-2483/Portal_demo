@@ -19,6 +19,11 @@ config/icon="res://icon.svg"
 
 GameCore="*res://GameCore.tscn"
 
+[editor]
+
+movie_writer/movie_file="E:/1/1.avi"
+movie_writer/fps=24
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/ecs_editor_plugin/plugin.cfg")

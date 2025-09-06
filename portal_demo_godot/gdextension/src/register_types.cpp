@@ -4,6 +4,10 @@
 #include "ecs_component_resource.h" // ECS組件資源基類
 #include "component_registrar.h"
 
+// 编辑器插件相关
+#include "ipresettable_resource.h"
+#include "universal_preset_inspector_plugin.h"
+
 #include <gdextension_interface.h>
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/godot.hpp>
@@ -13,27 +17,32 @@ using namespace godot;
 // 初始化模組時被調用
 void initialize_gdextension_module(ModuleInitializationLevel p_level)
 {
-  if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE)
+  if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE)
   {
-    return;
+    // 注册核心类
+    ClassDB::register_class<GameCoreManager>();
+    GDREGISTER_ABSTRACT_CLASS(ECSComponentResource);
+    GDREGISTER_ABSTRACT_CLASS(IPresettableResource);
+    ClassDB::register_class<ECSNode>();
+
+    // ✅ 在这里，安全地执行所有延迟的注册！
+    for (const auto &func : get_registration_functions())
+    {
+      func();
+    }
   }
-
-  // 注册核心类
-  ClassDB::register_class<GameCoreManager>();
-  GDREGISTER_ABSTRACT_CLASS(ECSComponentResource);
-  ClassDB::register_class<ECSNode>();
-
-  // ✅ 在这里，安全地执行所有延迟的注册！
-  for (const auto &func : get_registration_functions())
+  else if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR)
   {
-    func();
+    // 注册编辑器插件相关类 - 只注册Inspector插件，主插件由GDScript管理
+    ClassDB::register_class<UniversalPresetInspectorPlugin>();
   }
 }
 
 // 卸載模組時被調用
 void uninitialize_gdextension_module(ModuleInitializationLevel p_level)
 {
-  if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE)
+  // 编辑器和场景模块都需要处理卸载
+  if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE && p_level != MODULE_INITIALIZATION_LEVEL_EDITOR)
   {
     return;
   }
@@ -49,7 +58,7 @@ extern "C"
 
     init_obj.register_initializer(initialize_gdextension_module);
     init_obj.register_terminator(uninitialize_gdextension_module);
-    init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SCENE);
+    init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_EDITOR);
 
     return init_obj.init();
   }

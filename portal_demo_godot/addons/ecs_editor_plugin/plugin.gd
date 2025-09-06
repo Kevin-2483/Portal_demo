@@ -7,6 +7,7 @@ const ECSEventBus = preload("res://addons/ecs_editor_plugin/ecs_event_bus.gd")
 var dock_instance
 var instance_manager
 var event_bus
+var preset_inspector_plugin  # 新增：预设检查器插件
 
 func _enter_tree():
 	print("ECS Editor Plugin: Entering tree")
@@ -30,6 +31,9 @@ func _enter_tree():
 	dock_instance.instance_manager = instance_manager
 	add_control_to_dock(DOCK_SLOT_LEFT_UL, dock_instance)
 	
+	# 🆕 初始化预设功能
+	_setup_preset_system()
+	
 	# 连接编辑器信号
 	_connect_editor_signals()
 	
@@ -37,6 +41,9 @@ func _enter_tree():
 
 func _exit_tree():
 	print("ECS Editor Plugin: Exiting tree")
+	
+	# 🆕 清理预设系统
+	_cleanup_preset_system()
 	
 	# 清理资源
 	if dock_instance:
@@ -55,6 +62,27 @@ func _exit_tree():
 		event_bus.queue_free()
 		event_bus = null
 		print("ECS Editor Plugin: Event bus cleaned up")
+
+# 🆕 设置预设系统
+func _setup_preset_system():
+	# 实例化C++预设检查器插件
+	preset_inspector_plugin = UniversalPresetInspectorPlugin.new()
+	
+	# 正确的解决方案：直接传递EditorInterface给检查器插件
+	# 通过插件的set_editor_interface方法传递
+	if preset_inspector_plugin.has_method("set_editor_interface"):
+		preset_inspector_plugin.call("set_editor_interface", get_editor_interface())
+		print("ECS Editor Plugin: EditorInterface passed to inspector plugin")
+	
+	add_inspector_plugin(preset_inspector_plugin)
+	print("ECS Editor Plugin: Preset inspector plugin added")
+
+# 🆕 清理预设系统
+func _cleanup_preset_system():
+	if preset_inspector_plugin:
+		remove_inspector_plugin(preset_inspector_plugin)
+		preset_inspector_plugin = null
+		print("ECS Editor Plugin: Preset inspector plugin removed")
 
 func _connect_editor_signals():
 	# 监听场景变化

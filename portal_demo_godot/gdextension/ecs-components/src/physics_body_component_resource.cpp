@@ -155,7 +155,15 @@ void PhysicsBodyComponentResource::_bind_methods()
     ClassDB::bind_method(D_METHOD("set_static_body"), &PhysicsBodyComponentResource::set_static_body);
     ClassDB::bind_method(D_METHOD("set_kinematic_body"), &PhysicsBodyComponentResource::set_kinematic_body);
     ClassDB::bind_method(D_METHOD("set_trigger_body"), &PhysicsBodyComponentResource::set_trigger_body);
+    
+    // 约束验证方法
+    ClassDB::bind_method(D_METHOD("validate_constraints"), &PhysicsBodyComponentResource::validate_constraints);
+    ClassDB::bind_method(D_METHOD("get_constraint_warnings"), &PhysicsBodyComponentResource::get_constraint_warnings);
+    
+    // 自动填充方法 (这些方法已在基类 IPresettableResource 中绑定，这里无需重复绑定)
+    // 但我们可以添加一些物理组件特有的便利方法
 }
+
 
 PhysicsBodyComponentResource::PhysicsBodyComponentResource()
     : body_type(1) // Dynamic 預設
@@ -199,19 +207,34 @@ int PhysicsBodyComponentResource::get_body_type() const { return body_type; }
 // 形狀屬性
 void PhysicsBodyComponentResource::set_shape_type(int p_type) { shape_type = p_type; }
 int PhysicsBodyComponentResource::get_shape_type() const { return shape_type; }
-void PhysicsBodyComponentResource::set_shape_size(const Vector3& p_size) { shape_size = p_size; }
+void PhysicsBodyComponentResource::set_shape_size(const Vector3& p_size) { 
+    shape_size = p_size; 
+    _on_property_changed();
+}
 Vector3 PhysicsBodyComponentResource::get_shape_size() const { return shape_size; }
 
 // 材質屬性
-void PhysicsBodyComponentResource::set_friction(float p_friction) { friction = p_friction; }
+void PhysicsBodyComponentResource::set_friction(float p_friction) { 
+    friction = p_friction; 
+    _on_property_changed();
+}
 float PhysicsBodyComponentResource::get_friction() const { return friction; }
-void PhysicsBodyComponentResource::set_restitution(float p_restitution) { restitution = p_restitution; }
+void PhysicsBodyComponentResource::set_restitution(float p_restitution) { 
+    restitution = p_restitution; 
+    _on_property_changed();
+}
 float PhysicsBodyComponentResource::get_restitution() const { return restitution; }
-void PhysicsBodyComponentResource::set_density(float p_density) { density = p_density; }
+void PhysicsBodyComponentResource::set_density(float p_density) { 
+    density = p_density; 
+    _on_property_changed();
+}
 float PhysicsBodyComponentResource::get_density() const { return density; }
 
 // 質量屬性
-void PhysicsBodyComponentResource::set_mass(float p_mass) { mass = p_mass; }
+void PhysicsBodyComponentResource::set_mass(float p_mass) { 
+    mass = p_mass; 
+    _on_property_changed();
+}
 float PhysicsBodyComponentResource::get_mass() const { return mass; }
 void PhysicsBodyComponentResource::set_center_of_mass(const Vector3& p_center) { center_of_mass = p_center; }
 Vector3 PhysicsBodyComponentResource::get_center_of_mass() const { return center_of_mass; }
@@ -223,9 +246,15 @@ void PhysicsBodyComponentResource::set_angular_velocity(const Vector3& p_velocit
 Vector3 PhysicsBodyComponentResource::get_angular_velocity() const { return angular_velocity; }
 
 // 阻尼屬性
-void PhysicsBodyComponentResource::set_linear_damping(float p_damping) { linear_damping = p_damping; }
+void PhysicsBodyComponentResource::set_linear_damping(float p_damping) { 
+    linear_damping = p_damping; 
+    _on_property_changed();
+}
 float PhysicsBodyComponentResource::get_linear_damping() const { return linear_damping; }
-void PhysicsBodyComponentResource::set_angular_damping(float p_damping) { angular_damping = p_damping; }
+void PhysicsBodyComponentResource::set_angular_damping(float p_damping) { 
+    angular_damping = p_damping; 
+    _on_property_changed();
+}
 float PhysicsBodyComponentResource::get_angular_damping() const { return angular_damping; }
 
 // 重力屬性
@@ -459,6 +488,539 @@ void PhysicsBodyComponentResource::apply_properties_to_cpp_component(portal_core
     cpp_component.collision_filter.collision_layer = static_cast<uint32_t>(collision_layer);
     cpp_component.collision_filter.collision_mask = static_cast<uint32_t>(collision_mask);
     cpp_component.collision_filter.collision_group = static_cast<int16_t>(collision_group);
+}
+
+// 约束验证方法实现
+Array PhysicsBodyComponentResource::validate_constraints() const
+{
+    Array warnings;
+    
+    // 检查物理体类型和质量
+    if (body_type == 1 && mass <= 0.0f) { // Dynamic body
+        warnings.append("Dynamic body mass must be greater than 0. Current: " + String::num(mass));
+    }
+    
+    // 检查形状尺寸
+    switch (shape_type) {
+        case 0: // Box
+            if (shape_size.x <= 0.0f || shape_size.y <= 0.0f || shape_size.z <= 0.0f) {
+                warnings.append("Box size must be positive in all dimensions. Current: " + 
+                    String::num(shape_size.x) + ", " + String::num(shape_size.y) + ", " + String::num(shape_size.z));
+            }
+            break;
+        case 1: // Sphere  
+            if (shape_size.x <= 0.0f) {
+                warnings.append("Sphere radius must be positive. Current: " + String::num(shape_size.x));
+            }
+            break;
+        case 2: // Capsule
+            if (shape_size.x <= 0.0f) {
+                warnings.append("Capsule radius must be positive. Current: " + String::num(shape_size.x));
+            }
+            if (shape_size.y <= 0.0f) {
+                warnings.append("Capsule height must be positive. Current: " + String::num(shape_size.y));
+            }
+            break;
+    }
+    
+    // 检查材质属性
+    if (friction < 0.0f) {
+        warnings.append("Friction must be non-negative. Current: " + String::num(friction));
+    }
+    
+    if (restitution < 0.0f || restitution > 1.0f) {
+        warnings.append("Restitution must be between 0.0 and 1.0. Current: " + String::num(restitution));
+    }
+    
+    if ((body_type == 1 || body_type == 2) && density <= 0.0f) { // Dynamic or Kinematic
+        warnings.append("Dynamic/Kinematic body density must be positive. Current: " + String::num(density));
+    }
+    
+    // 检查阻尼值
+    if (linear_damping < 0.0f || linear_damping > 1.0f) {
+        warnings.append("Linear damping must be between 0.0 and 1.0. Current: " + String::num(linear_damping));
+    }
+    
+    if (angular_damping < 0.0f || angular_damping > 1.0f) {
+        warnings.append("Angular damping must be between 0.0 and 1.0. Current: " + String::num(angular_damping));
+    }
+    
+    // 检查速度限制
+    if (max_linear_velocity <= 0.0f) {
+        warnings.append("Max linear velocity must be positive. Current: " + String::num(max_linear_velocity));
+    }
+    
+    if (max_angular_velocity <= 0.0f) {
+        warnings.append("Max angular velocity must be positive. Current: " + String::num(max_angular_velocity));
+    }
+    
+    // 检查重力缩放
+    if (gravity_scale < 0.0f) {
+        warnings.append("Gravity scale cannot be negative. Current: " + String::num(gravity_scale));
+    }
+    
+    return warnings;
+}
+
+String PhysicsBodyComponentResource::get_constraint_warnings() const
+{
+    Array warnings = validate_constraints();
+    if (warnings.is_empty()) {
+        return "";
+    }
+    
+    String result = "⚠️ Constraint Warnings:\n";
+    for (int i = 0; i < warnings.size(); i++) {
+        result += "• " + warnings[i].operator String() + "\n";
+    }
+    
+    return result;
+}
+
+// 屬性變化處理方法
+void PhysicsBodyComponentResource::_on_property_changed()
+{
+    // 執行約束檢查
+    get_constraint_warnings(); // 這會觸發約束檢查
+    
+    // 觸發changed信號，讓ECS系統和UI知道屬性已更改
+    emit_changed();
+}
+
+// ===== 自动填充功能实现 =====
+
+Array PhysicsBodyComponentResource::get_auto_fill_capabilities() const
+{
+    Array capabilities;
+    
+    // 从 MeshInstance3D 提取形状
+    Dictionary mesh_capability;
+    mesh_capability["source_node_type"] = "MeshInstance3D";
+    mesh_capability["capability_name"] = "Mesh Shape";
+    mesh_capability["description"] = "Extract box shape from mesh bounds (AABB)";
+    mesh_capability["supported_properties"] = Array::make("shape_type", "shape_size");
+    capabilities.append(mesh_capability);
+    
+    // 从 CollisionShape3D 提取碰撞数据
+    Dictionary collision_capability;
+    collision_capability["source_node_type"] = "CollisionShape3D";
+    collision_capability["capability_name"] = "Collision Shape";
+    collision_capability["description"] = "Copy shape type and size from collision shape";
+    collision_capability["supported_properties"] = Array::make("shape_type", "shape_size");
+    capabilities.append(collision_capability);
+    
+    // 从 RigidBody3D 提取物理属性
+    Dictionary rigid_body_capability;
+    rigid_body_capability["source_node_type"] = "RigidBody3D";
+    rigid_body_capability["capability_name"] = "Physics Properties";
+    rigid_body_capability["description"] = "Extract mass, damping, and physics settings";
+    rigid_body_capability["supported_properties"] = Array::make("body_type", "mass", "linear_damping", "angular_damping", "gravity_scale");
+    capabilities.append(rigid_body_capability);
+    
+    // 从 StaticBody3D 设置静态体
+    Dictionary static_body_capability;
+    static_body_capability["source_node_type"] = "StaticBody3D";
+    static_body_capability["capability_name"] = "Static Body";
+    static_body_capability["description"] = "Configure as static physics body";
+    static_body_capability["supported_properties"] = Array::make("body_type");
+    capabilities.append(static_body_capability);
+    
+    return capabilities;
+}
+
+Dictionary PhysicsBodyComponentResource::auto_fill_from_node(Node* target_node, const String& capability_name)
+{
+    Dictionary result;
+    result["success"] = false;
+    result["error_message"] = "";
+    result["property_values"] = Dictionary();
+    result["applied_capability"] = "";
+    
+    if (!target_node) {
+        result["error_message"] = "Target node is null";
+        return result;
+    }
+    
+    String node_class = target_node->get_class();
+    
+    // 根据节点类型和能力名称选择合适的填充方法
+    if (capability_name.is_empty()) {
+        // 自动选择最佳匹配
+        if (node_class == "MeshInstance3D" || target_node->is_class("MeshInstance3D")) {
+            return auto_fill_from_mesh_instance(target_node);
+        } else if (node_class == "CollisionShape3D" || target_node->is_class("CollisionShape3D")) {
+            return auto_fill_from_collision_shape(target_node);
+        } else if (node_class == "RigidBody3D" || target_node->is_class("RigidBody3D")) {
+            return auto_fill_from_rigid_body(target_node);
+        } else if (node_class == "StaticBody3D" || target_node->is_class("StaticBody3D")) {
+            return auto_fill_from_static_body(target_node);
+        }
+    } else {
+        // 使用指定的能力
+        if (capability_name == "Mesh Shape" && (node_class == "MeshInstance3D" || target_node->is_class("MeshInstance3D"))) {
+            return auto_fill_from_mesh_instance(target_node);
+        } else if (capability_name == "Collision Shape" && (node_class == "CollisionShape3D" || target_node->is_class("CollisionShape3D"))) {
+            return auto_fill_from_collision_shape(target_node);
+        } else if (capability_name == "Physics Properties" && (node_class == "RigidBody3D" || target_node->is_class("RigidBody3D"))) {
+            return auto_fill_from_rigid_body(target_node);
+        } else if (capability_name == "Static Body" && (node_class == "StaticBody3D" || target_node->is_class("StaticBody3D"))) {
+            return auto_fill_from_static_body(target_node);
+        }
+    }
+    
+    result["error_message"] = "No suitable auto-fill capability found for node type: " + node_class;
+    return result;
+}
+
+Dictionary PhysicsBodyComponentResource::auto_fill_from_mesh_instance(Node* node)
+{
+    Dictionary result;
+    result["success"] = false;
+    result["error_message"] = "";
+    result["property_values"] = Dictionary();
+    result["applied_capability"] = "Mesh Shape";
+    
+    if (!node || !node->is_class("MeshInstance3D")) {
+        result["error_message"] = "Node is not a MeshInstance3D";
+        return result;
+    }
+    
+    // 获取网格资源
+    if (!node->has_method("get_mesh")) {
+        result["error_message"] = "MeshInstance3D has no get_mesh method";
+        return result;
+    }
+    
+    Variant mesh_var = node->call("get_mesh");
+    if (mesh_var.get_type() != Variant::OBJECT) {
+        result["error_message"] = "No mesh resource found";
+        return result;
+    }
+    
+    Object* mesh_obj = mesh_var;
+    if (!mesh_obj) {
+        result["error_message"] = "Mesh object is null";
+        return result;
+    }
+    
+    String mesh_class = mesh_obj->get_class();
+    Dictionary values;
+    int shape_type = 0; // 默认为Box
+    Vector3 shape_size;
+    
+    // 根据网格类型设置形状
+    if (mesh_class == "SphereMesh") {
+        shape_type = 1; // Sphere
+        if (mesh_obj->has_method("get_radius")) {
+            Variant radius_var = mesh_obj->call("get_radius");
+            if (radius_var.get_type() == Variant::FLOAT) {
+                float radius = radius_var;
+                shape_size = Vector3(radius, radius, radius); // 球体使用半径
+            } else {
+                shape_size = Vector3(0.5f, 0.5f, 0.5f); // 默认半径
+            }
+        } else {
+            shape_size = Vector3(0.5f, 0.5f, 0.5f); // 默认半径
+        }
+    } else if (mesh_class == "CapsuleMesh") {
+        shape_type = 2; // Capsule
+        float radius = 0.5f;
+        float height = 1.0f;
+        if (mesh_obj->has_method("get_radius")) {
+            Variant radius_var = mesh_obj->call("get_radius");
+            if (radius_var.get_type() == Variant::FLOAT) {
+                radius = radius_var;
+            }
+        }
+        if (mesh_obj->has_method("get_height")) {
+            Variant height_var = mesh_obj->call("get_height");
+            if (height_var.get_type() == Variant::FLOAT) {
+                height = height_var;
+            }
+        }
+        shape_size = Vector3(radius, height, radius); // 胶囊：半径(x), 高度(y), 半径(z)
+    } else {
+        // 其他网格类型（包括BoxMesh、CylinderMesh等）当作Box处理
+        shape_type = 0; // Box
+        Vector3 bounds = calculate_mesh_bounds(node);
+        if (bounds.length() <= 0.0f) {
+            result["error_message"] = "Unable to calculate mesh bounds";
+            return result;
+        }
+        shape_size = bounds; // 保存完整尺寸，让物理引擎转换为半尺寸
+    }
+    
+    values["shape_type"] = shape_type;
+    values["shape_size"] = shape_size;
+    
+    // 应用属性
+    set_shape_type(shape_type);
+    set_shape_size(shape_size);
+    
+    result["success"] = true;
+    result["property_values"] = values;
+    return result;
+}
+
+Dictionary PhysicsBodyComponentResource::auto_fill_from_collision_shape(Node* node)
+{
+    Dictionary result;
+    result["success"] = false;
+    result["error_message"] = "";
+    result["property_values"] = Dictionary();
+    result["applied_capability"] = "Collision Shape";
+    
+    int shape_type_out;
+    Vector3 size_out;
+    
+    if (!extract_collision_shape_data(node, shape_type_out, size_out)) {
+        result["error_message"] = "Unable to extract collision shape data";
+        return result;
+    }
+    
+    Dictionary values;
+    values["shape_type"] = shape_type_out;
+    values["shape_size"] = size_out;
+    
+    // 应用属性
+    set_shape_type(shape_type_out);
+    set_shape_size(size_out);
+    
+    result["success"] = true;
+    result["property_values"] = values;
+    return result;
+}
+
+Dictionary PhysicsBodyComponentResource::auto_fill_from_rigid_body(Node* node)
+{
+    Dictionary result;
+    result["success"] = false;
+    result["error_message"] = "";
+    result["property_values"] = Dictionary();
+    result["applied_capability"] = "Physics Properties";
+    
+    // 使用反射获取 RigidBody3D 的属性
+    Dictionary values;
+    values["body_type"] = 1; // Dynamic
+    
+    // 尝试获取常见的物理属性
+    if (node->has_method("get_mass")) {
+        Variant mass_var = node->call("get_mass");
+        if (mass_var.get_type() == Variant::FLOAT) {
+            values["mass"] = mass_var;
+            set_mass(mass_var);
+        }
+    }
+    
+    if (node->has_method("get_linear_damp")) {
+        Variant damp_var = node->call("get_linear_damp");
+        if (damp_var.get_type() == Variant::FLOAT) {
+            values["linear_damping"] = damp_var;
+            set_linear_damping(damp_var);
+        }
+    }
+    
+    if (node->has_method("get_angular_damp")) {
+        Variant damp_var = node->call("get_angular_damp");
+        if (damp_var.get_type() == Variant::FLOAT) {
+            values["angular_damping"] = damp_var;
+            set_angular_damping(damp_var);
+        }
+    }
+    
+    if (node->has_method("get_gravity_scale")) {
+        Variant gravity_var = node->call("get_gravity_scale");
+        if (gravity_var.get_type() == Variant::FLOAT) {
+            values["gravity_scale"] = gravity_var;
+            set_gravity_scale(gravity_var);
+        }
+    }
+    
+    // 应用动态体类型
+    set_body_type(1);
+    
+    result["success"] = true;
+    result["property_values"] = values;
+    return result;
+}
+
+Dictionary PhysicsBodyComponentResource::auto_fill_from_static_body(Node* node)
+{
+    Dictionary result;
+    result["success"] = false;
+    result["error_message"] = "";
+    result["property_values"] = Dictionary();
+    result["applied_capability"] = "Static Body";
+    
+    Dictionary values;
+    values["body_type"] = 0; // Static
+    
+    // 应用静态体类型
+    set_body_type(0);
+    
+    result["success"] = true;
+    result["property_values"] = values;
+    return result;
+}
+
+Vector3 PhysicsBodyComponentResource::calculate_mesh_bounds(Node* mesh_instance)
+{
+    if (!mesh_instance || !mesh_instance->is_class("MeshInstance3D")) {
+        return Vector3();
+    }
+    
+    // 尝试获取网格资源
+    if (!mesh_instance->has_method("get_mesh")) {
+        return Vector3();
+    }
+    
+    Variant mesh_var = mesh_instance->call("get_mesh");
+    if (mesh_var.get_type() != Variant::OBJECT) {
+        return Vector3();
+    }
+    
+    Object* mesh_obj = mesh_var;
+    if (!mesh_obj) {
+        return Vector3();
+    }
+    
+    String mesh_class = mesh_obj->get_class();
+    
+    // 根据网格类型返回不同的尺寸
+    if (mesh_class == "SphereMesh") {
+        // 球体网格 - 获取半径
+        if (mesh_obj->has_method("get_radius")) {
+            Variant radius_var = mesh_obj->call("get_radius");
+            if (radius_var.get_type() == Variant::FLOAT) {
+                float radius = radius_var;
+                return Vector3(radius * 2.0f, radius * 2.0f, radius * 2.0f); // 返回直径作为尺寸
+            }
+        }
+        return Vector3(1.0f, 1.0f, 1.0f); // 默认球体尺寸
+    } else if (mesh_class == "CapsuleMesh") {
+        // 胶囊网格 - 获取半径和高度
+        float radius = 0.5f;
+        float height = 1.0f;
+        if (mesh_obj->has_method("get_radius")) {
+            Variant radius_var = mesh_obj->call("get_radius");
+            if (radius_var.get_type() == Variant::FLOAT) {
+                radius = radius_var;
+            }
+        }
+        if (mesh_obj->has_method("get_height")) {
+            Variant height_var = mesh_obj->call("get_height");
+            if (height_var.get_type() == Variant::FLOAT) {
+                height = height_var;
+            }
+        }
+        return Vector3(radius * 2.0f, height, radius * 2.0f); // 返回胶囊的包围盒尺寸
+    } else if (mesh_class == "CylinderMesh") {
+        // 圆柱网格 - 获取半径和高度
+        float top_radius = 0.5f;
+        float bottom_radius = 0.5f;
+        float height = 1.0f;
+        if (mesh_obj->has_method("get_top_radius")) {
+            Variant radius_var = mesh_obj->call("get_top_radius");
+            if (radius_var.get_type() == Variant::FLOAT) {
+                top_radius = radius_var;
+            }
+        }
+        if (mesh_obj->has_method("get_bottom_radius")) {
+            Variant radius_var = mesh_obj->call("get_bottom_radius");
+            if (radius_var.get_type() == Variant::FLOAT) {
+                bottom_radius = radius_var;
+            }
+        }
+        if (mesh_obj->has_method("get_height")) {
+            Variant height_var = mesh_obj->call("get_height");
+            if (height_var.get_type() == Variant::FLOAT) {
+                height = height_var;
+            }
+        }
+        float max_radius = top_radius > bottom_radius ? top_radius : bottom_radius;
+        return Vector3(max_radius * 2.0f, height, max_radius * 2.0f); // 返回圆柱的包围盒尺寸
+    } else {
+        // 其他网格类型（包括BoxMesh）- 使用AABB
+        if (!mesh_obj->has_method("get_aabb")) {
+            return Vector3();
+        }
+        
+        // 获取AABB
+        Variant aabb_var = mesh_obj->call("get_aabb");
+        if (aabb_var.get_type() != Variant::AABB) {
+            return Vector3();
+        }
+        
+        AABB aabb = aabb_var;
+        return aabb.size;
+    }
+}
+
+bool PhysicsBodyComponentResource::extract_collision_shape_data(Node* collision_shape, int& shape_type_out, Vector3& size_out)
+{
+    if (!collision_shape || !collision_shape->is_class("CollisionShape3D")) {
+        return false;
+    }
+    
+    if (!collision_shape->has_method("get_shape")) {
+        return false;
+    }
+    
+    Variant shape_var = collision_shape->call("get_shape");
+    if (shape_var.get_type() != Variant::OBJECT) {
+        return false;
+    }
+    
+    Object* shape_obj = shape_var;
+    if (!shape_obj) {
+        return false;
+    }
+    
+    String shape_class = shape_obj->get_class();
+    
+    if (shape_class == "BoxShape3D") {
+        shape_type_out = 0; // Box
+        if (shape_obj->has_method("get_size")) {
+            Variant size_var = shape_obj->call("get_size");
+            if (size_var.get_type() == Variant::VECTOR3) {
+                size_out = Vector3(size_var) * 0.5f; // 转换为半尺寸
+                return true;
+            }
+        }
+    } else if (shape_class == "SphereShape3D") {
+        shape_type_out = 1; // Sphere
+        if (shape_obj->has_method("get_radius")) {
+            Variant radius_var = shape_obj->call("get_radius");
+            if (radius_var.get_type() == Variant::FLOAT) {
+                float radius = radius_var;
+                size_out = Vector3(radius, radius, radius);
+                return true;
+            }
+        }
+    } else if (shape_class == "CapsuleShape3D") {
+        shape_type_out = 2; // Capsule
+        float radius = 0.5f;
+        float height = 2.0f;
+        
+        if (shape_obj->has_method("get_radius")) {
+            Variant radius_var = shape_obj->call("get_radius");
+            if (radius_var.get_type() == Variant::FLOAT) {
+                radius = radius_var;
+            }
+        }
+        
+        if (shape_obj->has_method("get_height")) {
+            Variant height_var = shape_obj->call("get_height");
+            if (height_var.get_type() == Variant::FLOAT) {
+                height = height_var;
+            }
+        }
+        
+        size_out = Vector3(radius, height, radius);
+        return true;
+    }
+    
+    return false;
 }
 
 REGISTER_COMPONENT_RESOURCE(PhysicsBodyComponentResource)
