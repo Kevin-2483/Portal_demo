@@ -20,6 +20,7 @@ from SCons.Script import (
 )
 from SCons.Util import flatten
 from SCons.Environment import Base as SConsEnvironmentBase
+import sys
 
 # ==============================================================================
 # 自定义工具函数
@@ -95,8 +96,24 @@ print("=== Portal Demo 项目编译系统 (优化版) ===")
 print(f"项目根目录: {Dir('#').abspath}")
 
 # --- 设置默认编译参数 ---
-ARGUMENTS.setdefault("platform", "macos")
-ARGUMENTS.setdefault("arch", "universal")
+if sys.platform == "win32":
+    detected_platform = "windows"
+    default_arch = "x86_64"
+elif sys.platform == "darwin":
+    detected_platform = "macos"
+    default_arch = "universal"
+else:
+    detected_platform = "linux"
+    # 假设 Linux 默认为 64 位
+    default_arch = "x86_64"
+
+# 直接赋值，强制覆盖命令行参数，实现全自动
+ARGUMENTS["platform"] = detected_platform
+print(f"--- 已自动设置平台为: {detected_platform} ---")
+
+
+# setdefault 仍然用于其他参数，因为它们可能需要手动更改
+ARGUMENTS.setdefault("arch", default_arch)
 ARGUMENTS.setdefault("target", "template_debug")
 
 # ==============================================================================
@@ -146,9 +163,15 @@ if library_nodes and not GetOption("clean"):
     print("  - 已从 godot-cpp 获取基础编译环境。")
 
     # 根据环境，手动构建我们期望的 godot-cpp 库的文件节点
-    godot_cpp_lib_name_stem = (
-        f"godot-cpp.{env_base['platform']}.{env_base['target']}.{env_base['arch']}"
-    )
+    godot_cpp_lib_name_stem = ""
+    if env_base["platform"] == "windows":
+        # 兼容某些版本在 Windows 上错误地添加了 "lib" 前缀的 godot-cpp SConstruct
+        godot_cpp_lib_name_stem = f"libgodot-cpp.{env_base['platform']}.{env_base['target']}.{env_base['arch']}"
+    else:
+        # 正常平台的计算方式 (Linux, macOS 等)
+        godot_cpp_lib_name_stem = f"godot-cpp.{env_base['platform']}.{env_base['target']}.{env_base['arch']}"
+
+    # 后面的代码保持不变
     godot_cpp_full_lib_name = (
         f"{env_base['LIBPREFIX']}{godot_cpp_lib_name_stem}{env_base['LIBSUFFIX']}"
     )
@@ -173,7 +196,7 @@ if library_nodes and not GetOption("clean"):
 
     # --- 2.2：配置插件环境 ---
     build_dir = "build"
-    env_plugin.VariantDir(build_dir, ".", duplicate=0)
+    env_plugin.VariantDir(build_dir, ".", duplicate=1)
     print(f"  - 构建目录设置为: {build_dir}")
 
     env_plugin.Append(
@@ -205,8 +228,14 @@ if library_nodes and not GetOption("clean"):
                 print(f"    - 位于: {path}")
             print("")  # 加一个空行分隔
 
-    env_plugin.Append(CXXFLAGS=["-std=c++17"])
-    print("  - C++ 标准设置为 C++17。")
+    ### [修改] 使用平台判断来设置正确的 C++ 标准标志
+    if env_plugin["platform"] == "windows":
+        env_plugin.Append(CXXFLAGS=["/std:c++17", "/EHsc", "/utf-8"]) # /EHsc 是 Windows 上常用的异常处理模型
+        print("  - C++ 标准设置为 C++17 (MSVC)。")
+    else:
+        env_plugin.Append(CXXFLAGS=["-std=c++17"])
+        print("  - C++ 标准设置为 C++17。")
+
 
     # --- 2.3 (关键步骤): 配置链接器以使用 godot-cpp 库 ---
     godot_cpp_bin_path = os.path.join(
@@ -220,10 +249,18 @@ if library_nodes and not GetOption("clean"):
     env_plugin.Append(LIBS=[godot_cpp_lib_name])
     print(f"  - 配置链接器以使用库: {godot_cpp_lib_name}")
 
-    # --- 2.4：针对 macOS 的环境微调 ---
+    ### [修改] 针对不同平台的环境微调
     if env_plugin["platform"] == "macos":
         env_plugin.Append(LINKFLAGS=["-stdlib=libc++", "-Wl,-undefined,dynamic_lookup"])
         print("  - 已为 macOS 添加链接器标志。")
+    elif env_plugin["platform"] == "windows":
+        # MSVC 通常需要定义这个宏来正确链接 Windows API
+        env_plugin.Append(CPPDEFINES=["WINDOWS_ENABLED", "TYPED_METHOD_BIND"])
+        # 如果需要调试信息
+        if env_plugin.get("target") == "template_debug":
+            env_plugin.Append(LINKFLAGS=["/DEBUG"])
+        print("  - 已为 Windows 添加编译和链接设置。")
+
 
     # --- 2.5：收集 *只属于插件* 的源文件 ---
     # Glob 必须在 variant_dir (build_dir) 中执行，以确保中间文件被正确放置。
@@ -297,7 +334,7 @@ if library_nodes and not GetOption("clean"):
         
         # 编译测试程序 - 使用和主程序相同的设置
         test_program = env_test.Program(
-            target=f"{build_dir}/test_ecs_physics_core",
+            target=f"{build_dir}/test_ecs_physics_core", # SCons 会在 Windows 上自动添加 .exe 后缀
             source=test_sources
         )
         
@@ -327,14 +364,19 @@ if library_nodes and not GetOption("clean"):
                 "JPH_FLOATING_POINT_EXCEPTIONS_ENABLED",
             ]
         )
-
-    # macOS 特定設定
-    if env_plugin["platform"] == "macos":
-        # 移除 JPH_PLATFORM_MACOS 定義，讓 Jolt 自動檢測
-        # env_plugin.Append(CPPDEFINES=['JPH_PLATFORM_MACOS'])
-        # 為 Jolt 添加 macOS 特定的優化（如果支援）
+    
+    ### [修改] 平台特定的 Jolt 优化设置
+    if env_plugin["platform"] == "windows":
+        # 为 Jolt 添加 Windows 特定的优化
+        # /arch:SSE2 是一个非常安全的基础选项，几乎所有 x64 CPU 都支持
+        # 如果主人的 CPU 支持，可以改为 /arch:AVX 或 /arch:AVX2 以获得更好性能
+        env_plugin.Append(CXXFLAGS=["/arch:AVX2"])
+        print("  - 已为 Windows 配置 Jolt SIMD 优化 (/arch:AVX2)。")
+    elif env_plugin["platform"] == "macos":
+        # 为 Jolt 添加 macOS 特定的优化（如果支援）
         try:
             env_plugin.Append(CXXFLAGS=["-msse4.1"])  # SIMD 優化
+            print("  - 已为 macOS 配置 Jolt SIMD 优化 (-msse4.1)。")
         except:
             pass  # 如果不支援則跳過
 
@@ -355,6 +397,7 @@ if library_nodes and not GetOption("clean"):
         )
         print(f"  - macOS Framework 目标: {framework_name}")
     else:
+        # 这个 else 分支对 Windows 和 Linux 都适用
         lib_name = (
             f"libgdextension_bridge{env_plugin['suffix']}{env_plugin['SHLIBSUFFIX']}"
         )
@@ -362,7 +405,7 @@ if library_nodes and not GetOption("clean"):
         plugin_library = env_plugin.SharedLibrary(
             target=library_path, source=plugin_sources
         )
-        print(f"  - 共享库目标: {lib_name}")
+        print(f"  - 共享库目标: {library_path}")
 
     # ==============================================================================
     # 阶段三：定义最终构建目标和清理规则

@@ -2,6 +2,8 @@
 #include <Jolt/Physics/Collision/Shape/Shape.h>
 #include <iostream>
 #include <cstdarg>
+#include <cstdint>
+#include "math_constants.h"
 
 // Jolt Physics 錯誤處理回調
 static void TraceImpl(const char* inFMT, ...) {
@@ -14,7 +16,7 @@ static void TraceImpl(const char* inFMT, ...) {
 }
 
 #ifdef JPH_ENABLE_ASSERTS
-static bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, uint inLine) {
+static bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, std::uint32_t inLine) {
     std::cerr << "[Jolt Assert] " << inFile << ":" << inLine << ": (" << inExpression << ") " 
               << (inMessage != nullptr ? inMessage : "") << std::endl;
     return true;
@@ -231,7 +233,7 @@ bool PhysicsWorldManager::initialize_jolt() {
 
     // 安裝trace和assert回調
     Trace = TraceImpl;
-    JPH_IF_ENABLE_ASSERTS(AssertFailed = AssertFailedImpl;)
+    JPH_IF_ENABLE_ASSERTS(AssertFailed = reinterpret_cast<JPH::AssertFailedFunction>(AssertFailedImpl);)
 
     // 創建工廠
     Factory::sInstance = new Factory();

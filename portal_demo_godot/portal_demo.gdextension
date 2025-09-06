@@ -16,3 +16,5 @@ compatibility_minimum = "4.4"
 ; 
 ; 如果您在 macOS 上编译 (无论是 Intel x86_64 还是 Apple Silicon arm64)
 macos.debug.universal = "res://bin/libgdextension_bridge.macos.template_debug.framework"
+
+windows.debug.x86_64 = "res://bin/libgdextension_bridge.windows.template_debug.x86_64.dll"

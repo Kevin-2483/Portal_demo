@@ -1,10 +1,10 @@
 #pragma once
 
 #include <cstdio>
-#include <cmath>
 #include "entt/entt.hpp"
 #include "../components/z_rotation_component.h"
 #include "../system_base.h"
+#include "../math_constants.h"
 
 namespace portal_core
 {
