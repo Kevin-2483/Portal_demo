@@ -115,8 +115,11 @@ namespace portal_core
 
   void PortalGameWorld::update_systems(float delta_time)
   {
-    // 使用 SystemManager 和 entt::organizer 來管理系統執行
+    // 1. 使用 SystemManager 来管理系统执行
     system_manager_.update_systems(registry_, delta_time);
+    
+    // 2. 在所有系统更新后，处理队列中的事件
+    event_manager_.process_queued_events(delta_time);
   }
 
 } // namespace portal_core

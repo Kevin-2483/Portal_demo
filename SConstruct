@@ -322,6 +322,7 @@ if library_nodes and not GetOption("clean"):
             # 需要的核心源文件
             f"{build_dir}/src/core/physics_world_manager.cpp",
             f"{build_dir}/src/core/portal_game_world.cpp",
+            f"{build_dir}/src/core/event_manager.cpp",
             f"{build_dir}/src/core/systems/physics_system.cpp",
             f"{build_dir}/src/core/systems/physics_command_system.cpp",
         ]
@@ -345,6 +346,42 @@ if library_nodes and not GetOption("clean"):
         print("  - 测试程序编译配置完成")
     else:
         print("  - 警告: 测试文件不存在，跳过测试编译")
+
+    # 检查并编译事件管理器测试
+    event_test_file = "src/core/tests/test_event_manager_fixed.cpp"
+    if os.path.exists(event_test_file):
+        event_test_sources = [
+            f"{build_dir}/src/core/tests/test_event_manager_fixed.cpp",
+            f"{build_dir}/src/core/event_manager.cpp",
+        ]
+        
+        event_test_program = env_plugin.Program(
+            target=f"{build_dir}/test_event_manager",
+            source=event_test_sources
+        )
+        
+        print(f"  - 事件管理器测试程序目标: {build_dir}/test_event_manager")
+        print(f"  - 事件测试源文件数量: {len(event_test_sources)}")
+    else:
+        print("  - 警告: 事件管理器测试文件不存在")
+
+    # 检查并编译事件池测试
+    pool_test_file = "src/core/tests/test_event_pool_and_concurrency_simple.cpp"
+    if os.path.exists(pool_test_file):
+        pool_test_sources = [
+            f"{build_dir}/src/core/tests/test_event_pool_and_concurrency_simple.cpp",
+            f"{build_dir}/src/core/event_manager.cpp",
+        ]
+        
+        pool_test_program = env_plugin.Program(
+            target=f"{build_dir}/test_event_pool",
+            source=pool_test_sources
+        )
+        
+        print(f"  - 事件池测试程序目标: {build_dir}/test_event_pool")
+        print(f"  - 事件池测试源文件数量: {len(pool_test_sources)}")
+    else:
+        print("  - 警告: 事件池测试文件不存在")
 
     # --- 2.5.1：Jolt Physics 編譯設定 ---
     # 添加 Jolt 特定的編譯器定義
@@ -419,6 +456,15 @@ if library_nodes and not GetOption("clean"):
     if test_file_exists and 'test_program' in locals():
         default_targets.append(test_program)
         print("  - 测试程序已加入默认编译目标")
+    
+    # 添加其他测试程序到默认目标
+    if 'event_test_program' in locals():
+        default_targets.append(event_test_program)
+        print("  - 事件管理器测试程序已加入默认编译目标")
+    
+    if 'pool_test_program' in locals():
+        default_targets.append(pool_test_program)
+        print("  - 事件池测试程序已加入默认编译目标")
     
     Default(default_targets)
     Alias("gdextension", plugin_library)
