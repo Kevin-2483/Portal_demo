@@ -271,6 +271,7 @@ if library_nodes and not GetOption("clean"):
         + Glob(f"{build_dir}/portal_demo_godot/gdextension/ecs-components/src/*.cpp")
         + Glob(f"{build_dir}/src/core/*.cpp")
         + Glob(f"{build_dir}/src/core/systems/*.cpp")
+        + Glob(f"{build_dir}/src/core/physics_events/*.cpp")
     )
 
     # 收集所有 Jolt Physics 源文件（遞歸搜尋所有子目錄）
@@ -309,79 +310,58 @@ if library_nodes and not GetOption("clean"):
     print(f"  - 總源文件數量: {len(plugin_sources)}")
 
     # ==============================================================================
-    # 阶段 2.5.2：编译测试程序
+    # 阶段 2.5.2：自动编译测试程序
     # ==============================================================================
-    print("\n=== 配置测试程序编译 ===")
+    print("\n=== 自动配置测试程序编译 ===")
     
-    # 检查测试源文件是否存在
-    test_file_exists = os.path.exists("src/core/tests/test_ecs_physics_core_fixed.cpp")
-    if test_file_exists:
-        # 测试程序源文件
-        test_sources = [
-            f"{build_dir}/src/core/tests/test_ecs_physics_core_fixed.cpp",
-            # 需要的核心源文件
+    # 自动发现所有测试文件
+    tests_dir = "src/core/tests"
+    test_programs = []
+    
+    if os.path.exists(tests_dir):
+        test_files = [f for f in os.listdir(tests_dir) if f.endswith('.cpp') and f.startswith('test_')]
+        print(f"  - 发现 {len(test_files)} 个测试文件")
+        
+        # 通用的核心依赖源文件
+        common_core_sources = [
             f"{build_dir}/src/core/physics_world_manager.cpp",
-            f"{build_dir}/src/core/portal_game_world.cpp",
+            f"{build_dir}/src/core/portal_game_world.cpp", 
             f"{build_dir}/src/core/event_manager.cpp",
             f"{build_dir}/src/core/systems/physics_system.cpp",
             f"{build_dir}/src/core/systems/physics_command_system.cpp",
+            f"{build_dir}/src/core/physics_events/physics_event_system.cpp",
+            f"{build_dir}/src/core/physics_events/physics_event_adapter.cpp",
+            f"{build_dir}/src/core/physics_events/lazy_physics_query_manager.cpp",
         ]
         
-        # 使用和主程序完全相同的编译环境（不要Clone，直接使用）
-        env_test = env_plugin
+        # 为每个测试文件创建编译目标
+        for test_file in test_files:
+            if test_file == "test_runner.cpp":
+                # 跳过测试运行器，它需要特殊处理
+                continue
+                
+            test_name = test_file.replace('.cpp', '').replace('test_', '')
+            test_target = f"{build_dir}/test_{test_name}"
+            
+            # 基础测试源文件
+            test_sources = [f"{build_dir}/src/core/tests/{test_file}"]
+            
+            # 所有测试都使用完整的项目代码 - 简单可靠
+            test_sources.extend(common_core_sources)
+            test_sources.extend([str(src) for src in jolt_sources])
+            print(f"    + {test_name}: 完整项目测试 (包含所有依赖)")
+            
+            # 创建测试程序
+            test_program = env_plugin.Program(
+                target=test_target,
+                source=test_sources
+            )
+            
+            test_programs.append(test_program)
         
-        # 添加 Jolt 源文件到测试
-        test_sources += [str(src) for src in jolt_sources]
-        
-        # 编译测试程序 - 使用和主程序相同的设置
-        test_program = env_test.Program(
-            target=f"{build_dir}/test_ecs_physics_core", # SCons 会在 Windows 上自动添加 .exe 后缀
-            source=test_sources
-        )
-        
-        print(f"  - 测试程序目标: {build_dir}/test_ecs_physics_core")
-        print(f"  - 测试源文件数量: {len(test_sources)}")
-        print("  - 使用和主程序相同的编译环境")
-        
-        print("  - 测试程序编译配置完成")
+        print(f"  - 配置完成，共 {len(test_programs)} 个测试程序")
     else:
-        print("  - 警告: 测试文件不存在，跳过测试编译")
-
-    # 检查并编译事件管理器测试
-    event_test_file = "src/core/tests/test_event_manager_fixed.cpp"
-    if os.path.exists(event_test_file):
-        event_test_sources = [
-            f"{build_dir}/src/core/tests/test_event_manager_fixed.cpp",
-            f"{build_dir}/src/core/event_manager.cpp",
-        ]
-        
-        event_test_program = env_plugin.Program(
-            target=f"{build_dir}/test_event_manager",
-            source=event_test_sources
-        )
-        
-        print(f"  - 事件管理器测试程序目标: {build_dir}/test_event_manager")
-        print(f"  - 事件测试源文件数量: {len(event_test_sources)}")
-    else:
-        print("  - 警告: 事件管理器测试文件不存在")
-
-    # 检查并编译事件池测试
-    pool_test_file = "src/core/tests/test_event_pool_and_concurrency_simple.cpp"
-    if os.path.exists(pool_test_file):
-        pool_test_sources = [
-            f"{build_dir}/src/core/tests/test_event_pool_and_concurrency_simple.cpp",
-            f"{build_dir}/src/core/event_manager.cpp",
-        ]
-        
-        pool_test_program = env_plugin.Program(
-            target=f"{build_dir}/test_event_pool",
-            source=pool_test_sources
-        )
-        
-        print(f"  - 事件池测试程序目标: {build_dir}/test_event_pool")
-        print(f"  - 事件池测试源文件数量: {len(pool_test_sources)}")
-    else:
-        print("  - 警告: 事件池测试文件不存在")
+        print("  - 警告: tests目录不存在")
 
     # --- 2.5.1：Jolt Physics 編譯設定 ---
     # 添加 Jolt 特定的編譯器定義
@@ -453,21 +433,18 @@ if library_nodes and not GetOption("clean"):
 
     # 將測試程序加入預設編譯目標
     default_targets = [plugin_library]
-    if test_file_exists and 'test_program' in locals():
-        default_targets.append(test_program)
-        print("  - 测试程序已加入默认编译目标")
-    
-    # 添加其他测试程序到默认目标
-    if 'event_test_program' in locals():
-        default_targets.append(event_test_program)
-        print("  - 事件管理器测试程序已加入默认编译目标")
-    
-    if 'pool_test_program' in locals():
-        default_targets.append(pool_test_program)
-        print("  - 事件池测试程序已加入默认编译目标")
+    if test_programs:
+        default_targets.extend(test_programs)
+        print(f"  - 已添加 {len(test_programs)} 个测试程序到默认编译目标")
     
     Default(default_targets)
     Alias("gdextension", plugin_library)
+    
+    # 添加测试程序的别名
+    if test_programs:
+        Alias("tests", test_programs)
+        print(f"  - 可以使用 'scons tests' 来只编译测试程序")
+    
     # **-- [逻辑修正 V10] --**
     # 将要清理的目录用 Dir() 包装，使其成为 SCons 节点，确保被正确识别和删除。
     Clean(

@@ -19,6 +19,7 @@
 #include <Jolt/Physics/Body/Body.h>
 #include <Jolt/Physics/EActivation.h>
 #include <Jolt/Physics/Collision/ContactListener.h>
+#include "math_types.h"
 #include <Jolt/Physics/Collision/BroadPhase/BroadPhaseLayer.h>
 #include <Jolt/Physics/Collision/BroadPhase/BroadPhaseLayerInterfaceTable.h>
 #include <Jolt/Physics/Collision/BroadPhase/ObjectVsBroadPhaseLayerFilterTable.h>
@@ -192,8 +193,9 @@ public:
     // 接觸移除回調
     virtual void OnContactRemoved(const SubShapeIDPair& inSubShapePair) override;
     
-    // 事件回調函數類型
-    using ContactEventCallback = std::function<void(BodyID, BodyID)>;
+    // 事件回調函數類型 - 包含詳細接觸信息
+    // 参数：body1_id, body2_id, contact_point, contact_normal, impulse_magnitude
+    using ContactEventCallback = std::function<void(BodyID, BodyID, const Vec3&, const Vec3&, float)>;
     
     void set_contact_added_callback(ContactEventCallback callback) { 
         contact_added_callback_ = std::move(callback); 

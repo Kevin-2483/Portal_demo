@@ -9,6 +9,7 @@
 #include <atomic>
 #include <thread>
 #include <chrono>
+#include <iostream>
 #include "event_pool_and_concurrency.h"
 
 namespace portal_core {

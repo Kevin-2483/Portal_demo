@@ -314,7 +314,7 @@ namespace portal_core
 
       // 設置碰撞事件回調
       physics_world_->set_contact_added_callback(
-          [this](JPH::BodyID body1, JPH::BodyID body2)
+          [this](JPH::BodyID body1, JPH::BodyID body2, const Vec3& contact_point, const Vec3& contact_normal, float impulse_magnitude)
           {
             // 處理碰撞進入事件
             entt::entity entity1 = get_entity_by_body_id(body1);
@@ -322,7 +322,7 @@ namespace portal_core
 
             if (entity1 != entt::null && entity2 != entt::null)
             {
-              // 這裡可以添加碰撞事件處理邏輯
+              // 這裡可以添加碰撞事件處理邏輯，现在有完整的接触信息
               // 暫時只輸出調試信息
               // std::cout << "Collision between entities " << static_cast<uint32_t>(entity1)
               //          << " and " << static_cast<uint32_t>(entity2) << std::endl;
@@ -330,9 +330,9 @@ namespace portal_core
           });
 
       physics_world_->set_contact_removed_callback(
-          [this](JPH::BodyID body1, JPH::BodyID body2)
+          [this](JPH::BodyID body1, JPH::BodyID body2, const Vec3& contact_point, const Vec3& contact_normal, float impulse_magnitude)
           {
-            // 處理碰撞退出事件
+            // 處理碰撞退出事件 (移除事件通常不需要详细接触信息)
             entt::entity entity1 = get_entity_by_body_id(body1);
             entt::entity entity2 = get_entity_by_body_id(body2);
 
