@@ -6,7 +6,7 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 // 引入C++ ECS組件定義
-#include "../../../src/core/components/physics_command_component.h"
+#include "core/components/physics_command_component.h"
 
 using namespace godot;
 

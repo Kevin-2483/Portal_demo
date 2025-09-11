@@ -7,8 +7,8 @@
 #include "component_registrar.h"
 
 // Include the necessary C++ ECS components
-#include "transform_component.h"
-#include "physics_body_component.h"
+#include "core/components/transform_component.h"
+#include "core/components/physics_body_component.h"
 
 using namespace godot;
 
@@ -359,10 +359,10 @@ void PhysicsBodyComponentResource::sync_to_node(entt::registry& registry, entt::
     }
     
     // 将 C++ Transform 转换为 Godot Transform
-    Vector3 godot_position(transform_comp->position.x(), transform_comp->position.y(), transform_comp->position.z());
-    Quaternion godot_rotation(transform_comp->rotation.x(), transform_comp->rotation.y(), transform_comp->rotation.z(), transform_comp->rotation.w());
-    Vector3 godot_scale(transform_comp->scale.x(), transform_comp->scale.y(), transform_comp->scale.z());
-    
+    Vector3 godot_position(transform_comp->position.GetX(), transform_comp->position.GetY(), transform_comp->position.GetZ());
+    Quaternion godot_rotation(transform_comp->rotation.GetX(), transform_comp->rotation.GetY(), transform_comp->rotation.GetZ(), transform_comp->rotation.GetW());
+    Vector3 godot_scale(transform_comp->scale.GetX(), transform_comp->scale.GetY(), transform_comp->scale.GetZ());
+
     // 更新 Godot 节点的变换
     node3d->set_position(godot_position);
     node3d->set_quaternion(godot_rotation);

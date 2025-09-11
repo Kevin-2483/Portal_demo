@@ -11,8 +11,8 @@
 #include <godot_cpp/variant/node_path.hpp>
 
 // 包含 C++ ECS 組件
-#include "../../src/core/components/transform_component.h"
-#include "../../src/core/portal_game_world.h"
+#include "core/components/transform_component.h"
+#include "core/portal_game_world.h"
 
 // 添加必要的頭文件用於運行時組件檢測
 #include <string>
@@ -297,7 +297,7 @@ void ECSNode::create_ecs_entity()
       Vector3 rot = godot_transform.get_basis().get_euler();
 
       transform_comp.position = portal_core::Vector3(pos.x, pos.y, pos.z);
-      transform_comp.rotation = portal_core::Quaternion::from_euler(portal_core::Vector3(rot.x, rot.y, rot.z));
+      transform_comp.rotation = portal_core::Quaternion::sEulerAngles(portal_core::Vector3(rot.x, rot.y, rot.z));
 
       if (!target_node_path.is_empty())
       {
@@ -312,7 +312,7 @@ void ECSNode::create_ecs_entity()
     {
       // 目標節點不是 Node3D，使用默認變換
       transform_comp.position = portal_core::Vector3(0, 0, 0);
-      transform_comp.rotation = portal_core::Quaternion::from_euler(portal_core::Vector3(0, 0, 0));
+      transform_comp.rotation = portal_core::Quaternion::sEulerAngles(portal_core::Vector3(0, 0, 0));
       UtilityFunctions::print("ECSNode: Target node is not Node3D, using default transform");
     }
   }
@@ -320,7 +320,7 @@ void ECSNode::create_ecs_entity()
   {
     // 沒有找到有效的目標節點，使用默認變換
     transform_comp.position = portal_core::Vector3(0, 0, 0);
-    transform_comp.rotation = portal_core::Quaternion::from_euler(portal_core::Vector3(0, 0, 0));
+    transform_comp.rotation = portal_core::Quaternion::sEulerAngles(portal_core::Vector3(0, 0, 0));
     UtilityFunctions::print_rich("[color=yellow]ECSNode: No valid target node found, using default transform[/color]");
   }
 

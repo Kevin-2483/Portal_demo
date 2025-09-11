@@ -74,8 +74,8 @@ void LazyPhysicsQueryManager::request_area_monitoring(entt::entity requester, co
               ") with radius " + std::to_string(radius));
 }
 
-void LazyPhysicsQueryManager::request_box_area_monitoring(entt::entity requester, const Vec3& center, const Vec3& half_extents,
-                                                        const Quat& rotation, uint32_t layer_mask) {
+void LazyPhysicsQueryManager::request_box_area_monitoring(entt::entity requester, const Vector3& center, const Vector3& half_extents,
+                                                        const Quaternion& rotation, uint32_t layer_mask) {
     // 按需创建包含检测组件（用于矩形区域）
     if (!registry_.all_of<ContainmentComponent>(requester)) {
         auto dimension = detect_query_dimension(center);
@@ -190,8 +190,8 @@ void LazyPhysicsQueryManager::request_sphere_overlap_query(entt::entity requeste
     debug_log("Requested sphere overlap query for entity " + std::to_string(static_cast<uint32_t>(requester)));
 }
 
-void LazyPhysicsQueryManager::request_box_overlap_query(entt::entity requester, const Vec3& center, const Vec3& half_extents,
-                                                       const Quat& rotation, uint32_t layer_mask) {
+void LazyPhysicsQueryManager::request_box_overlap_query(entt::entity requester, const Vector3& center, const Vector3& half_extents,
+                                                       const Quaternion& rotation, uint32_t layer_mask) {
     ensure_query_component(requester);
     ensure_pending_query_tag(requester);
 

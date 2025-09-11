@@ -38,15 +38,15 @@ namespace portal_core
         Vector3 angular_displacement = rotation_comp.angular_velocity * delta_time;
 
         // 將角位移轉換為四元數並應用旋轉
-        if (angular_displacement.length() > 0.0f)
+        if (angular_displacement.Length() > 0.0f)
         {
-          float angle = angular_displacement.length();
-          Vector3 axis = angular_displacement.normalized();
-          Quaternion delta_rotation = Quaternion::from_axis_angle(axis, angle);
+          float angle = angular_displacement.Length();
+          Vector3 axis = angular_displacement.Normalized();
+          Quaternion delta_rotation = JPH::Quat::sRotation(axis, angle);
 
           // 應用旋轉
           transform.rotation = delta_rotation * transform.rotation;
-          transform.rotation = transform.rotation.normalized();
+          transform.rotation = transform.rotation.Normalized();
         }
       }
     }

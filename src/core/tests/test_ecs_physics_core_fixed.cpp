@@ -7,18 +7,18 @@
 
 // ECS系統頭文件
 #include <entt/entt.hpp>
-#include "../physics_world_manager.h"
-#include "../system_manager.h"
-#include "../portal_game_world.h"
-#include "../components/physics_body_component.h"
-#include "../components/physics_command_component.h"
-#include "../components/physics_event_component.h"
-#include "../components/physics_sync_component.h"
-#include "../components/transform_component.h"
+#include "core/physics_world_manager.h"
+#include "core/system_manager.h"
+#include "core/portal_game_world.h"
+#include "core/components/physics_body_component.h"
+#include "core/components/physics_command_component.h"
+#include "core/components/physics_event_component.h"
+#include "core/components/physics_sync_component.h"
+#include "core/components/transform_component.h"
 
 // 測試用物理系統
-#include "../systems/physics_system.h"
-#include "../systems/physics_command_system.h"
+#include "core/systems/physics_system.h"
+#include "core/systems/physics_command_system.h"
 
 using namespace portal_core;
 
@@ -36,7 +36,7 @@ TransformVector3 vec3_to_vector3(const PhysicsVec3 &v)
 
 PhysicsVec3 vector3_to_vec3(const TransformVector3 &v)
 {
-    return PhysicsVec3(v.x(), v.y(), v.z());
+    return PhysicsVec3(v.GetX(), v.GetY(), v.GetZ());
 }
 
 TransformQuaternion quat_to_quaternion(const PhysicsQuat &q)
@@ -46,7 +46,7 @@ TransformQuaternion quat_to_quaternion(const PhysicsQuat &q)
 
 PhysicsQuat quaternion_to_quat(const TransformQuaternion &q)
 {
-    return PhysicsQuat(q.x(), q.y(), q.z(), q.w());
+    return PhysicsQuat(q.GetX(), q.GetY(), q.GetZ(), q.GetW());
 }
 
 // 測試用實體工廠

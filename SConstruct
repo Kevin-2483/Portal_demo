@@ -201,15 +201,14 @@ if library_nodes and not GetOption("clean"):
 
     env_plugin.Append(
         CPPPATH=[
+            Dir(f"#{build_dir}/src"),  # 核心源文件优先
+            Dir(f"#{build_dir}/src/vendor/entt/single_include"),
+            Dir(f"#{build_dir}/src/vendor/jolt"),
+            Dir(f"#{build_dir}/src/vendor/imgui"),  # ImGui 头文件
             Dir("#portal_demo_godot/gdextension/godot-cpp/gen/include"),
             Dir("#portal_demo_godot/gdextension/godot-cpp/include"),
-            Dir("#portal_demo_godot/gdextension/include"),
-            Dir("#portal_demo_godot/gdextension/ecs-components/include"),
-            Dir("#src/core"),
-            Dir("#src/core/components"),
-            Dir("#src/core/systems"),
-            Dir("#src/vendor/entt/single_include"),
-            Dir("#src/vendor/jolt"),
+            Dir("#portal_demo_godot/gdextension/include"),  # gdextension 头文件
+            Dir("#portal_demo_godot/gdextension/ecs-components/include"),  # ecs 组件头文件
         ]
     )
     print("  - 插件头文件路径已设置。")
@@ -269,10 +268,27 @@ if library_nodes and not GetOption("clean"):
     plugin_sources = (
         Glob(f"{build_dir}/portal_demo_godot/gdextension/src/*.cpp")
         + Glob(f"{build_dir}/portal_demo_godot/gdextension/ecs-components/src/*.cpp")
+        + Glob(f"{build_dir}/portal_demo_godot/gdextension/src/debug/*.cpp")  # 添加调试系统
+        + Glob(f"{build_dir}/portal_demo_godot/gdextension/src/render/*.cpp")  # 添加渲染系统
         + Glob(f"{build_dir}/src/core/*.cpp")
         + Glob(f"{build_dir}/src/core/systems/*.cpp")
+        + Glob(f"{build_dir}/src/core/physics/*.cpp")  # 添加物理调试系统
         + Glob(f"{build_dir}/src/core/physics_events/*.cpp")
+        + Glob(f"{build_dir}/src/core/debug/*.cpp")  # 添加调试系统
+        + Glob(f"{build_dir}/src/core/render/*.cpp")  # 添加渲染系统
     )
+
+    # 收集 ImGui 源文件
+    imgui_sources = [
+        f"{build_dir}/src/vendor/imgui/imgui.cpp",
+        f"{build_dir}/src/vendor/imgui/imgui_demo.cpp", 
+        f"{build_dir}/src/vendor/imgui/imgui_draw.cpp",
+        f"{build_dir}/src/vendor/imgui/imgui_tables.cpp",
+        f"{build_dir}/src/vendor/imgui/imgui_widgets.cpp",
+    ]
+    
+    # 添加ImGui源文件到插件源文件
+    plugin_sources.extend([File(src) for src in imgui_sources])
 
     # 收集所有 Jolt Physics 源文件（遞歸搜尋所有子目錄）
     import os
@@ -306,8 +322,33 @@ if library_nodes and not GetOption("clean"):
     plugin_sources += jolt_sources
 
     print(f"  - 收集到 {len(jolt_sources)} 個 Jolt Physics 源文件")
-    print(f"  - Portal 項目源文件數量: {len(plugin_sources) - len(jolt_sources)}")
+    print(f"  - 收集到 {len(imgui_sources)} 個 ImGui 源文件")
+    print(f"  - Portal 項目源文件數量: {len(plugin_sources) - len(jolt_sources) - len(imgui_sources)}")
     print(f"  - 總源文件數量: {len(plugin_sources)}")
+
+    # ==============================================================================
+    # 阶段 2.5.1：设置调试宏（必须在测试程序创建前）
+    # ==============================================================================
+    
+    # 添加 Jolt 特定的编译器定义
+    env_plugin.Append(
+        CPPDEFINES=[
+            "JPH_OBJECT_STREAM",  # 启用对象序列化
+            "JPH_DISABLE_TEMP_ALLOCATOR",  # 禁用临时分配器（与 Godot 兼容）
+            "JPH_DISABLE_CUSTOM_ALLOCATOR",  # 禁用自定义分配器（与 Godot 兼容）
+        ]
+    )
+
+    # 根据编译目标添加适当的定义
+    if env_plugin.get("target") == "template_debug":
+        env_plugin.Append(
+            CPPDEFINES=[
+                "JPH_ENABLE_ASSERTS",  # 调试版本启用断言
+                "JPH_FLOATING_POINT_EXCEPTIONS_ENABLED",
+                "PORTAL_TEMPLATE_DEBUG",  # 使用自定义宏而不是标准_DEBUG，避免链接冲突
+            ]
+        )
+        print("  - 已配置调试宏: PORTAL_TEMPLATE_DEBUG")
 
     # ==============================================================================
     # 阶段 2.5.2：自动编译测试程序
@@ -332,6 +373,10 @@ if library_nodes and not GetOption("clean"):
             f"{build_dir}/src/core/physics_events/physics_event_system.cpp",
             f"{build_dir}/src/core/physics_events/physics_event_adapter.cpp",
             f"{build_dir}/src/core/physics_events/lazy_physics_query_manager.cpp",
+            f"{build_dir}/src/core/render/unified_render_manager.cpp",
+            f"{build_dir}/src/core/render/unified_debug_draw.cpp",
+            f"{build_dir}/src/core/debug/debug_gui_system.cpp",
+            f"{build_dir}/src/core/debug/debuggable_registry.cpp",
         ]
         
         # 为每个测试文件创建编译目标
@@ -349,6 +394,7 @@ if library_nodes and not GetOption("clean"):
             # 所有测试都使用完整的项目代码 - 简单可靠
             test_sources.extend(common_core_sources)
             test_sources.extend([str(src) for src in jolt_sources])
+            test_sources.extend(imgui_sources)
             print(f"    + {test_name}: 完整项目测试 (包含所有依赖)")
             
             # 创建测试程序
@@ -363,26 +409,7 @@ if library_nodes and not GetOption("clean"):
     else:
         print("  - 警告: tests目录不存在")
 
-    # --- 2.5.1：Jolt Physics 編譯設定 ---
-    # 添加 Jolt 特定的編譯器定義
-    env_plugin.Append(
-        CPPDEFINES=[
-            "JPH_OBJECT_STREAM",  # 啟用對象序列化
-            "JPH_DISABLE_TEMP_ALLOCATOR",  # 禁用臨時分配器（與 Godot 兼容）
-            "JPH_DISABLE_CUSTOM_ALLOCATOR",  # 禁用自定義分配器（與 Godot 兼容）
-        ]
-    )
-
-    # 根據編譯目標添加適當的定義
-    if env_plugin.get("target") == "template_debug":
-        env_plugin.Append(
-            CPPDEFINES=[
-                "JPH_ENABLE_ASSERTS",  # 調試版本啟用斷言
-                "JPH_FLOATING_POINT_EXCEPTIONS_ENABLED",
-            ]
-        )
-    
-    ### [修改] 平台特定的 Jolt 优化设置
+    # --- 2.5.3：Jolt Physics 平台特定优化设置 ---
     if env_plugin["platform"] == "windows":
         # 为 Jolt 添加 Windows 特定的优化
         # /arch:SSE2 是一个非常安全的基础选项，几乎所有 x64 CPU 都支持

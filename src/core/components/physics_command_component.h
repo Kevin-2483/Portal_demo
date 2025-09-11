@@ -101,10 +101,10 @@ namespace portal_core
     // 命令數據（使用variant存儲不同類型的命令參數）
     std::variant<
         std::monostate,        // 空狀態（無參數命令）
-        Vec3,                  // 向量參數（力、衝量、速度、位置等）
+        Vector3,                  // 向量參數（力、衝量、速度、位置等）
         float,                 // 浮點參數（重力縮放、阻尼等）
-        std::pair<Vec3, Vec3>, // 向量對（位置+力、起點+終點等）
-        std::pair<Vec3, Quat>, // 位置+旋轉
+        std::pair<Vector3, Vector3>, // 向量對（位置+力、起點+終點等）
+        std::pair<Vector3, Quaternion>, // 位置+旋轉
         std::function<void()>  // 自定義函數
         >
         data;
@@ -160,7 +160,7 @@ namespace portal_core
     /**
      * 添加力命令
      */
-    void add_force(const Vec3 &force, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
+    void add_force(const Vector3 &force, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
     {
       PhysicsCommand cmd(PhysicsCommandType::ADD_FORCE, force);
       cmd.timing = timing;
@@ -171,7 +171,7 @@ namespace portal_core
     /**
      * 添加衝量命令
      */
-    void add_impulse(const Vec3 &impulse, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
+    void add_impulse(const Vector3 &impulse, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
     {
       PhysicsCommand cmd(PhysicsCommandType::ADD_IMPULSE, impulse);
       cmd.timing = timing;
@@ -182,7 +182,7 @@ namespace portal_core
     /**
      * 添加扭矩命令
      */
-    void add_torque(const Vec3 &torque, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
+    void add_torque(const Vector3 &torque, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
     {
       PhysicsCommand cmd(PhysicsCommandType::ADD_TORQUE, torque);
       cmd.timing = timing;
@@ -193,7 +193,7 @@ namespace portal_core
     /**
      * 設置線性速度命令
      */
-    void set_linear_velocity(const Vec3 &velocity, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
+    void set_linear_velocity(const Vector3 &velocity, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
     {
       PhysicsCommand cmd(PhysicsCommandType::SET_LINEAR_VELOCITY, velocity);
       cmd.timing = timing;
@@ -204,7 +204,7 @@ namespace portal_core
     /**
      * 設置角速度命令
      */
-    void set_angular_velocity(const Vec3 &velocity, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
+    void set_angular_velocity(const Vector3 &velocity, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
     {
       PhysicsCommand cmd(PhysicsCommandType::SET_ANGULAR_VELOCITY, velocity);
       cmd.timing = timing;
@@ -215,7 +215,7 @@ namespace portal_core
     /**
      * 設置位置命令
      */
-    void set_position(const Vec3 &position, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
+    void set_position(const Vector3 &position, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
     {
       PhysicsCommand cmd(PhysicsCommandType::SET_POSITION, position);
       cmd.timing = timing;
@@ -226,11 +226,11 @@ namespace portal_core
     /**
      * 設置旋轉命令
      */
-    void set_rotation(const Quat &rotation, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
+    void set_rotation(const Quaternion &rotation, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
     {
-      // 注意：這裡我們需要將Quat轉換為Vec3存儲，或擴展variant類型
-      // 暫時使用Vec3存儲歐拉角
-      Vec3 euler_angles = rotation.GetEulerAngles();
+      // 注意：這裡我們需要將Quat轉換為Vector3存儲，或擴展variant類型
+      // 暫時使用Vector3存儲歐拉角
+      Vector3 euler_angles = rotation.GetEulerAngles();
       PhysicsCommand cmd(PhysicsCommandType::SET_ROTATION, euler_angles);
       cmd.timing = timing;
       cmd.command_id = next_command_id++;
@@ -240,7 +240,7 @@ namespace portal_core
     /**
      * 瞬移命令（同時設置位置和旋轉）
      */
-    void teleport(const Vec3 &position, const Quat &rotation, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
+    void teleport(const Vector3 &position, const Quaternion &rotation, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
     {
       PhysicsCommand cmd(PhysicsCommandType::TELEPORT, std::make_pair(position, rotation));
       cmd.timing = timing;
@@ -251,7 +251,7 @@ namespace portal_core
     /**
      * 在指定位置添加力
      */
-    void add_force_at_position(const Vec3 &force, const Vec3 &position, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
+    void add_force_at_position(const Vector3 &force, const Vector3 &position, PhysicsCommandTiming timing = PhysicsCommandTiming::BEFORE_PHYSICS_STEP)
     {
       PhysicsCommand cmd(PhysicsCommandType::ADD_FORCE_AT_POSITION, std::make_pair(force, position));
       cmd.timing = timing;
@@ -513,13 +513,13 @@ namespace portal_core
     // 射線檢測查詢
     struct RaycastQuery
     {
-      Vec3 origin;
-      Vec3 direction;
+      Vector3 origin;
+      Vector3 direction;
       float max_distance = 1000.0f;
       uint32_t layer_mask = 0xFFFFFFFF;
       bool hit = false;
-      Vec3 hit_point;
-      Vec3 hit_normal;
+      Vector3 hit_point;
+      Vector3 hit_normal;
       float hit_distance = 0.0f;
       entt::entity hit_entity = entt::null;
     };
@@ -534,9 +534,9 @@ namespace portal_core
         CAPSULE
       };
       Shape shape = SPHERE;
-      Vec3 center;
-      Vec3 size; // 半徑（球體）或半尺寸（盒子）
-      Quat rotation = Quat(0, 0, 0, 1);
+      Vector3 center;
+      Vector3 size; // 半徑（球體）或半尺寸（盒子）
+      Quaternion rotation = Quaternion::sIdentity();
       uint32_t layer_mask = 0xFFFFFFFF;
       std::vector<entt::entity> overlapping_entities;
     };
@@ -544,12 +544,12 @@ namespace portal_core
     // 距離查詢
     struct DistanceQuery
     {
-      Vec3 point;
+      Vector3 point;
       float max_distance = 100.0f;
       uint32_t layer_mask = 0xFFFFFFFF;
       entt::entity closest_entity = entt::null;
       float closest_distance = std::numeric_limits<float>::max();
-      Vec3 closest_point;
+      Vector3 closest_point;
     };
 
     // 查詢隊列
@@ -567,7 +567,7 @@ namespace portal_core
     /**
      * 添加射線檢測查詢
      */
-    void add_raycast(const Vec3 &origin, const Vec3 &direction, float max_distance = 1000.0f, uint32_t layer_mask = 0xFFFFFFFF)
+    void add_raycast(const Vector3 &origin, const Vector3 &direction, float max_distance = 1000.0f, uint32_t layer_mask = 0xFFFFFFFF)
     {
       RaycastQuery query;
       query.origin = origin;
@@ -595,7 +595,7 @@ namespace portal_core
     /**
      * 添加盒子重疊查詢
      */
-    void add_box_overlap(const Vec3 &center, const Vec3 &half_extents, const Quat &rotation = Quat(0, 0, 0, 1), uint32_t layer_mask = 0xFFFFFFFF)
+    void add_box_overlap(const Vector3 &center, const Vector3 &half_extents, const Quaternion &rotation = Quaternion::sIdentity(), uint32_t layer_mask = 0xFFFFFFFF)
     {
       OverlapQuery query;
       query.shape = OverlapQuery::BOX;

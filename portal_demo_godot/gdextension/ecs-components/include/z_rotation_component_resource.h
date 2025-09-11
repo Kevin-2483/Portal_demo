@@ -6,7 +6,7 @@
 #include <godot_cpp/variant/utility_functions.hpp>
 
 // 引入C++ ECS組件定義
-#include "z_rotation_component.h"
+#include "core/components/z_rotation_component.h"
 
 using namespace godot;
 

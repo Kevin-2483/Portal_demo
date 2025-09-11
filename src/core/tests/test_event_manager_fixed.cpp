@@ -9,8 +9,8 @@
 
 // ECS系统头文件
 #include <entt/entt.hpp>
-#include "../event_manager.h"
-#include "../math_types.h"
+#include "core/event_manager.h"
+#include "core/math_types.h"
 
 using namespace portal_core;
 

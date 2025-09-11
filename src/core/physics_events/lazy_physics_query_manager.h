@@ -56,8 +56,8 @@ public:
     /**
      * 请求矩形区域监控
      */
-    void request_box_area_monitoring(entt::entity requester, const Vec3& center, const Vec3& half_extents,
-                                   const Quat& rotation = Quat(0, 0, 0, 1), uint32_t layer_mask = 0xFFFFFFFF);
+    void request_box_area_monitoring(entt::entity requester, const Vector3& center, const Vector3& half_extents,
+                                   const Quaternion& rotation = Quaternion::sIdentity(), uint32_t layer_mask = 0xFFFFFFFF);
 
     // === 懒加载平面相交检测（2D相交） ===
 
@@ -105,8 +105,8 @@ public:
     /**
      * 请求盒体重叠查询
      */
-    void request_box_overlap_query(entt::entity requester, const Vec3& center, const Vec3& half_extents,
-                                  const Quat& rotation = Quat(0, 0, 0, 1), uint32_t layer_mask = 0xFFFFFFFF);
+    void request_box_overlap_query(entt::entity requester, const Vector3& center, const Vector3& half_extents,
+                                  const Quaternion& rotation = Quaternion::sIdentity(), uint32_t layer_mask = 0xFFFFFFFF);
 
     // === 高级查询功能 ===
 

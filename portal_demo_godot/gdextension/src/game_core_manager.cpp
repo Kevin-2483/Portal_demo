@@ -5,7 +5,7 @@
 #include <godot_cpp/classes/engine.hpp>
 
 // 包含 C++ 核心
-#include "../../../src/core/portal_game_world.h"
+#include "core/portal_game_world.h"
 
 using namespace godot;
 

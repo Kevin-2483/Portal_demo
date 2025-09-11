@@ -1,9 +1,15 @@
 #include "physics_system.h"
-#include "../components/physics_body_component.h"
-#include "../components/transform_component.h"
-#include "../components/physics_sync_component.h"
-#include "../components/physics_event_component.h"
-#include "../component_safety_manager.h"
+#include "core/components/physics_body_component.h"
+#include "core/components/transform_component.h"
+#include "core/components/physics_sync_component.h"
+#include "core/components/physics_event_component.h"
+#include "core/component_safety_manager.h"
+
+// 直接使用统一渲染接口进行调试绘制
+#ifdef GDEXTENSION_BUILD
+#include "core/render/unified_debug_draw.h"
+#endif
+
 #include <iostream>
 #include <chrono>
 
@@ -26,11 +32,14 @@ namespace portal_core
     accumulator_time_ = 0.0f;
     frame_counter_ = 0;
 
-    std::cout << "PhysicsSystem: Initialization complete." << std::endl;
+    // 启用调试渲染进行测试
+    debug_rendering_enabled_ = true;
+
+    std::cout << "PhysicsSystem: Initialization complete. Debug rendering enabled." << std::endl;
     return true;
   }
 
-  bool PhysicsSystem::initialize(entt::registry& registry)
+  bool PhysicsSystem::initialize(entt::registry &registry)
   {
     if (!initialize())
     {
@@ -156,13 +165,15 @@ namespace portal_core
     uint32_t entity_id = static_cast<uint32_t>(entity);
     bool physics_corrected = ComponentSafetyManager::validate_and_correct_physics_body(*physics_body, entity_id);
     bool transform_corrected = ComponentSafetyManager::validate_and_correct_transform(*transform, entity_id);
-    
-    if (physics_corrected || transform_corrected) {
+
+    if (physics_corrected || transform_corrected)
+    {
       std::cout << "PhysicsSystem: Components auto-corrected for entity " << entity_id << std::endl;
     }
 
     // 檢查組件依賴關係
-    if (!ComponentSafetyManager::validate_component_dependencies(registry, entity)) {
+    if (!ComponentSafetyManager::validate_component_dependencies(registry, entity))
+    {
       std::cerr << "PhysicsSystem: Component dependency validation failed for entity " << entity_id << std::endl;
       return;
     }
@@ -170,7 +181,7 @@ namespace portal_core
     // 驗證物理體組件（現在應該都是有效的）
     if (!validate_physics_body_component(*physics_body))
     {
-      std::cerr << "PhysicsSystem: Physics body component still invalid after auto-correction for entity " 
+      std::cerr << "PhysicsSystem: Physics body component still invalid after auto-correction for entity "
                 << entity_id << std::endl;
       return;
     }
@@ -314,7 +325,7 @@ namespace portal_core
 
       // 設置碰撞事件回調
       physics_world_->set_contact_added_callback(
-          [this](JPH::BodyID body1, JPH::BodyID body2, const Vec3& contact_point, const Vec3& contact_normal, float impulse_magnitude)
+          [this](JPH::BodyID body1, JPH::BodyID body2, const Vec3 &contact_point, const Vec3 &contact_normal, float impulse_magnitude)
           {
             // 處理碰撞進入事件
             entt::entity entity1 = get_entity_by_body_id(body1);
@@ -330,7 +341,7 @@ namespace portal_core
           });
 
       physics_world_->set_contact_removed_callback(
-          [this](JPH::BodyID body1, JPH::BodyID body2, const Vec3& contact_point, const Vec3& contact_normal, float impulse_magnitude)
+          [this](JPH::BodyID body1, JPH::BodyID body2, const Vec3 &contact_point, const Vec3 &contact_normal, float impulse_magnitude)
           {
             // 處理碰撞退出事件 (移除事件通常不需要详细接触信息)
             entt::entity entity1 = get_entity_by_body_id(body1);
@@ -512,11 +523,11 @@ namespace portal_core
         float t = sync_comp->interpolation_speed * 0.016f; // 假設60fps
         if (sync_comp->sync_position)
         {
-          transform->position = transform->position.lerp(new_position, t);
+          transform->position = transform->position + (new_position - transform->position) * t;
         }
         if (sync_comp->sync_rotation)
         {
-          transform->rotation = transform->rotation.slerp(new_rotation, t);
+          transform->rotation = transform->rotation.SLERP(new_rotation, t);
         }
       }
       else
@@ -571,7 +582,7 @@ namespace portal_core
     if (sync_comp)
     {
       physics_position -= sync_comp->position_offset;
-      physics_rotation = physics_rotation * sync_comp->rotation_offset.conjugate();
+      physics_rotation = physics_rotation * sync_comp->rotation_offset.Conjugated();
     }
 
     // 同步到物理世界
@@ -591,13 +602,13 @@ namespace portal_core
   void PhysicsSystem::apply_physics_settings(JPH::BodyID body_id, const PhysicsBodyComponent &component)
   {
     // 設置速度
-    if (component.linear_velocity.length() > 0)
+    if (component.linear_velocity.Length() > 0)
     {
       JPH::Vec3 vel(component.linear_velocity.GetX(), component.linear_velocity.GetY(), component.linear_velocity.GetZ());
       physics_world_->set_body_linear_velocity(body_id, vel);
     }
 
-    if (component.angular_velocity.length() > 0)
+    if (component.angular_velocity.Length() > 0)
     {
       JPH::Vec3 ang_vel(component.angular_velocity.GetX(), component.angular_velocity.GetY(), component.angular_velocity.GetZ());
       physics_world_->set_body_angular_velocity(body_id, ang_vel);
@@ -632,22 +643,129 @@ namespace portal_core
 
   void PhysicsSystem::update_debug_rendering(entt::registry &registry)
   {
-    // TODO: 實現調試渲染
-    // 這裡可以添加物理體的可視化調試信息
+#ifdef GDEXTENSION_BUILD
+    // 直接使用统一渲染接口进行调试绘制
+    using namespace portal_core::debug;
+    using namespace portal_core::render;
+
+    // 清空上一帧的调试绘制（每帧重新绘制）
+    UnifiedDebugDraw::clear_3d();
+
+    // 绘制原点坐标轴
+    UnifiedDebugDraw::draw_coordinate_axes(Vector3(0, 0, 0), 1.0f);
+
+    // 遍历所有有物理体的实体，绘制调试信息
+    registry.view<PhysicsBodyComponent, TransformComponent>().each(
+        [&](entt::entity entity, const PhysicsBodyComponent &physics_body, const TransformComponent &transform)
+        {
+          // 获取物理体ID
+          auto it = entity_to_body_.find(entity);
+          if (it == entity_to_body_.end())
+          {
+            return; // 物理体还未创建
+          }
+
+          JPH::BodyID body_id = it->second;
+
+          // 从物理世界获取实际位置
+          auto &body_interface = physics_world_->get_body_interface();
+          JPH::Vec3 position = body_interface.GetPosition(body_id);
+          JPH::Quat rotation = body_interface.GetRotation(body_id);
+
+          Vector3 pos(position.GetX(), position.GetY(), position.GetZ());
+
+          // 根据物理体类型绘制不同颜色的调试信息
+          switch (physics_body.body_type)
+          {
+          case PhysicsBodyType::STATIC:
+            // 静态物体 - 蓝色十字
+            UnifiedDebugDraw::draw_cross(pos, 0.2f, Color4f::BLUE);
+            UnifiedDebugDraw::draw_line(pos, Vector3(pos.GetX(), pos.GetY() + 0.5f, pos.GetZ()), Color4f::BLUE);
+            break;
+
+          case PhysicsBodyType::KINEMATIC:
+            // 运动学物体 - 绿色十字
+            UnifiedDebugDraw::draw_cross(pos, 0.2f, Color4f::GREEN);
+            UnifiedDebugDraw::draw_line(pos, Vector3(pos.GetX(), pos.GetY() + 0.5f, pos.GetZ()), Color4f::GREEN);
+            break;
+
+          case PhysicsBodyType::DYNAMIC:
+            // 动态物体 - 红色十字
+            UnifiedDebugDraw::draw_cross(pos, 0.2f, Color4f::RED);
+            UnifiedDebugDraw::draw_line(pos, Vector3(pos.GetX(), pos.GetY() + 0.5f, pos.GetZ()), Color4f::RED);
+
+            // 如果物体在运动，绘制速度向量
+            JPH::Vec3 velocity = body_interface.GetLinearVelocity(body_id);
+            if (velocity.LengthSq() > 0.01f)
+            {
+              Vector3 vel_end(pos.GetX() + velocity.GetX() * 0.1f,
+                              pos.GetY() + velocity.GetY() * 0.1f,
+                              pos.GetZ() + velocity.GetZ() * 0.1f);
+              UnifiedDebugDraw::draw_line(pos, vel_end, Color4f::YELLOW); // 黄色速度向量
+            }
+            break;
+
+          case PhysicsBodyType::TRIGGER:
+            // 触发器 - 洋红色十字
+            UnifiedDebugDraw::draw_cross(pos, 0.2f, Color4f(1.0f, 0.0f, 1.0f, 1.0f));
+            UnifiedDebugDraw::draw_line(pos, Vector3(pos.GetX(), pos.GetY() + 0.5f, pos.GetZ()), Color4f(1.0f, 0.0f, 1.0f, 1.0f));
+            break;
+          }
+        });
+
+    // 添加一个旋转的测试图案，验证动态绘制
+    static float test_time = 0.0f;
+    test_time += 0.016f; // 假设60fps
+
+    Vector3 test_center(0, 3, 0);
+    float radius = 1.5f;
+    for (int i = 0; i < 6; ++i)
+    {
+      float angle = test_time + i * 3.14159f / 3.0f;
+      Vector3 point(test_center.GetX() + cos(angle) * radius,
+                    test_center.GetY(),
+                    test_center.GetZ() + sin(angle) * radius);
+
+      // 彩色旋转线段
+      float r = 0.5f + 0.5f * sin(angle);
+      float g = 0.5f + 0.5f * cos(angle * 2.0f);
+      float b = 0.5f + 0.5f * sin(angle * 3.0f);
+
+      UnifiedDebugDraw::draw_line(test_center, point, Color4f(r, g, b, 1.0f));
+    }
+
+    // 输出调试信息
+    static int frame_count = 0;
+    if (++frame_count % 120 == 0)
+    { // 每2秒输出一次
+      auto stats = UnifiedDebugDraw::get_stats();
+      std::cout << "PhysicsSystem: Drew debug elements, render stats: " 
+                << stats.total_commands << " commands" << std::endl;
+    }
+#else
+    // 在测试环境中，只输出简单的调试信息
+    static int frame_count = 0;
+    if (++frame_count % 120 == 0)
+    {
+      std::cout << "PhysicsSystem: Debug rendering disabled in test environment (frame " << frame_count << ")" << std::endl;
+    }
+#endif
   }
 
   void PhysicsSystem::on_physics_body_added(entt::registry &registry, entt::entity entity)
   {
     // 使用安全管理器自動驗證和修正新添加的組件
-    if (auto* physics_body = registry.try_get<PhysicsBodyComponent>(entity)) {
+    if (auto *physics_body = registry.try_get<PhysicsBodyComponent>(entity))
+    {
       uint32_t entity_id = static_cast<uint32_t>(entity);
       bool corrected = ComponentSafetyManager::validate_and_correct_physics_body(*physics_body, entity_id);
-      if (corrected) {
-        std::cout << "PhysicsSystem: Auto-corrected PhysicsBodyComponent for entity " 
+      if (corrected)
+      {
+        std::cout << "PhysicsSystem: Auto-corrected PhysicsBodyComponent for entity "
                   << entity_id << " on component addition" << std::endl;
       }
     }
-    
+
     pending_creation_.insert(entity);
   }
 

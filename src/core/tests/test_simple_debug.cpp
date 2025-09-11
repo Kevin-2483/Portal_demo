@@ -1,5 +1,5 @@
-#include "../physics_world_manager.h"
-#include "../event_manager.h"
+#include "core/physics_world_manager.h"
+#include "core/event_manager.h"
 #include <entt/entt.hpp>
 #include <iostream>
 #include <chrono>

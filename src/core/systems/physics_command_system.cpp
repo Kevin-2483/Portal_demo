@@ -360,7 +360,7 @@ namespace portal_core
 
       // 添加力和相應的扭矩
       physics_world_->add_force(body_id, force);
-      Vec3 torque = relative_pos.cross(force);
+      Vec3 torque = relative_pos.Cross(force);
       physics_world_->add_torque(body_id, torque);
       return true;
     }
@@ -376,7 +376,7 @@ namespace portal_core
 
       // 添加衝量和相應的角衝量
       physics_world_->add_impulse(body_id, impulse);
-      Vec3 angular_impulse = relative_pos.cross(impulse);
+      Vec3 angular_impulse = relative_pos.Cross(impulse);
       physics_world_->add_angular_impulse(body_id, angular_impulse);
       return true;
     }
@@ -458,7 +458,7 @@ namespace portal_core
     case PhysicsCommandType::SET_ROTATION:
     {
       Vec3 euler = command.get_data<Vec3>();
-      Quat rotation = Quat::from_euler(euler);
+      Quat rotation = Quat::sEulerAngles(euler);
       physics_world_->set_body_rotation(body_id, rotation);
       transform->rotation = rotation;
       return true;
@@ -476,7 +476,7 @@ namespace portal_core
     {
       Vec3 rotation_delta = command.get_data<Vec3>();
       Quat current_rot = physics_world_->get_body_rotation(body_id);
-      Quat delta_quat = Quat::from_euler(rotation_delta);
+      Quat delta_quat = Quat::sEulerAngles(rotation_delta);
       Quat new_rot = current_rot * delta_quat;
       physics_world_->set_body_rotation(body_id, new_rot);
       transform->rotation = new_rot;

@@ -327,9 +327,9 @@ void PhysicsCommandComponentResource::create_commands_for_component(portal_core:
         if (execution_delay > 0.0f) {
             cpp_component.add_delayed_command(
                 portal_core::PhysicsCommand(portal_core::PhysicsCommandType::ADD_FORCE, 
-                    portal_core::Vec3(add_force.x, add_force.y, add_force.z)), execution_delay);
+                    portal_core::Vector3(add_force.x, add_force.y, add_force.z)), execution_delay);
         } else {
-            cpp_component.add_force(portal_core::Vec3(add_force.x, add_force.y, add_force.z), timing);
+            cpp_component.add_force(portal_core::Vector3(add_force.x, add_force.y, add_force.z), timing);
         }
     }
     
@@ -421,17 +421,17 @@ void PhysicsCommandComponentResource::create_commands_for_component(portal_core:
     // 瞬移命令（位置+旋轉）
     if (use_set_position && use_set_rotation) {
         // 將歐拉角轉換為四元數
-        portal_core::Quat quat = portal_core::Quat::FromEuler(
-            portal_core::Vec3(set_rotation.x, set_rotation.y, set_rotation.z)
+        portal_core::Quaternion quat = portal_core::Quaternion::sEulerAngles(
+            portal_core::Vector3(set_rotation.x, set_rotation.y, set_rotation.z)
         );
         
         if (execution_delay > 0.0f) {
             cpp_component.add_delayed_command(
                 portal_core::PhysicsCommand(portal_core::PhysicsCommandType::TELEPORT, 
-                    std::make_pair(portal_core::Vec3(set_position.x, set_position.y, set_position.z), quat)), execution_delay);
+                    std::make_pair(portal_core::Vector3(set_position.x, set_position.y, set_position.z), quat)), execution_delay);
         } else {
             cpp_component.teleport(
-                portal_core::Vec3(set_position.x, set_position.y, set_position.z), 
+                portal_core::Vector3(set_position.x, set_position.y, set_position.z), 
                 quat, timing);
         }
     }

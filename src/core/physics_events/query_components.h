@@ -66,7 +66,7 @@ struct PhysicsEventQueryComponent {
     }
     
     // 添加盒体重叠查询 (兼容现有接口)
-    void add_box_overlap(const Vec3& center, const Vec3& half_extents, const Quat& rotation = Quat(0, 0, 0, 1), uint32_t layer_mask = 0xFFFFFFFF) {
+    void add_box_overlap(const Vector3& center, const Vector3& half_extents, const Quaternion& rotation = Quaternion::sIdentity(), uint32_t layer_mask = 0xFFFFFFFF) {
         PhysicsQueryComponent::OverlapQuery query;
         query.shape = PhysicsQueryComponent::OverlapQuery::BOX;
         query.center = center;

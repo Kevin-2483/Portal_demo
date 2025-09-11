@@ -1,9 +1,9 @@
-#include "../physics_events/physics_event_system.h"
-#include "../physics_events/physics_event_adapter.h"
-#include "../physics_events/physics_events.h"
-#include "../event_manager.h"
-#include "../physics_world_manager.h"
-#include "../components/physics_body_component.h"
+#include "core/physics_events/physics_event_system.h"
+#include "core/physics_events/physics_event_adapter.h"
+#include "core/physics_events/physics_events.h"
+#include "core/event_manager.h"
+#include "core/physics_world_manager.h"
+#include "core/components/physics_body_component.h"
 #include <entt/entt.hpp>
 #include <iostream>
 #include <chrono>
