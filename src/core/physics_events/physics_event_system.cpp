@@ -20,8 +20,8 @@ bool PhysicsEventSystem::initialize() {
         return true;
     }
 
-    // 初始化事件适配器
-    if (!adapter_->initialize()) {
+    // 初始化事件适配器（使用扩展初始化，设置组件监听器）
+    if (!adapter_->initialize(registry_)) {
         std::cerr << "PhysicsEventSystem: Failed to initialize event adapter" << std::endl;
         return false;
     }

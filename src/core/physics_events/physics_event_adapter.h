@@ -34,6 +34,11 @@ public:
     bool initialize();
 
     /**
+     * 扩展的初始化方法（设置组件监听器）
+     */
+    bool initialize(entt::registry& registry);
+
+    /**
      * 清理适配器
      */
     void cleanup();
@@ -54,6 +59,11 @@ public:
      */
     void set_debug_mode(bool debug) { debug_mode_ = debug; }
 
+    /**
+     * 从BodyID查找对应的实体（公有接口，用于测试）
+     */
+    entt::entity body_id_to_entity(BodyID body_id);
+
 private:
     // 核心系统引用
     EventManager& event_manager_;
@@ -64,6 +74,11 @@ private:
     bool initialized_ = false;
     bool enabled_ = true;
     bool debug_mode_ = false;
+
+    // EnTT 组件监听器连接 - 用于增量更新映射
+    entt::connection physics_body_added_connection_;
+    entt::connection physics_body_removed_connection_;
+    entt::connection physics_body_updated_connection_;
 
     // === Jolt Physics 回调处理 ===
 
@@ -90,19 +105,50 @@ private:
     // === 实体查找和映射 ===
 
     /**
-     * 从BodyID查找对应的实体
+     * 内部实体查找方法
      */
-    entt::entity body_id_to_entity(BodyID body_id);
+    entt::entity find_entity_by_body_id(BodyID body_id);
 
     /**
-     * 缓存BodyID到实体的映射
+     * 双向映射缓存 - 提供O(1)的双向查找性能
      */
-    std::unordered_map<uint32_t, entt::entity> body_to_entity_map_;
+    std::unordered_map<uint32_t, entt::entity> body_to_entity_map_;    // BodyID -> Entity
+    std::unordered_map<uint32_t, uint32_t> entity_to_body_id_map_;     // Entity -> BodyID
 
     /**
-     * 更新BodyID到实体的映射缓存
+     * 更新BodyID到实体的映射缓存 (已废弃 - 使用增量更新)
+     * @deprecated 使用增量更新机制替代每帧重建
      */
     void update_body_entity_mapping();
+
+    /**
+     * 内部映射管理方法 - 确保双向映射的一致性
+     */
+    
+    /**
+     * 增量更新映射 - 添加单个实体映射（双向）
+     */
+    void add_entity_mapping_internal(entt::entity entity, BodyID body_id);
+
+    /**
+     * 增量更新映射 - 移除单个实体映射（双向）
+     */
+    void remove_entity_mapping_internal(entt::entity entity);
+
+    /**
+     * 增量更新映射 - 通过BodyID移除映射（双向）
+     */
+    void remove_body_mapping_internal(BodyID body_id);
+
+    /**
+     * 初始化映射 - 仅在初始化时调用一次
+     */
+    void initialize_body_entity_mapping();
+
+    /**
+     * 清理所有映射
+     */
+    void clear_all_mappings();
 
     // === 碰撞和触发器检测 ===
 
@@ -222,6 +268,23 @@ private:
      * 调试日志输出
      */
     void debug_log(const std::string& message);
+
+    // === 增量映射更新事件处理 ===
+
+    /**
+     * 处理物理体组件添加事件
+     */
+    void on_physics_body_component_added(entt::registry& registry, entt::entity entity);
+
+    /**
+     * 处理物理体组件移除事件
+     */
+    void on_physics_body_component_removed(entt::registry& registry, entt::entity entity);
+
+    /**
+     * 处理物理体组件更新事件（BodyID可能改变）
+     */
+    void on_physics_body_component_updated(entt::registry& registry, entt::entity entity);
 };
 
 } // namespace portal_core

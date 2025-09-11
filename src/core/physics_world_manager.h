@@ -37,6 +37,7 @@
 #include <vector>
 #include <functional>
 #include <thread>
+#include <mutex>
 
 JPH_SUPPRESS_WARNINGS
 
@@ -204,10 +205,26 @@ public:
     void set_contact_removed_callback(ContactEventCallback callback) { 
         contact_removed_callback_ = std::move(callback); 
     }
+    
+    // 处理排队的接触事件 - 在安全的上下文中调用
+    void process_pending_events();
 
 private:
+    struct PendingContactEvent {
+        BodyID body1_id;
+        BodyID body2_id;
+        Vec3 contact_point;
+        Vec3 contact_normal;
+        float impulse_magnitude;
+        bool is_added;  // true for added, false for removed
+    };
+    
     ContactEventCallback contact_added_callback_;
     ContactEventCallback contact_removed_callback_;
+    
+    // 事件队列相关
+    std::vector<PendingContactEvent> pending_contact_events_;
+    std::mutex pending_events_mutex_;
 };
 
 // 身體激活監聽器
@@ -226,10 +243,23 @@ public:
     void set_body_deactivated_callback(ActivationEventCallback callback) { 
         body_deactivated_callback_ = std::move(callback); 
     }
+    
+    // 处理排队的事件 - 在安全的上下文中调用
+    void process_pending_events();
 
 private:
+    struct PendingActivationEvent {
+        BodyID body_id;
+        uint64 user_data;
+        bool is_activated;  // true for activated, false for deactivated
+    };
+    
     ActivationEventCallback body_activated_callback_;
     ActivationEventCallback body_deactivated_callback_;
+    
+    // 事件队列相关
+    std::vector<PendingActivationEvent> pending_activation_events_;
+    std::mutex pending_events_mutex_;
 };
 
 // 物理世界管理器

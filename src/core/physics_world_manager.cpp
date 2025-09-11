@@ -135,7 +135,13 @@ namespace portal_core
                 contact_point = Vec3(float(world_point.GetX()), float(world_point.GetY()), float(world_point.GetZ()));
             }
             
-            contact_added_callback_(inBody1.GetID(), inBody2.GetID(), contact_point, contact_normal, impulse_magnitude);
+            // 将接触添加事件入队，避免在Jolt内部锁定状态下直接调用用户回调
+            std::lock_guard<std::mutex> lock(pending_events_mutex_);
+            pending_contact_events_.push_back({
+                inBody1.GetID(), inBody2.GetID(), 
+                contact_point, contact_normal, impulse_magnitude, 
+                true  // is_added = true
+            });
         }
     }
 
@@ -150,10 +156,45 @@ namespace portal_core
     {
         if (contact_removed_callback_)
         {
-            // 注意：在接觸移除時，我們沒有直接的Body引用，需要從SubShapeIDPair獲取
             // 对于移除事件，没有实际的接触信息，传递零值
             Vec3 zero_vec = Vec3::sZero();
-            contact_removed_callback_(inSubShapePair.GetBody1ID(), inSubShapePair.GetBody2ID(), zero_vec, zero_vec, 0.0f);
+            
+            // 将接触移除事件入队，避免在Jolt内部锁定状态下直接调用用户回调
+            std::lock_guard<std::mutex> lock(pending_events_mutex_);
+            pending_contact_events_.push_back({
+                inSubShapePair.GetBody1ID(), inSubShapePair.GetBody2ID(), 
+                zero_vec, zero_vec, 0.0f, 
+                false  // is_added = false
+            });
+        }
+    }
+
+    void PhysicsContactListener::process_pending_events()
+    {
+        std::vector<PendingContactEvent> events_to_process;
+        
+        // 获取所有待处理的事件
+        {
+            std::lock_guard<std::mutex> lock(pending_events_mutex_);
+            events_to_process = std::move(pending_contact_events_);
+            pending_contact_events_.clear();
+        }
+        
+        // 在没有锁定的情况下处理事件
+        for (const auto& event : events_to_process)
+        {
+            if (event.is_added && contact_added_callback_)
+            {
+                contact_added_callback_(event.body1_id, event.body2_id, 
+                                      event.contact_point, event.contact_normal, 
+                                      event.impulse_magnitude);
+            }
+            else if (!event.is_added && contact_removed_callback_)
+            {
+                contact_removed_callback_(event.body1_id, event.body2_id, 
+                                        event.contact_point, event.contact_normal, 
+                                        event.impulse_magnitude);
+            }
         }
     }
 
@@ -162,7 +203,9 @@ namespace portal_core
     {
         if (body_activated_callback_)
         {
-            body_activated_callback_(inBodyID, inBodyUserData);
+            // 将激活事件入队，避免在Jolt内部锁定状态下直接调用用户回调
+            std::lock_guard<std::mutex> lock(pending_events_mutex_);
+            pending_activation_events_.push_back({inBodyID, inBodyUserData, true});
         }
     }
 
@@ -170,7 +213,34 @@ namespace portal_core
     {
         if (body_deactivated_callback_)
         {
-            body_deactivated_callback_(inBodyID, inBodyUserData);
+            // 将停用事件入队，避免在Jolt内部锁定状态下直接调用用户回调
+            std::lock_guard<std::mutex> lock(pending_events_mutex_);
+            pending_activation_events_.push_back({inBodyID, inBodyUserData, false});
+        }
+    }
+
+    void PhysicsActivationListener::process_pending_events()
+    {
+        std::vector<PendingActivationEvent> events_to_process;
+        
+        // 获取所有待处理的事件
+        {
+            std::lock_guard<std::mutex> lock(pending_events_mutex_);
+            events_to_process = std::move(pending_activation_events_);
+            pending_activation_events_.clear();
+        }
+        
+        // 在没有锁定的情况下处理事件
+        for (const auto& event : events_to_process)
+        {
+            if (event.is_activated && body_activated_callback_)
+            {
+                body_activated_callback_(event.body_id, event.user_data);
+            }
+            else if (!event.is_activated && body_deactivated_callback_)
+            {
+                body_deactivated_callback_(event.body_id, event.user_data);
+            }
         }
     }
 
@@ -322,6 +392,17 @@ namespace portal_core
             physics_system_->Update(fixed_timestep_, collision_steps_, temp_allocator_.get(), job_system_.get());
             accumulated_time_ -= fixed_timestep_;
         }
+        
+        // 在物理更新完成后处理排队的事件，避免死锁
+        if (contact_listener_)
+        {
+            contact_listener_->process_pending_events();
+        }
+        
+        if (activation_listener_)
+        {
+            activation_listener_->process_pending_events();
+        }
     }
 
     BodyID PhysicsWorldManager::create_body(const PhysicsBodyDesc &desc)
@@ -352,6 +433,11 @@ namespace portal_core
         body_settings.mUserData = desc.user_data;
         body_settings.mFriction = desc.material.friction;
         body_settings.mRestitution = desc.material.restitution;
+        
+        // 如果是触发器类型，在创建时就设置为传感器
+        if (desc.body_type == PhysicsBodyType::TRIGGER) {
+            body_settings.mIsSensor = true;
+        }
 
         // 只對動態和運動學物體設置質量屬性，靜態物體不需要
         if (desc.body_type != PhysicsBodyType::STATIC && desc.body_type != PhysicsBodyType::TRIGGER)
@@ -374,6 +460,14 @@ namespace portal_core
         if (body_id.IsInvalid())
         {
             std::cerr << "PhysicsWorldManager: Failed to create physics body." << std::endl;
+            return body_id;
+        }
+
+        // 如果是触发器类型，设置为传感器
+        if (desc.body_type == PhysicsBodyType::TRIGGER) {
+            body_interface.SetIsSensor(body_id, true);
+            std::cout << "PhysicsWorldManager: Set body " << body_id.GetIndexAndSequenceNumber() 
+                      << " as sensor (trigger)" << std::endl;
         }
 
         return body_id;

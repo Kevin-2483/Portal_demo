@@ -2,6 +2,7 @@
 #include "../components/physics_body_component.h"
 #include <iostream>
 #include <cmath>
+#include <algorithm>
 
 namespace portal_core {
 
@@ -48,11 +49,30 @@ bool PhysicsEventAdapter::initialize() {
         }
     });
 
-    // 初始化BodyID到实体的映射
-    update_body_entity_mapping();
+    // 初始化BodyID到实体的映射（仅初始化时执行一次）
+    initialize_body_entity_mapping();
 
     initialized_ = true;
     debug_log("PhysicsEventAdapter: Initialized successfully");
+    return true;
+}
+
+bool PhysicsEventAdapter::initialize(entt::registry& registry) {
+    if (!initialize()) {
+        return false;
+    }
+
+    // 设置EnTT组件监听器用于增量更新映射
+    physics_body_added_connection_ = registry.on_construct<PhysicsBodyComponent>()
+        .connect<&PhysicsEventAdapter::on_physics_body_component_added>(*this);
+    
+    physics_body_removed_connection_ = registry.on_destroy<PhysicsBodyComponent>()
+        .connect<&PhysicsEventAdapter::on_physics_body_component_removed>(*this);
+    
+    physics_body_updated_connection_ = registry.on_update<PhysicsBodyComponent>()
+        .connect<&PhysicsEventAdapter::on_physics_body_component_updated>(*this);
+
+    debug_log("PhysicsEventAdapter: Component listeners set up");
     return true;
 }
 
@@ -61,8 +81,13 @@ void PhysicsEventAdapter::cleanup() {
         return;
     }
 
-    // 清理映射缓存
-    body_to_entity_map_.clear();
+    // 断开EnTT组件监听器连接
+    physics_body_added_connection_.release();
+    physics_body_removed_connection_.release();
+    physics_body_updated_connection_.release();
+
+    // 清理所有映射缓存
+    clear_all_mappings();
     
     initialized_ = false;
     debug_log("PhysicsEventAdapter: Cleaned up");
@@ -75,14 +100,13 @@ void PhysicsEventAdapter::update(float delta_time) {
 
     last_update_time_ = delta_time;
 
-    // 更新BodyID到实体的映射缓存
-    update_body_entity_mapping();
+    // 注意：映射更新现在通过EnTT监听器自动处理，无需每帧重建
 
     // 处理懒加载查询
     process_pending_queries();
 
-    // 处理平面相交检测（2D相交）
-    process_plane_intersections(delta_time);
+    // 暂时禁用平面相交检测（2D相交）
+    // process_plane_intersections(delta_time);
 
     // 处理区域监控
     process_area_monitoring(delta_time);
@@ -94,8 +118,8 @@ void PhysicsEventAdapter::update(float delta_time) {
 // === Jolt Physics 回调处理 ===
 
 void PhysicsEventAdapter::handle_contact_added_with_info(BodyID body1, BodyID body2, const Vec3& contact_point, const Vec3& contact_normal, float impulse_magnitude) {
-    auto entity1 = body_id_to_entity(body1);
-    auto entity2 = body_id_to_entity(body2);
+    auto entity1 = find_entity_by_body_id(body1);
+    auto entity2 = find_entity_by_body_id(body2);
 
     if (entity1 == entt::null || entity2 == entt::null) {
         return;
@@ -132,8 +156,8 @@ void PhysicsEventAdapter::handle_contact_added_with_info(BodyID body1, BodyID bo
 }
 
 void PhysicsEventAdapter::handle_contact_removed(BodyID body1, BodyID body2) {
-    auto entity1 = body_id_to_entity(body1);
-    auto entity2 = body_id_to_entity(body2);
+    auto entity1 = find_entity_by_body_id(body1);
+    auto entity2 = find_entity_by_body_id(body2);
 
     if (entity1 == entt::null || entity2 == entt::null) {
         return;
@@ -159,7 +183,7 @@ void PhysicsEventAdapter::handle_contact_removed(BodyID body1, BodyID body2) {
 }
 
 void PhysicsEventAdapter::handle_body_activated(BodyID body_id, uint64 user_data) {
-    auto entity = body_id_to_entity(body_id);
+    auto entity = find_entity_by_body_id(body_id);
     if (entity == entt::null) {
         return;
     }
@@ -175,7 +199,7 @@ void PhysicsEventAdapter::handle_body_activated(BodyID body_id, uint64 user_data
 }
 
 void PhysicsEventAdapter::handle_body_deactivated(BodyID body_id, uint64 user_data) {
-    auto entity = body_id_to_entity(body_id);
+    auto entity = find_entity_by_body_id(body_id);
     if (entity == entt::null) {
         return;
     }
@@ -193,30 +217,116 @@ void PhysicsEventAdapter::handle_body_deactivated(BodyID body_id, uint64 user_da
 // === 实体查找和映射 ===
 
 entt::entity PhysicsEventAdapter::body_id_to_entity(BodyID body_id) {
+    return find_entity_by_body_id(body_id);
+}
+
+entt::entity PhysicsEventAdapter::find_entity_by_body_id(BodyID body_id) {
     uint32_t id = body_id.GetIndexAndSequenceNumber();
     
     auto it = body_to_entity_map_.find(id);
     if (it != body_to_entity_map_.end()) {
         return it->second;
     }
-
+    
     return entt::null;
 }
 
 void PhysicsEventAdapter::update_body_entity_mapping() {
-    // 清空旧映射
-    body_to_entity_map_.clear();
+    // 废弃方法 - 现在使用增量更新
+    debug_log("Warning: update_body_entity_mapping() is deprecated. Using incremental updates instead.");
+    
+    // 为了向后兼容，保留该方法但添加警告
+    // 在紧急情况下可以调用 initialize_body_entity_mapping() 进行完整重建
+}
 
-    // 重建映射 - 遍历所有有PhysicsBodyComponent的实体
+void PhysicsEventAdapter::initialize_body_entity_mapping() {
+    // 清空旧映射
+    clear_all_mappings();
+
+    // 初始化映射 - 遍历所有有PhysicsBodyComponent的实体（仅初始化时调用）
     auto view = registry_.view<PhysicsBodyComponent>();
+    size_t mapped_count = 0;
+    
     for (auto entity : view) {
         auto& body_comp = view.get<PhysicsBodyComponent>(entity);
         if (body_comp.body_id.IsInvalid()) {
             continue;
         }
         
-        uint32_t id = body_comp.body_id.GetIndexAndSequenceNumber();
-        body_to_entity_map_[id] = entity;
+        add_entity_mapping_internal(entity, body_comp.body_id);
+        mapped_count++;
+    }
+    
+    debug_log("PhysicsEventAdapter: Initialized dual mapping for " + std::to_string(mapped_count) + " entities");
+}
+
+void PhysicsEventAdapter::add_entity_mapping_internal(entt::entity entity, BodyID body_id) {
+    if (body_id.IsInvalid()) {
+        return;
+    }
+    
+    uint32_t body_id_key = body_id.GetIndexAndSequenceNumber();
+    uint32_t entity_key = static_cast<uint32_t>(entity);
+    
+    // 先清理可能存在的旧映射（防止内存泄漏）
+    remove_entity_mapping_internal(entity);
+    remove_body_mapping_internal(body_id);
+    
+    // 添加双向映射
+    body_to_entity_map_[body_id_key] = entity;
+    entity_to_body_id_map_[entity_key] = body_id_key;
+    
+    if (debug_mode_) {
+        debug_log("Added dual mapping: BodyID " + std::to_string(body_id_key) + " <-> Entity " + std::to_string(entity_key));
+    }
+}
+
+void PhysicsEventAdapter::remove_entity_mapping_internal(entt::entity entity) {
+    uint32_t entity_key = static_cast<uint32_t>(entity);
+    
+    // 通过实体查找对应的BodyID（O(1)查找）
+    auto entity_it = entity_to_body_id_map_.find(entity_key);
+    if (entity_it != entity_to_body_id_map_.end()) {
+        uint32_t body_id_key = entity_it->second;
+        
+        // 移除双向映射
+        body_to_entity_map_.erase(body_id_key);
+        entity_to_body_id_map_.erase(entity_it);
+        
+        if (debug_mode_) {
+            debug_log("Removed dual mapping for Entity " + std::to_string(entity_key) + " (BodyID: " + std::to_string(body_id_key) + ")");
+        }
+    }
+}
+
+void PhysicsEventAdapter::remove_body_mapping_internal(BodyID body_id) {
+    if (body_id.IsInvalid()) {
+        return;
+    }
+    
+    uint32_t body_id_key = body_id.GetIndexAndSequenceNumber();
+    
+    // 通过BodyID查找对应的实体（O(1)查找）
+    auto body_it = body_to_entity_map_.find(body_id_key);
+    if (body_it != body_to_entity_map_.end()) {
+        uint32_t entity_key = static_cast<uint32_t>(body_it->second);
+        
+        // 移除双向映射
+        entity_to_body_id_map_.erase(entity_key);
+        body_to_entity_map_.erase(body_it);
+        
+        if (debug_mode_) {
+            debug_log("Removed dual mapping for BodyID " + std::to_string(body_id_key) + " (Entity: " + std::to_string(entity_key) + ")");
+        }
+    }
+}
+
+void PhysicsEventAdapter::clear_all_mappings() {
+    body_to_entity_map_.clear();
+    entity_to_body_id_map_.clear();
+    
+    if (debug_mode_) {
+        debug_log("Cleared all dual mappings");
     }
 }
 
@@ -244,7 +354,7 @@ bool PhysicsEventAdapter::is_sensor_body(BodyID body_id) {
 
 bool PhysicsEventAdapter::is_body_sensor_safe(BodyID body_id) {
     // 安全版本：通过实体组件来检查是否为传感器
-    auto entity = body_id_to_entity(body_id);
+    auto entity = find_entity_by_body_id(body_id);
     if (entity == entt::null) {
         return false;
     }
@@ -299,12 +409,13 @@ void PhysicsEventAdapter::dispatch_trigger_exit_event(entt::entity sensor_entity
 // === 2D/3D 相交检测支持 ===
 
 PhysicsEventDimension PhysicsEventAdapter::detect_intersection_dimension(const Vec3& contact_point, const Vec3& contact_normal) {
-    // 检查是否为平面相交（2D类型）
-    if (is_plane_intersection(contact_normal)) {
-        return PhysicsEventDimension::DIMENSION_2D;  // 平面相交
-    } else {
-        return PhysicsEventDimension::DIMENSION_3D;  // 空间相交
-    }
+    // 暂时禁用2D/3D检测逻辑，统一使用AUTO_DETECT
+    // if (is_plane_intersection(contact_normal)) {
+    //     return PhysicsEventDimension::DIMENSION_2D;  // 平面相交
+    // } else {
+    //     return PhysicsEventDimension::DIMENSION_3D;  // 空间相交
+    // }
+    return PhysicsEventDimension::AUTO_DETECT;
 }
 
 bool PhysicsEventAdapter::is_plane_intersection(const Vec3& contact_normal, float tolerance) {
@@ -365,7 +476,7 @@ void PhysicsEventAdapter::execute_raycast_queries(entt::entity entity, PhysicsEv
         raycast.hit_point = result.hit_point;
         raycast.hit_normal = result.hit_normal;
         raycast.hit_distance = result.distance;
-        raycast.hit_entity = body_id_to_entity(result.body_id);
+        raycast.hit_entity = find_entity_by_body_id(result.body_id);
 
         // 检测相交维度
         auto dimension = detect_intersection_dimension(raycast.hit_point, raycast.hit_normal);
@@ -390,7 +501,7 @@ void PhysicsEventAdapter::execute_overlap_queries(entt::entity entity, PhysicsEv
                 overlap.size.GetX());  // 使用x分量作为半径
                 
             for (auto body_id : bodies) {
-                auto overlapped_entity = body_id_to_entity(body_id);
+                auto overlapped_entity = find_entity_by_body_id(body_id);
                 if (overlapped_entity != entt::null && overlapped_entity != entity) {
                     overlapping_entities.push_back(overlapped_entity);
                 }
@@ -402,7 +513,7 @@ void PhysicsEventAdapter::execute_overlap_queries(entt::entity entity, PhysicsEv
                 overlap.size, overlap.rotation);
                 
             for (auto body_id : bodies) {
-                auto overlapped_entity = body_id_to_entity(body_id);
+                auto overlapped_entity = find_entity_by_body_id(body_id);
                 if (overlapped_entity != entt::null && overlapped_entity != entity) {
                     overlapping_entities.push_back(overlapped_entity);
                 }
@@ -424,6 +535,9 @@ void PhysicsEventAdapter::execute_overlap_queries(entt::entity entity, PhysicsEv
 // === 平面相交检测处理（2D相交） ===
 
 void PhysicsEventAdapter::process_plane_intersections(float delta_time) {
+    // 暂时禁用平面相交检测（2D相交逻辑）
+    return;
+    
     auto plane_view = registry_.view<PlaneIntersectionComponent>();
     
     for (auto entity : plane_view) {
@@ -462,7 +576,7 @@ void PhysicsEventAdapter::check_entity_plane_intersection(entt::entity entity, P
         // 发生了平面穿越
         auto intersection_event = CollisionStartEvent(entity, plane_comp.monitored_entity, 
                                                     entity_pos, plane_comp.plane_normal, 0.0f, 
-                                                    PhysicsEventDimension::DIMENSION_2D);  // 明确标记为2D相交
+                                                    PhysicsEventDimension::AUTO_DETECT);  // 使用AUTO_DETECT而非强制2D
         
         // 立即事件 - 平面穿越是重要事件
         event_manager_.publish_immediate(intersection_event, 
@@ -500,7 +614,7 @@ void PhysicsEventAdapter::process_area_monitoring(float delta_time) {
         // 更新区域内实体列表
         std::unordered_set<entt::entity> current_entities;
         for (auto body_id : bodies) {
-            auto found_entity = body_id_to_entity(body_id);
+            auto found_entity = find_entity_by_body_id(body_id);
             if (found_entity != entt::null && found_entity != entity) {
                 current_entities.insert(found_entity);
             }
@@ -592,6 +706,49 @@ void PhysicsEventAdapter::process_persistent_contacts(float delta_time) {
 void PhysicsEventAdapter::debug_log(const std::string& message) {
     if (debug_mode_) {
         std::cout << "[PhysicsEventAdapter] " << message << std::endl;
+    }
+}
+
+// === 增量映射更新事件处理 ===
+
+void PhysicsEventAdapter::on_physics_body_component_added(entt::registry& registry, entt::entity entity) {
+    if (!initialized_ || !enabled_) {
+        return;
+    }
+    
+    auto* body_comp = registry.try_get<PhysicsBodyComponent>(entity);
+    if (body_comp && !body_comp->body_id.IsInvalid()) {
+        add_entity_mapping_internal(entity, body_comp->body_id);
+    }
+}
+
+void PhysicsEventAdapter::on_physics_body_component_removed(entt::registry& registry, entt::entity entity) {
+    if (!initialized_) {
+        return;
+    }
+    
+    // 使用双向映射直接移除，避免遍历整个映射表（从O(n)优化到O(1)）
+    remove_entity_mapping_internal(entity);
+}
+
+void PhysicsEventAdapter::on_physics_body_component_updated(entt::registry& registry, entt::entity entity) {
+    if (!initialized_ || !enabled_) {
+        return;
+    }
+    
+    auto* body_comp = registry.try_get<PhysicsBodyComponent>(entity);
+    if (!body_comp) {
+        // 组件不存在，移除映射
+        remove_entity_mapping_internal(entity);
+        return;
+    }
+    
+    // 先移除旧的映射（如果存在）
+    remove_entity_mapping_internal(entity);
+    
+    // 添加新的映射（如果BodyID有效）
+    if (!body_comp->body_id.IsInvalid()) {
+        add_entity_mapping_internal(entity, body_comp->body_id);
     }
 }
 

@@ -188,12 +188,23 @@ private:
     bool test_collision_events() {
         std::cout << "\n🧪 Testing collision events..." << std::endl;
 
-        // 创建两个物理实体
-        auto entity1 = create_test_entity(JPH::Vec3(0, 5, 0), PhysicsBodyType::DYNAMIC);  // 掉落的球
-        auto entity2 = create_test_entity(JPH::Vec3(0, 0, 0), PhysicsBodyType::STATIC);   // 地面
+        // 创建一个更大的地面，确保碰撞能够发生
+        auto ground = create_ground_entity(JPH::Vec3(0, -0.5, 0), JPH::Vec3(10, 0.5, 10));  // 大地面
+        auto falling_ball = create_test_entity(JPH::Vec3(0, 5, 0), PhysicsBodyType::DYNAMIC);  // 掉落的球
 
-        // 模拟几帧物理更新
-        simulate_physics_frames(10);
+        // 添加调试信息
+        auto& ground_body = registry_.get<PhysicsBodyComponent>(ground);
+        auto& ball_body = registry_.get<PhysicsBodyComponent>(falling_ball);
+        std::cout << "Created ground: " << static_cast<uint32_t>(ground) 
+                  << " (BodyID: " << ground_body.body_id.GetIndexAndSequenceNumber() << ") at (0, -0.5, 0)" << std::endl;
+        std::cout << "Created falling ball: " << static_cast<uint32_t>(falling_ball) 
+                  << " (BodyID: " << ball_body.body_id.GetIndexAndSequenceNumber() << ") at (0, 5, 0)" << std::endl;
+
+        // 让球有一定的初始速度向下
+        physics_world_->set_body_linear_velocity(ball_body.body_id, JPH::Vec3(0, -5, 0));
+
+        // 模拟更多帧物理更新，确保球落到地面发生碰撞
+        simulate_physics_frames(200);  // 增加到200帧，确保球有足够时间落到地面
 
         bool passed = results_.collision_start_events > 0;
         std::cout << (passed ? "✅" : "❌") << " Collision events test: " 
@@ -207,15 +218,26 @@ private:
 
         // 创建触发器
         auto trigger = create_trigger_entity(JPH::Vec3(10, 0, 0), 2.0f);  // 半径2米的触发器
-        auto moving_entity = create_test_entity(JPH::Vec3(8, 0, 0), PhysicsBodyType::DYNAMIC);  // 移动物体
+        auto moving_entity = create_test_entity(JPH::Vec3(6, 0, 0), PhysicsBodyType::DYNAMIC);  // 移动物体，从更远处开始
 
-        // 给移动物体添加速度，让它进入触发器
+        // 检查触发器组件是否正确设置
+        auto& trigger_comp = registry_.get<PhysicsBodyComponent>(trigger);
+        auto& moving_comp = registry_.get<PhysicsBodyComponent>(moving_entity);
+        
+        std::cout << "Created trigger: " << static_cast<uint32_t>(trigger) 
+                  << " (BodyID: " << trigger_comp.body_id.GetIndexAndSequenceNumber() << ")"
+                  << " at (10, 0, 0), is_trigger=" << trigger_comp.is_trigger << std::endl;
+        std::cout << "Created moving entity: " << static_cast<uint32_t>(moving_entity) 
+                  << " (BodyID: " << moving_comp.body_id.GetIndexAndSequenceNumber() << ")"
+                  << " at (6, 0, 0), is_trigger=" << moving_comp.is_trigger << std::endl;
+
+        // 给移动物体添加更大的速度，确保它能进入触发器
         physics_world_->set_body_linear_velocity(
             registry_.get<PhysicsBodyComponent>(moving_entity).body_id, 
-            JPH::Vec3(2, 0, 0));  // 向右移动
+            JPH::Vec3(5, 0, 0));  // 更快地向右移动
 
-        // 模拟物理更新
-        simulate_physics_frames(15);
+        // 模拟物理更新，给足够时间让实体进入触发器
+        simulate_physics_frames(300);
 
         bool passed = results_.trigger_enter_events > 0;
         std::cout << (passed ? "✅" : "❌") << " Trigger events test: " 
@@ -409,6 +431,9 @@ private:
         auto& physics_component = registry_.emplace<PhysicsBodyComponent>(entity, body_type, desc.shape);
         physics_component.body_id = body_id;
         
+        // 手动触发组件更新事件，让监听器能捕获到正确的BodyID
+        registry_.patch<PhysicsBodyComponent>(entity);
+        
         return entity;
     }
 
@@ -426,26 +451,97 @@ private:
         // 添加物理体组件
         auto& physics_component = registry_.emplace<PhysicsBodyComponent>(entity, desc.body_type, desc.shape);
         physics_component.body_id = body_id;
+        physics_component.is_trigger = true;  // 确保触发器标志被设置
+        
+        // 手动触发组件更新事件，让监听器能捕获到正确的BodyID
+        registry_.patch<PhysicsBodyComponent>(entity);
+        
+        std::cout << "Created trigger entity " << static_cast<uint32_t>(entity) 
+                  << " (BodyID: " << body_id.GetIndexAndSequenceNumber() 
+                  << ") with is_trigger=" << physics_component.is_trigger << std::endl;
         
         return entity;
     }
 
+    entt::entity create_ground_entity(const JPH::Vec3& position, const JPH::Vec3& half_extents) {
+        auto entity = registry_.create();
+        
+        // 创建盒状地面
+        PhysicsBodyDesc desc;
+        desc.body_type = PhysicsBodyType::STATIC;
+        desc.shape = PhysicsShapeDesc::box(half_extents);  // 使用盒子形状
+        desc.position = RVec3(position.GetX(), position.GetY(), position.GetZ());
+        
+        auto body_id = physics_world_->create_body(desc);
+        
+        // 添加物理体组件
+        auto& physics_component = registry_.emplace<PhysicsBodyComponent>(entity, desc.body_type, desc.shape);
+        physics_component.body_id = body_id;
+        
+        // 手动触发组件更新事件，让监听器能捕获到正确的BodyID
+        registry_.patch<PhysicsBodyComponent>(entity);
+        
+        return entity;
+    }
+
+    void print_physics_bodies_status() {
+        // 打印所有有PhysicsBodyComponent的实体的状态
+        auto view = registry_.view<PhysicsBodyComponent>();
+        for (auto entity : view) {
+            auto& body_comp = view.get<PhysicsBodyComponent>(entity);
+            if (!body_comp.body_id.IsInvalid()) {
+                auto position = physics_world_->get_body_position(body_comp.body_id);
+                std::cout << "        Entity " << static_cast<uint32_t>(entity) 
+                          << " (BodyID: " << body_comp.body_id.GetIndexAndSequenceNumber() << ") "
+                          << "at (" << position.GetX() << ", " << position.GetY() << ", " << position.GetZ() << ")" << std::endl;
+            }
+        }
+    }
+
     void simulate_physics_frames(int frame_count) {
+        std::cout << "  🔄 Starting physics simulation for " << frame_count << " frames..." << std::endl;
+        
         for (int i = 0; i < frame_count; ++i) {
             float delta_time = 1.0f / 60.0f;  // 60 FPS
+
+            // 每二十帧打印一次（或第一帧和最后一帧）
+            bool should_print = ((i + 1) % 40 == 0) || (i == 0) || (i == frame_count - 1);
+            
+            if (should_print) {
+                std::cout << "    Frame " << (i + 1) << "/" << frame_count << ":" << std::endl;
+                
+                // 检查一些物理体的位置（如果存在的话）
+                print_physics_bodies_status();
+            }
             
             // 更新物理世界
             physics_world_->update(delta_time);
+            if (should_print) {
+                std::cout << "      ✅ Physics world updated" << std::endl;
+            }
             
             // 更新物理事件系统
             physics_event_system_->update(delta_time);
+            if (should_print) {
+                std::cout << "      ✅ Physics event system updated" << std::endl;
+            }
             
             // 处理事件队列
             event_manager_.process_queued_events(delta_time);
+            if (should_print) {
+                std::cout << "      ✅ Event queue processed" << std::endl;
+                
+                // 检查累积的事件计数
+                std::cout << "      📊 Events so far - Collisions: " << results_.collision_start_events 
+                          << ", Triggers: " << results_.trigger_enter_events 
+                          << ", Raycasts: " << results_.raycast_result_events << std::endl;
+            }
             
             // 短暂暂停
             std::this_thread::sleep_for(std::chrono::milliseconds(16));  // ~60 FPS
         }
+        
+        std::cout << "  ✅ Physics simulation completed" << std::endl;
     }
 };
 
