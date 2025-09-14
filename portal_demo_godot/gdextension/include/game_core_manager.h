@@ -3,6 +3,11 @@
 
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/packed_scene.hpp>
+#include <godot_cpp/classes/resource_loader.hpp>
+#include <godot_cpp/classes/dir_access.hpp>
+#include <unordered_map>
+#include <string>
 
 // 前向聲明
 namespace portal_core
@@ -33,6 +38,17 @@ namespace godot
     bool pending_destruction_;
     double destruction_delay_;
     double destruction_timer_;
+    
+    // 模板管理相关
+    static std::unordered_map<std::string, godot::Ref<godot::PackedScene>> templates_;
+    static std::unordered_map<std::string, godot::Dictionary> template_properties_;
+    static std::unordered_map<godot::Node*, std::string> active_entities_;
+    static bool templates_loaded_;
+    static const char* TEMPLATES_PATH;
+    
+    // Schema系统相关成员变量
+    std::unordered_map<std::string, godot::Dictionary> schema_properties_;
+    std::unordered_map<std::string, godot::Array> schema_presets_;
 
   protected:
     static void _bind_methods();
@@ -73,17 +89,48 @@ namespace godot
     static GameCoreManager* get_editor_instance();
     static void set_editor_instance(GameCoreManager* instance);
     
-    // 实体生成桥接函数
-    static Node* spawn_godot_entity(const String& template_name, Node* parent = nullptr, const Dictionary& overrides = Dictionary());
-    static Array get_available_godot_templates();
-    static bool has_godot_template(const String& template_name);
-    static Node* spawn_godot_entity_with_ecs_override(const String& template_name, Node* parent = nullptr, 
-                                                    const Dictionary& component_overrides = Dictionary(), 
-                                                    const Dictionary& general_overrides = Dictionary());
-    static void clear_all_godot_entities();
-    static int get_godot_entity_count();
+    // 模板管理方法
+    static void load_all_templates();
+    static void scan_directory_recursive(const String& path, const String& prefix = "");
+    static void analyze_all_templates();
+    static Dictionary load_schema_properties(const String& template_name);
+    
+
+    
+    // 实体生成和管理方法
+    static Node* spawn_entity(const String& template_name, Node* parent = nullptr, const Dictionary& overrides = Dictionary());
+    static Node* spawn_entity_with_ecs_override(const String& template_name, Node* parent = nullptr, 
+                                              const Dictionary& component_overrides = Dictionary(), 
+                                              const Dictionary& general_overrides = Dictionary());
+    static Array get_available_templates();
+    static bool has_template(const String& template_name);
+    static void clear_all_entities();
+    static int get_active_entity_count();
+    static Array get_active_entities();
+    static Array get_entities_by_template(const String& template_name);
+    static void destroy_entity(Node* entity);
+    
+    // 属性和模板信息方法
     static Dictionary get_template_properties(const String& template_path);
     static Dictionary get_all_template_properties();
+    
+    // Schema系统相关方法
+    bool load_template_schema(const String& template_name);
+    Dictionary get_schema_properties(const String& template_name);
+    Array get_schema_presets(const String& template_name);
+    Dictionary validate_property_overrides(const String& template_name, const Dictionary& overrides);
+    
+    // === 兼容性方法已移除，请使用新的实体管理方法 ===
+    
+  private:
+    // 内部辅助方法
+    static void apply_overrides(Node* instance, const Dictionary& overrides);
+    static void set_property_by_path(Node* root_node, const String& property_path, const Variant& value);
+    static Node* find_node_by_type(Node* root, const String& node_type);
+    static void set_simple_property(Node* node, const String& property_name, const Variant& value);
+    static Node* find_ecs_node(Node* root);
+    static void apply_ecs_component_overrides(Node* ecs_node, const Dictionary& component_overrides);
+    static void on_entity_destroyed(Node* entity, const String& template_name);
     
     // 信號：當 GameCore 初始化完成時發出
     void emit_core_initialized();

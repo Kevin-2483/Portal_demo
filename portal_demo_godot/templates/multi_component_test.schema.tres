@@ -1,6 +1,8 @@
-[gd_resource type="Resource" script_class="TemplateSchemaResource" load_steps=2 format=3 uid="uid://dua7bu3nhgv5a"]
+[gd_resource type="Resource" script_class="TemplateSchemaResource" load_steps=3 format=3 uid="uid://dl6e8le6lc6ht"]
 
-[ext_resource type="Script" uid="uid://b608t3ae0oceh" path="res://addons/template_schema_generator/template_schema_resource.gd" id="1_4murq"]
+[ext_resource type="Script" uid="uid://dt6sxwir5iybq" path="res://addons/ecs_editor_plugin/template_schema_resource.gd" id="1_4murq"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_test123"]
 
 [resource]
 script = ExtResource("1_4murq")
@@ -8,28 +10,457 @@ template_path = "res://templates/multi_component_test.tscn"
 template_name = "multi_component_test"
 description = "Auto-generated schema for multi_component_test"
 version = "1.0"
-created_time = "2025-09-13T18:03:48"
+created_time = "2025-09-14T13:01:56"
 root_node_properties = {
-"position": {
-"category": "Transform",
-"default_value": Vector3(0, 2, 0),
-"description": "Basic transform property: position",
-"type": 9,
-"type_name": "Vector3"
+"MultiComponentTest/MeshInstance3D.auto_translate_mode": {
+"category": "Native",
+"default_value": 0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 2,
+"type_name": "int"
 },
-"rotation": {
-"category": "Transform",
-"default_value": Vector3(0, 0, 0),
-"description": "Basic transform property: rotation",
-"type": 9,
-"type_name": "Vector3"
+"MultiComponentTest/MeshInstance3D.cast_shadow": {
+"category": "Native",
+"default_value": 1,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 2,
+"type_name": "int"
 },
-"scale": {
-"category": "Transform",
-"default_value": Vector3(1, 1, 1),
-"description": "Basic transform property: scale",
-"type": 9,
-"type_name": "Vector3"
+"MultiComponentTest/MeshInstance3D.custom_aabb": {
+"category": "Native",
+"default_value": AABB(0, 0, 0, 0, 0, 0),
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 16,
+"type_name": "Variant"
+},
+"MultiComponentTest/MeshInstance3D.editor_description": {
+"category": "Native",
+"default_value": "",
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 4,
+"type_name": "String"
+},
+"MultiComponentTest/MeshInstance3D.extra_cull_margin": {
+"category": "Native",
+"default_value": 0.0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 3,
+"type_name": "float"
+},
+"MultiComponentTest/MeshInstance3D.gi_lightmap_texel_scale": {
+"category": "Native",
+"default_value": 1.0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 3,
+"type_name": "float"
+},
+"MultiComponentTest/MeshInstance3D.gi_mode": {
+"category": "Native",
+"default_value": 1,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 2,
+"type_name": "int"
+},
+"MultiComponentTest/MeshInstance3D.ignore_occlusion_culling": {
+"category": "Native",
+"default_value": false,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 1,
+"type_name": "bool"
+},
+"MultiComponentTest/MeshInstance3D.layers": {
+"category": "Native",
+"default_value": 1,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 2,
+"type_name": "int"
+},
+"MultiComponentTest/MeshInstance3D.lod_bias": {
+"category": "Native",
+"default_value": 1.0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 3,
+"type_name": "float"
+},
+"MultiComponentTest/MeshInstance3D.material_overlay": {
+"category": "Native",
+"default_value": null,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 24,
+"type_name": "Object"
+},
+"MultiComponentTest/MeshInstance3D.material_override": {
+"category": "Native",
+"default_value": null,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 24,
+"type_name": "Object"
+},
+"MultiComponentTest/MeshInstance3D.mesh": {
+"category": "Native",
+"default_value": SubResource("BoxMesh_test123"),
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 24,
+"type_name": "Object"
+},
+"MultiComponentTest/MeshInstance3D.physics_interpolation_mode": {
+"category": "Native",
+"default_value": 0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 2,
+"type_name": "int"
+},
+"MultiComponentTest/MeshInstance3D.process_mode": {
+"category": "Native",
+"default_value": 0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 2,
+"type_name": "int"
+},
+"MultiComponentTest/MeshInstance3D.process_physics_priority": {
+"category": "Native",
+"default_value": 0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 2,
+"type_name": "int"
+},
+"MultiComponentTest/MeshInstance3D.process_priority": {
+"category": "Native",
+"default_value": 0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 2,
+"type_name": "int"
+},
+"MultiComponentTest/MeshInstance3D.process_thread_group": {
+"category": "Native",
+"default_value": 0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 2,
+"type_name": "int"
+},
+"MultiComponentTest/MeshInstance3D.rotation_edit_mode": {
+"category": "Native",
+"default_value": 0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 2,
+"type_name": "int"
+},
+"MultiComponentTest/MeshInstance3D.rotation_order": {
+"category": "Native",
+"default_value": 2,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 2,
+"type_name": "int"
+},
+"MultiComponentTest/MeshInstance3D.skeleton": {
+"category": "Native",
+"default_value": NodePath(".."),
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 22,
+"type_name": "Variant"
+},
+"MultiComponentTest/MeshInstance3D.skin": {
+"category": "Native",
+"default_value": null,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 24,
+"type_name": "Object"
+},
+"MultiComponentTest/MeshInstance3D.sorting_offset": {
+"category": "Native",
+"default_value": 0.0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 3,
+"type_name": "float"
+},
+"MultiComponentTest/MeshInstance3D.sorting_use_aabb_center": {
+"category": "Native",
+"default_value": true,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 1,
+"type_name": "bool"
+},
+"MultiComponentTest/MeshInstance3D.surface_material_override/0": {
+"category": "Native",
+"default_value": null,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 24,
+"type_name": "Object"
+},
+"MultiComponentTest/MeshInstance3D.top_level": {
+"category": "Native",
+"default_value": false,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 1,
+"type_name": "bool"
+},
+"MultiComponentTest/MeshInstance3D.transform": {
+"category": "Native",
+"default_value": Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0),
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 18,
+"type_name": "Transform3D"
+},
+"MultiComponentTest/MeshInstance3D.transparency": {
+"category": "Native",
+"default_value": 0.0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 3,
+"type_name": "float"
+},
+"MultiComponentTest/MeshInstance3D.unique_name_in_owner": {
+"category": "Native",
+"default_value": false,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 1,
+"type_name": "bool"
+},
+"MultiComponentTest/MeshInstance3D.visibility_parent": {
+"category": "Native",
+"default_value": NodePath(""),
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 22,
+"type_name": "Variant"
+},
+"MultiComponentTest/MeshInstance3D.visibility_range_begin": {
+"category": "Native",
+"default_value": 0.0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 3,
+"type_name": "float"
+},
+"MultiComponentTest/MeshInstance3D.visibility_range_begin_margin": {
+"category": "Native",
+"default_value": 0.0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 3,
+"type_name": "float"
+},
+"MultiComponentTest/MeshInstance3D.visibility_range_end": {
+"category": "Native",
+"default_value": 0.0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 3,
+"type_name": "float"
+},
+"MultiComponentTest/MeshInstance3D.visibility_range_end_margin": {
+"category": "Native",
+"default_value": 0.0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 3,
+"type_name": "float"
+},
+"MultiComponentTest/MeshInstance3D.visibility_range_fade_mode": {
+"category": "Native",
+"default_value": 0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 2,
+"type_name": "int"
+},
+"MultiComponentTest/MeshInstance3D.visible": {
+"category": "Native",
+"default_value": true,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "MultiComponentTest/MeshInstance3D",
+"type": 1,
+"type_name": "bool"
+},
+"auto_translate_mode": {
+"category": "Native",
+"default_value": 0,
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 2,
+"type_name": "int"
+},
+"editor_description": {
+"category": "Native",
+"default_value": "",
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 4,
+"type_name": "String"
+},
+"physics_interpolation_mode": {
+"category": "Native",
+"default_value": 0,
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 2,
+"type_name": "int"
+},
+"process_mode": {
+"category": "Native",
+"default_value": 0,
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 2,
+"type_name": "int"
+},
+"process_physics_priority": {
+"category": "Native",
+"default_value": 0,
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 2,
+"type_name": "int"
+},
+"process_priority": {
+"category": "Native",
+"default_value": 0,
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 2,
+"type_name": "int"
+},
+"process_thread_group": {
+"category": "Native",
+"default_value": 0,
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 2,
+"type_name": "int"
+},
+"rotation_edit_mode": {
+"category": "Native",
+"default_value": 0,
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 2,
+"type_name": "int"
+},
+"rotation_order": {
+"category": "Native",
+"default_value": 2,
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 2,
+"type_name": "int"
+},
+"top_level": {
+"category": "Native",
+"default_value": false,
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 1,
+"type_name": "bool"
+},
+"transform": {
+"category": "Native",
+"default_value": Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0),
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 18,
+"type_name": "Transform3D"
+},
+"unique_name_in_owner": {
+"category": "Native",
+"default_value": false,
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 1,
+"type_name": "bool"
+},
+"visibility_parent": {
+"category": "Native",
+"default_value": NodePath(""),
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 22,
+"type_name": "Variant"
+},
+"visible": {
+"category": "Native",
+"default_value": true,
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 1,
+"type_name": "bool"
 }
 }
 ecs_component_properties = {
@@ -301,12 +732,6 @@ ecs_component_properties = {
 }
 }
 }
-presets = Array[Dictionary]([{
-"component_overrides": {},
-"created_time": "2025-09-13T18:03:48",
-"description": "Default template configuration",
-"name": "Default",
-"root_overrides": {}
-}])
+presets = Array[Dictionary]([])
 tags = Array[String]([])
 category = ""
