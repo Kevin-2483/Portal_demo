@@ -39,6 +39,17 @@ void ECSNode::_bind_methods()
   ClassDB::bind_method(D_METHOD("is_entity_created"), &ECSNode::is_entity_created);     // 新增
   ClassDB::bind_method(D_METHOD("reload_from_scene"), &ECSNode::reload_from_scene);         // 新增
   ClassDB::bind_method(D_METHOD("force_recreate_entity"), &ECSNode::force_recreate_entity); // 新增
+  
+  // === 简化的组件管理API绑定 ===
+  ClassDB::bind_method(D_METHOD("has_godot_component", "component_class"), &ECSNode::has_godot_component);
+  ClassDB::bind_method(D_METHOD("add_godot_component", "component_resource"), &ECSNode::add_godot_component);
+  ClassDB::bind_method(D_METHOD("remove_godot_component", "component_class"), &ECSNode::remove_godot_component);
+  
+  // === 实体ID访问绑定 ===
+  ClassDB::bind_method(D_METHOD("get_entity_id"), &ECSNode::get_entity_id);
+  
+  // === 实体销毁回调绑定 ===
+  // 注意：_on_entity_destroyed方法不绑定到Godot，因为entt::entity类型不被支持
 
   // 添加編輯器通知支持
   ClassDB::bind_method(D_METHOD("_notification", "what"), &ECSNode::_notification);
@@ -328,6 +339,16 @@ void ECSNode::create_ecs_entity()
 
   // 應用設計師配置的組件
   apply_components_to_entity();
+  
+  // 建立双向链接
+  auto* manager = get_game_core_manager_efficient();
+  if (manager) {
+    auto* link_manager = manager->get_link_manager();
+    if (link_manager) {
+      link_manager->create_link((uint32_t)entity, this, "ECSNode");
+      UtilityFunctions::print("[ECSNode] Established bidirectional link for entity ", (uint32_t)entity);
+    }
+  }
 }
 
 void ECSNode::destroy_ecs_entity()
@@ -337,6 +358,16 @@ void ECSNode::destroy_ecs_entity()
     return;
   }
 
+  // 清理双向链接
+  auto* manager = get_game_core_manager_efficient();
+  if (manager) {
+    auto* link_manager = manager->get_link_manager();
+    if (link_manager) {
+      link_manager->remove_link_by_entity((uint32_t)entity, false);
+      UtilityFunctions::print("[ECSNode] Cleared bidirectional link for entity ", (uint32_t)entity);
+    }
+  }
+  
   auto game_world = godot::GameCoreManager::get_game_world();
   if (game_world)
   {
@@ -519,7 +550,15 @@ void ECSNode::disconnect_resource_signals()
 
 void ECSNode::_on_resource_changed()
 {
-  UtilityFunctions::print("ECSNode: Resource changed - updating components");
+  // 检查是否在编辑器模式，如果不是则直接返回，避免不必要的重建
+  if (!Engine::get_singleton()->is_editor_hint())
+  {
+    UtilityFunctions::print("ECSNode: Not in editor mode, skipping resource change handling");
+    return;
+  }
+  
+  UtilityFunctions::print("ECSNode: Resource changed in editor mode");
+  
   if (entity_created && is_inside_tree())
   {
     _update_ecs_components();
@@ -1010,4 +1049,131 @@ bool ECSNode::force_recreate_entity()
     UtilityFunctions::print("ECSNode: Failed to recreate entity");
     return false;
   }
+}
+
+// === 简化的Godot组件管理API实现 ===
+bool ECSNode::has_godot_component(const String& component_class) const
+{
+  for (int i = 0; i < components.size(); i++)
+  {
+    Resource *res = Object::cast_to<Resource>(components[i]);
+    if (res && res->get_class() == component_class)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ECSNode::add_godot_component(Resource* component_resource)
+{
+  if (!component_resource)
+  {
+    UtilityFunctions::print("ECSNode: Cannot add null component");
+    return false;
+  }
+  
+  String component_class = component_resource->get_class();
+  
+  // 检查是否已存在该类型的组件
+  if (has_godot_component(component_class))
+  {
+    UtilityFunctions::print("ECSNode: Component already exists: ", component_class);
+    return false;
+  }
+  
+  // 添加组件到数组
+  components.append(component_resource);
+  
+  // 如果实体已创建，立即应用到ECS（但不重新连接信号，避免触发重建）
+  if (is_entity_created())
+  {
+    // 直接连接新组件的信号，避免调用_update_ecs_components导致完全重建
+    Ref<Resource> resource = component_resource;
+    if (resource.is_valid() && !resource->is_connected("changed", Callable(this, "_on_resource_changed")))
+    {
+      resource->connect("changed", Callable(this, "_on_resource_changed"));
+    }
+    
+    // 重新应用所有组件到实体
+    apply_components_to_entity();
+  }
+  
+  UtilityFunctions::print("ECSNode: Added component: ", component_class);
+  return true;
+}
+
+bool ECSNode::remove_godot_component(const String& component_class)
+{
+  // 查找并移除指定类型的组件
+  for (int i = 0; i < components.size(); i++)
+  {
+    Resource *res = Object::cast_to<Resource>(components[i]);
+    if (res && res->get_class() == component_class)
+    {
+      // 先断开信号连接
+      Ref<Resource> resource = res;
+      if (resource.is_valid() && resource->is_connected("changed", Callable(this, "_on_resource_changed")))
+      {
+        resource->disconnect("changed", Callable(this, "_on_resource_changed"));
+      }
+      
+      // 如果实体已创建，先从ECS中移除该组件
+      if (is_entity_created())
+      {
+        auto game_world = godot::GameCoreManager::get_game_world();
+        if (game_world)
+        {
+          auto &registry = game_world->get_registry();
+          Ref<ECSComponentResource> ecs_resource = Object::cast_to<ECSComponentResource>(resource.ptr());
+          if (ecs_resource.is_valid())
+          {
+            ecs_resource->remove_from_entity(registry, entity);
+            UtilityFunctions::print("ECSNode: Removed ECS component: ", ecs_resource->get_component_type_name());
+          }
+        }
+      }
+      
+      components.remove_at(i);
+      
+      UtilityFunctions::print("ECSNode: Removed component: ", component_class);
+      return true;
+    }
+  }
+  
+  UtilityFunctions::print("ECSNode: Component not found: ", component_class);
+  return false;
+}
+
+// === 实体销毁回调实现 ===
+void ECSNode::_on_entity_destroyed(entt::entity destroyed_entity, uint64_t godot_node_id)
+{
+  if (entity == destroyed_entity)
+  {
+    UtilityFunctions::print("ECSNode: Our entity was destroyed from ECS system - cleaning up nodes");
+    
+    // 标记实体已被销毁
+    entity_created = false;
+    entity = entt::null;
+    
+    // 销毁目标节点及其子节点
+    Node* target_node = get_effective_target_node();
+    if (target_node && target_node != this)
+    {
+      UtilityFunctions::print("ECSNode: Destroying target node: ", target_node->get_name());
+      target_node->queue_free();
+    }
+    
+    // 销毁ECSNode自身
+    UtilityFunctions::print("ECSNode: Destroying ECSNode itself");
+    queue_free();
+  }
+}
+
+// === 实体ID访问实现 ===
+uint32_t ECSNode::get_entity_id() const
+{
+	// 返回ECS实体ID，用于双向链接
+	// 使用entt::to_integral确保保留版本信息，避免ABA问题
+	return entt::to_integral(entity);
 }

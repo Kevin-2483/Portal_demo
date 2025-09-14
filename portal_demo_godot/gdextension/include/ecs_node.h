@@ -86,4 +86,17 @@ private:
   bool is_entity_created() const;       // 新增：检查实体是否已创建
   bool reload_from_scene();             // 新增：从场景重新加载状态到ECS
   bool force_recreate_entity();         // 新增：强制重新创建实体
+  
+  // === 简化的组件管理API ===
+  bool has_godot_component(const String& component_class) const;
+  bool add_godot_component(Resource* component_resource);
+  bool remove_godot_component(const String& component_class);
+  
+  // === 实体ID访问 ===
+  uint32_t get_entity_id() const;  // 新增：获取ECS实体ID用于双向链接
+  
+private:
+  
+  // === 新增：实体销毁回调 ===
+  void _on_entity_destroyed(entt::entity destroyed_entity, uint64_t godot_node_id);
 };

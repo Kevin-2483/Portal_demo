@@ -9,6 +9,7 @@
 #include <godot_cpp/classes/resource_loader.hpp>
 #include <godot_cpp/classes/packed_scene.hpp>
 #include <godot_cpp/classes/dir_access.hpp>
+#include "ecs_entity_link_manager.h"
 
 // 模板路径常量
 const char *TEMPLATES_PATH = "res://templates";
@@ -96,6 +97,10 @@ void GameCoreManager::_bind_methods()
   ADD_SIGNAL(MethodInfo("templates_loaded"));
   ADD_SIGNAL(MethodInfo("entity_spawned", PropertyInfo(Variant::OBJECT, "entity"), PropertyInfo(Variant::STRING, "template_name")));
   ADD_SIGNAL(MethodInfo("entity_destroyed", PropertyInfo(Variant::OBJECT, "entity"), PropertyInfo(Variant::STRING, "template_name")));
+  
+  // 绑定双向链接管理方法
+  ClassDB::bind_static_method("GameCoreManager", D_METHOD("get_link_manager"), &GameCoreManager::get_link_manager);
+  ClassDB::bind_static_method("GameCoreManager", D_METHOD("setup_entity_destroy_callbacks"), &GameCoreManager::setup_entity_destroy_callbacks);
 }
 
 // 構造函數：當節點被創建時調用
@@ -254,6 +259,9 @@ void GameCoreManager::initialize_core()
     {
       load_all_templates();
     }
+    
+    // 设置ECS实体销毁回调
+    setup_entity_destroy_callbacks();
 
     // 發出初始化完成信號
     emit_signal("core_initialized");
@@ -593,6 +601,20 @@ Node *GameCoreManager::spawn_entity(const String &template_name, Node *parent, c
   // 记录活跃实体
   active_entities_[instance] = template_key;
 
+  // 查找ECSNode并建立双向链接
+  Node *ecs_node = find_ecs_node(instance);
+  if (ecs_node) {
+    // 获取ECS实体ID（假设ECSNode有get_entity_id方法）
+    Variant entity_id_var = ecs_node->call("get_entity_id");
+    if (entity_id_var.get_type() == Variant::INT) {
+      uint32_t entity_id = entity_id_var;
+      if (entity_id != 0) {
+        ECSEntityLinkManager::get_instance()->create_link(entity_id, instance, template_name);
+        UtilityFunctions::print("[GameCoreManager] Created bidirectional link for entity ", entity_id, " <-> node ", instance->get_name());
+      }
+    }
+  }
+
   // 连接销毁信号以便清理
   if (instance->has_signal("tree_exited"))
   {
@@ -659,6 +681,19 @@ Node *GameCoreManager::spawn_entity_with_ecs_override(const String &template_nam
 
   parent->add_child(instance);
   active_entities_[instance] = template_key;
+
+  // 建立双向链接（ECSNode已经在前面找到了）
+  if (ecs_node) {
+    // 获取ECS实体ID
+    Variant entity_id_var = ecs_node->call("get_entity_id");
+    if (entity_id_var.get_type() == Variant::INT) {
+      uint32_t entity_id = entity_id_var;
+      if (entity_id != 0) {
+        ECSEntityLinkManager::get_instance()->create_link(entity_id, instance, template_name);
+        UtilityFunctions::print("[GameCoreManager] Created bidirectional link for ECS entity ", entity_id, " <-> node ", instance->get_name());
+      }
+    }
+  }
 
   if (instance->has_signal("tree_exited"))
   {
@@ -1173,4 +1208,57 @@ Dictionary GameCoreManager::validate_property_overrides(const String &template_n
   result["valid"] = all_valid;
   result["errors"] = errors;
   return result;
+}
+
+// === 双向链接管理方法实现 ===
+
+ECSEntityLinkManager* GameCoreManager::get_link_manager() {
+    return ECSEntityLinkManager::get_instance();
+}
+
+void GameCoreManager::setup_entity_destroy_callbacks() {
+    auto* link_manager = get_link_manager();
+    if (!link_manager) {
+        UtilityFunctions::print("[GameCoreManager] Warning: Link manager not available");
+        return;
+    }
+    
+    // 注册ECS实体销毁回调
+    link_manager->register_entity_destroy_callback([](uint32_t entity_id, Node* linked_node) {
+        UtilityFunctions::print("[GameCoreManager] ECS entity ", entity_id, " destroyed, processing linked node");
+        
+        // 如果有链接的Godot节点，从active_entities_中移除
+        if (linked_node) {
+            auto it = active_entities_.find(linked_node);
+            if (it != active_entities_.end()) {
+                String template_name = String(it->second.c_str());
+                active_entities_.erase(it);
+                
+                // 发出实体销毁信号
+                if (auto* manager_instance = get_editor_instance()) {
+                    manager_instance->emit_signal("entity_destroyed", linked_node, template_name);
+                }
+                
+                UtilityFunctions::print("[GameCoreManager] Removed entity from active list: ", template_name);
+            }
+        }
+    });
+    
+    // 注册Godot节点销毁回调
+    link_manager->register_node_destroy_callback([](uint32_t entity_id, Node* destroyed_node) {
+        UtilityFunctions::print("[GameCoreManager] Godot node destroyed, processing linked ECS entity ", entity_id);
+        
+        // 从active_entities_中移除
+        if (destroyed_node) {
+            auto it = active_entities_.find(destroyed_node);
+            if (it != active_entities_.end()) {
+                String template_name = String(it->second.c_str());
+                active_entities_.erase(it);
+                
+                UtilityFunctions::print("[GameCoreManager] Removed destroyed node from active list: ", template_name);
+            }
+        }
+    });
+    
+    UtilityFunctions::print("[GameCoreManager] Entity destroy callbacks setup completed");
 }

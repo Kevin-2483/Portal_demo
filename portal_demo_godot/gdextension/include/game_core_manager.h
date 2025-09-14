@@ -8,6 +8,7 @@
 #include <godot_cpp/classes/dir_access.hpp>
 #include <unordered_map>
 #include <string>
+#include "ecs_entity_link_manager.h"
 
 // 前向聲明
 namespace portal_core
@@ -96,6 +97,18 @@ namespace godot
     static Dictionary load_schema_properties(const String& template_name);
     
 
+    
+    // === 双向链接管理方法 ===
+    
+    /**
+     * 获取ECS实体链接管理器实例
+     */
+    static ECSEntityLinkManager* get_link_manager();
+    
+    /**
+     * 注册ECS实体销毁回调到链接管理器
+     */
+    static void setup_entity_destroy_callbacks();
     
     // 实体生成和管理方法
     static Node* spawn_entity(const String& template_name, Node* parent = nullptr, const Dictionary& overrides = Dictionary());
