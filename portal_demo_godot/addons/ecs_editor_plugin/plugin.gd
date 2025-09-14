@@ -29,6 +29,7 @@ func _enter_tree():
 	# 创建并添加 dock
 	dock_instance = ECSDock.new()
 	dock_instance.instance_manager = instance_manager
+	dock_instance.editor_plugin = self  # 传递插件引用
 	add_control_to_dock(DOCK_SLOT_LEFT_UL, dock_instance)
 	
 	# 🆕 初始化预设功能

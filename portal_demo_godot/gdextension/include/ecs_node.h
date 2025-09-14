@@ -84,4 +84,6 @@ private:
   
   // 公开方法
   bool is_entity_created() const;       // 新增：检查实体是否已创建
+  bool reload_from_scene();             // 新增：从场景重新加载状态到ECS
+  bool force_recreate_entity();         // 新增：强制重新创建实体
 };

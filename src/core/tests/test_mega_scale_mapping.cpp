@@ -12,7 +12,10 @@
 #include <unordered_map>
 #include <algorithm>
 #include <thread>
+#include <memory> // For std::unique_ptr
 
+// 假设这些头文件和命名空间存在
+// #include "path/to/your/files.h"
 using namespace portal_core;
 
 /**
@@ -22,6 +25,12 @@ using namespace portal_core;
 class MegaScaleMappingTest {
 public:
     MegaScaleMappingTest() : event_manager_(registry_) {}
+
+    // 【修改点 1/5】添加析构函数，保证在对象销毁时安全清理
+    ~MegaScaleMappingTest() {
+        std::cout << "\nCleaning up test systems in destructor..." << std::endl;
+        cleanup_systems();
+    }
 
     bool run_mega_scale_tests() {
         std::cout << "=== Mega Scale Dual Mapping Performance Tests ===" << std::endl;
@@ -38,10 +47,11 @@ public:
         all_passed &= test_mega_scale_performance();
         all_passed &= test_removal_pattern_analysis();
 
-        cleanup_systems();
+        // 【说明】这里的 cleanup_systems() 调用是可选的，因为析构函数会确保最终清理。
+        // cleanup_systems();
 
         std::cout << "\n=== Mega Scale Test Summary ===" << std::endl;
-        std::cout << (all_passed ? "✅ All mega scale tests passed!" : "❌ Some mega scale tests failed!") << std::endl;
+        // 注意：最后的总览信息会在 main 函数的末尾打印
         
         return all_passed;
     }
@@ -69,7 +79,7 @@ private:
             return false;
         }
 
-        adapter_->set_debug_mode(false);  // 关闭调试输出
+        adapter_->set_debug_mode(false); // 关闭调试输出
         std::cout << "✅ All systems initialized successfully" << std::endl;
         return true;
     }
@@ -77,75 +87,63 @@ private:
     void cleanup_systems() {
         if (adapter_) {
             adapter_->cleanup();
+            adapter_.reset(); // 释放 unique_ptr
         }
         if (physics_world_) {
             physics_world_->cleanup();
+            physics_world_.reset(); // 释放 unique_ptr
         }
     }
 
-    /**
-     * 超大规模性能测试
-     */
     bool test_mega_scale_performance() {
-        std::cout << "\n--- Test: Mega Scale Performance (1,000,000 entities) ---" << std::endl;
+        std::cout << "\n--- Test: Mega Scale Performance ---" << std::endl;
         
-        const size_t mega_entity_count = 200000;  // 20万实体（更合理的测试规模）
-        const size_t removal_sample_size = 50000;  // 移除5万实体作为样本
+        const size_t mega_entity_count = 200000;
+        const size_t removal_sample_size = 50000;
         
         std::cout << "Creating " << mega_entity_count << " entities..." << std::endl;
         
         auto creation_start = std::chrono::high_resolution_clock::now();
-        std::vector<entt::entity> entities = create_test_entities_fast(mega_entity_count);
+        auto entities_opt = create_test_entities_fast(mega_entity_count);
         auto creation_end = std::chrono::high_resolution_clock::now();
         
         double creation_time = std::chrono::duration<double, std::milli>(creation_end - creation_start).count();
         std::cout << "✅ Created " << mega_entity_count << " entities in " << creation_time << " ms" << std::endl;
         
-        // 测试优化版本的移除性能
         std::cout << "Testing optimized O(1) removal performance..." << std::endl;
-        auto optimized_time = test_optimized_mega_removal(entities, removal_sample_size);
-        
-        // 重新创建实体进行对比测试
+        auto optimized_time = test_optimized_mega_removal(entities_opt, removal_sample_size);
+        registry_.clear(); // 【修改点 2/5】测试后清理现场
+
         std::cout << "Recreating entities for legacy test..." << std::endl;
-        entities = create_test_entities_fast(mega_entity_count);
+        auto entities_leg = create_test_entities_fast(mega_entity_count);
         
-        // 测试遗留版本的移除性能
         std::cout << "Testing legacy O(n) removal performance..." << std::endl;
-        auto legacy_time = test_legacy_mega_removal(entities, removal_sample_size);
+        auto legacy_time = test_legacy_mega_removal(entities_leg, removal_sample_size);
+        registry_.clear(); // 【修改点 2/5】测试后清理现场
         
-        double improvement_ratio = legacy_time / optimized_time;
+        double improvement_ratio = (optimized_time > 0) ? (legacy_time / optimized_time) : 0;
         
         std::cout << "\n=== Large Scale Performance Results ===" << std::endl;
-        std::cout << "Entity Count: 200,000" << std::endl;
+        std::cout << "Entity Count: " << mega_entity_count << std::endl;
         std::cout << "Removal Sample: " << removal_sample_size << " entities" << std::endl;
         std::cout << "Optimized (O(1)): " << optimized_time << " ms" << std::endl;
         std::cout << "Legacy (O(n)): " << legacy_time << " ms" << std::endl;
         std::cout << "Improvement: " << improvement_ratio << "x faster" << std::endl;
-        std::cout << "Time saved: " << (legacy_time - optimized_time) << " ms" << std::endl;
         
-        if (improvement_ratio > 10.0) {
-            std::cout << "✅ EXCELLENT: Massive performance improvement!" << std::endl;
-        } else if (improvement_ratio > 5.0) {
-            std::cout << "✅ GREAT: Significant performance improvement!" << std::endl;
-        } else if (improvement_ratio > 2.0) {
-            std::cout << "✅ GOOD: Noticeable performance improvement!" << std::endl;
-        } else if (improvement_ratio > 1.0) {
-            std::cout << "✓ MODEST: Some performance improvement" << std::endl;
+        if (improvement_ratio > 1.0) {
+             std::cout << "✅ GOOD: Performance improvement detected!" << std::endl;
         } else {
-            std::cout << "⚠️  WARNING: Performance regression detected!" << std::endl;
+             std::cout << "⚠️ WARNING: Performance regression or no improvement." << std::endl;
         }
         
         return improvement_ratio > 1.0;
     }
 
-    /**
-     * 移除模式分析测试
-     */
     bool test_removal_pattern_analysis() {
         std::cout << "\n--- Test: Removal Pattern Analysis ---" << std::endl;
         
-        const size_t entity_count = 500000;  // 50万实体
-        const std::vector<double> removal_percentages = {0.01, 0.05, 0.1, 0.2, 0.5};  // 1%, 5%, 10%, 20%, 50%
+        const size_t entity_count = 500000;
+        const std::vector<double> removal_percentages = {0.01, 0.05, 0.1, 0.2, 0.5};
         
         std::cout << "Testing different removal patterns with " << entity_count << " entities" << std::endl;
         
@@ -154,42 +152,36 @@ private:
             
             std::cout << "\nTesting " << (removal_pct * 100) << "% removal (" << removal_count << " entities):" << std::endl;
             
-            // 测试优化版本
-            auto entities = create_test_entities_fast(entity_count);
-            auto optimized_time = test_optimized_mega_removal(entities, removal_count);
+            auto entities_opt = create_test_entities_fast(entity_count);
+            auto optimized_time = test_optimized_mega_removal(entities_opt, removal_count);
+            registry_.clear(); // 【修改点 3/5】每次迭代后清理，防止内存无限增长
             
-            // 测试遗留版本
-            entities = create_test_entities_fast(entity_count);
-            auto legacy_time = test_legacy_mega_removal(entities, removal_count);
+            auto entities_leg = create_test_entities_fast(entity_count);
+            auto legacy_time = test_legacy_mega_removal(entities_leg, removal_count);
+            registry_.clear(); // 【修改点 3/5】每次迭代后清理
             
-            double improvement = legacy_time / optimized_time;
+            double improvement = (optimized_time > 0) ? (legacy_time / optimized_time) : 0;
             
             std::cout << "  Optimized: " << optimized_time << " ms" << std::endl;
             std::cout << "  Legacy: " << legacy_time << " ms" << std::endl;
             std::cout << "  Improvement: " << improvement << "x" << std::endl;
-            
-            if (improvement > 1.0) {
-                std::cout << "  ✅ Performance gain achieved!" << std::endl;
-            } else {
-                std::cout << "  ⚠️  No performance gain" << std::endl;
-            }
         }
         
         return true;
     }
 
     double test_optimized_mega_removal(std::vector<entt::entity>& entities, size_t removal_count) {
-        // 随机选择要移除的实体
         std::random_device rd;
         std::mt19937 gen(rd());
         std::shuffle(entities.begin(), entities.end(), gen);
         
         auto start_time = std::chrono::high_resolution_clock::now();
         
-        // 移除指定数量的实体（使用优化的O(1)实现）
-        for (size_t i = 0; i < removal_count && i < entities.size(); ++i) {
+        // 确保不会移除超出范围的实体
+        size_t count = std::min(removal_count, entities.size());
+        for (size_t i = 0; i < count; ++i) {
             if (registry_.valid(entities[i])) {
-                registry_.destroy(entities[i]);  // 触发优化的组件移除监听器
+                registry_.destroy(entities[i]);
             }
         }
         
@@ -198,7 +190,6 @@ private:
     }
 
     double test_legacy_mega_removal(std::vector<entt::entity>& entities, size_t removal_count) {
-        // 构建完整的映射（模拟实际场景）
         std::unordered_map<uint32_t, entt::entity> legacy_mapping;
         for (auto entity : entities) {
             if (registry_.all_of<PhysicsBodyComponent>(entity)) {
@@ -210,20 +201,18 @@ private:
             }
         }
         
-        // 随机选择要移除的实体
         std::random_device rd;
         std::mt19937 gen(rd());
         std::shuffle(entities.begin(), entities.end(), gen);
         
         auto start_time = std::chrono::high_resolution_clock::now();
         
-        // 模拟遗留版本的O(n)移除过程
-        for (size_t i = 0; i < removal_count && i < entities.size(); ++i) {
+        size_t count = std::min(removal_count, entities.size());
+        for (size_t i = 0; i < count; ++i) {
             auto entity = entities[i];
             if (registry_.valid(entity)) {
-                // 模拟O(n)查找和移除
                 auto it = std::find_if(legacy_mapping.begin(), legacy_mapping.end(),
-                    [entity](const std::pair<uint32_t, entt::entity>& pair) {
+                    [entity](const auto& pair) {
                         return pair.second == entity;
                     });
                 
@@ -239,21 +228,22 @@ private:
         return std::chrono::duration<double, std::milli>(end_time - start_time).count();
     }
 
-    // 快速实体创建（减少创建时间的干扰）
     std::vector<entt::entity> create_test_entities_fast(size_t count) {
         std::vector<entt::entity> entities;
         entities.reserve(count);
         
-        // 批量创建实体，减少随机数生成开销
         for (size_t i = 0; i < count; ++i) {
             auto entity = registry_.create();
             entities.push_back(entity);
             
             auto& physics_comp = registry_.emplace<PhysicsBodyComponent>(entity);
-            physics_comp.body_id = JPH::BodyID();  // 使用默认构造
+            
+            // 【修改点 4/5】为测试分配一个唯一的、有效的 BodyID
+            // 对于独立的映射测试，使用简单的计数器作为ID是完全有效的
+            physics_comp.body_id = JPH::BodyID(static_cast<uint32_t>(i));
+            
             physics_comp.body_type = (i % 2 == 0) ? PhysicsBodyType::DYNAMIC : PhysicsBodyType::STATIC;
             
-            // 只在必要时添加Transform组件
             if (i % 10 == 0) {
                 registry_.emplace<TransformComponent>(entity);
             }
@@ -269,11 +259,13 @@ int main() {
         std::cout << "WARNING: This test will use significant memory and CPU time!" << std::endl;
         std::cout << "Press Ctrl+C to cancel if needed..." << std::endl;
         
-        // 给用户一些时间来取消
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+        std::this_thread::sleep_for(std::chrono::seconds(2));
         
-        MegaScaleMappingTest test;
-        bool success = test.run_mega_scale_tests();
+        bool success = false;
+        { // 【修改点 5/5】将 test 对象放在独立作用域中，确保它在 main 结束前被完全析构
+            MegaScaleMappingTest test;
+            success = test.run_mega_scale_tests();
+        }
         
         std::cout << "\n" << (success ? "✅ All mega scale tests passed!" : "❌ Some mega scale tests failed!") << std::endl;
         return success ? 0 : 1;

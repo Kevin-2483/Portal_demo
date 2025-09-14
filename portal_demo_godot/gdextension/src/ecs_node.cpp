@@ -37,6 +37,8 @@ void ECSNode::_bind_methods()
   ClassDB::bind_method(D_METHOD("_on_reset_ecs_nodes"), &ECSNode::_on_reset_ecs_nodes); // 新增
   ClassDB::bind_method(D_METHOD("_on_clear_ecs_nodes"), &ECSNode::_on_clear_ecs_nodes); // 新增
   ClassDB::bind_method(D_METHOD("is_entity_created"), &ECSNode::is_entity_created);     // 新增
+  ClassDB::bind_method(D_METHOD("reload_from_scene"), &ECSNode::reload_from_scene);         // 新增
+  ClassDB::bind_method(D_METHOD("force_recreate_entity"), &ECSNode::force_recreate_entity); // 新增
 
   // 添加編輯器通知支持
   ClassDB::bind_method(D_METHOD("_notification", "what"), &ECSNode::_notification);
@@ -907,6 +909,105 @@ Node *ECSNode::get_effective_target_node()
     return parent_node; // 修改：直接返回父節點，不再限制為 Node3D
   }
 
-  // 如果既沒有有效的 target_node_path，也沒有父節點，則返回 nullptr
   return nullptr;
+}
+
+// 新增：从场景重新加载状态到ECS
+bool ECSNode::reload_from_scene()
+{
+  UtilityFunctions::print("ECSNode: reload_from_scene called for: ", get_path());
+  
+  if (!entity_created)
+  {
+    UtilityFunctions::print("ECSNode: No entity created yet, cannot reload");
+    return false;
+  }
+
+  if (!is_game_core_ready())
+  {
+    UtilityFunctions::print("ECSNode: GameCore not ready, cannot reload");
+    return false;
+  }
+
+  // 获取游戏世界
+  auto game_world = godot::GameCoreManager::get_game_world();
+  if (!game_world)
+  {
+    UtilityFunctions::print("ECSNode: Cannot get PortalGameWorld instance");
+    return false;
+  }
+
+  auto &registry = game_world->get_registry();
+  
+  // 确保实体仍然有效
+  if (!registry.valid(entity))
+  {
+    UtilityFunctions::print("ECSNode: Entity is no longer valid, cannot reload");
+    return false;
+  }
+
+  // 重新读取目标节点的当前状态
+  Node *effective_target = get_effective_target_node();
+  if (!effective_target)
+  {
+    UtilityFunctions::print("ECSNode: No effective target node found");
+    return false;
+  }
+
+  // 更新变换组件（如果目标是Node3D）
+  Node3D *target_3d = Object::cast_to<Node3D>(effective_target);
+  if (target_3d && registry.any_of<portal_core::TransformComponent>(entity))
+  {
+    auto &transform_comp = registry.get<portal_core::TransformComponent>(entity);
+    
+    // 获取当前的Godot变换
+    Transform3D godot_transform = target_3d->get_global_transform();
+    Vector3 pos = godot_transform.get_origin();
+    Vector3 rot = godot_transform.get_basis().get_euler();
+    Vector3 scale = godot_transform.get_basis().get_scale();
+
+    // 更新ECS变换组件
+    transform_comp.position = portal_core::Vector3(pos.x, pos.y, pos.z);
+    transform_comp.rotation = portal_core::Quaternion::sEulerAngles(portal_core::Vector3(rot.x, rot.y, rot.z));
+    // 注意：如果ECS TransformComponent支持scale，也可以在这里设置
+
+    UtilityFunctions::print("ECSNode: Updated transform from Godot - Position: (", pos.x, ", ", pos.y, ", ", pos.z, ")");
+  }
+
+  // 重新应用所有组件（确保组件状态同步）
+  apply_components_to_entity();
+  
+  UtilityFunctions::print("ECSNode: Successfully reloaded from scene");
+  return true;
+}
+
+// 新增：强制重新创建实体
+bool ECSNode::force_recreate_entity()
+{
+  UtilityFunctions::print("ECSNode: force_recreate_entity called for: ", get_path());
+  
+  if (!is_game_core_ready())
+  {
+    UtilityFunctions::print("ECSNode: GameCore not ready, cannot recreate entity");
+    return false;
+  }
+
+  // 销毁现有实体
+  destroy_ecs_entity();
+
+  // 重新创建实体
+  create_ecs_entity();
+
+  // 应用组件
+  if (entity_created)
+  {
+    apply_components_to_entity();
+    UtilityFunctions::print("ECSNode: Successfully recreated entity");
+    return true;
+  }
+  else
+  {
+    UtilityFunctions::print("ECSNode: Failed to recreate entity");
+    return false;
+  }
 }

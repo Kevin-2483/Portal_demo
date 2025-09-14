@@ -1,0 +1,25 @@
+[gd_scene load_steps=2 format=3 uid="uid://btest_native_props"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_native"]
+
+[node name="NativeNodeTest" type="Node3D"]
+position = Vector3(5, 10, -2)
+rotation = Vector3(0.5, 1.0, 0)
+scale = Vector3(2, 2, 2)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_native")
+cast_shadow = 2
+visibility_range_begin = 5.0
+visibility_range_end = 100.0
+
+[node name="Light3D" type="DirectionalLight3D" parent="."]
+light_energy = 1.5
+light_color = Color(0.8, 0.9, 1, 1)
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 5, 5)
+fov = 60.0
+near = 0.1
+far = 200.0

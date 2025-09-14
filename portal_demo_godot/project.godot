@@ -18,6 +18,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 GameCore="*res://GameCore.tscn"
+EntityManager="*res://EntityManager.gd"
 
 [editor]
 
@@ -26,4 +27,4 @@ movie_writer/fps=24
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/ecs_editor_plugin/plugin.cfg")
+enabled=PackedStringArray("res://addons/ecs_editor_plugin/plugin.cfg", "res://addons/template_schema_generator/plugin.cfg")

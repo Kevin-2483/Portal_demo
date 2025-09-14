@@ -1,0 +1,27 @@
+[gd_scene load_steps=5 format=3 uid="uid://c5ijec5utkufc"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_test123"]
+
+[sub_resource type="PhysicsBodyComponentResource" id="PhysicsBodyComponentResource_test123"]
+body_type = 1
+shape_type = 0
+shape_size = Vector3(1.0, 1.0, 1.0)
+friction = 0.5
+restitution = 0.3
+density = 1000.0
+mass = 2.0
+
+[sub_resource type="YRotationComponentResource" id="YRotationComponentResource_test123"]
+speed = 2.0
+
+[sub_resource type="XRotationComponentResource" id="XRotationComponentResource_test123"]
+speed = 1.5
+
+[node name="MultiComponentTest" type="Node3D"]
+position = Vector3(0, 2, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_test123")
+
+[node name="ECSNode" type="ECSNode" parent="."]
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_test123"), SubResource("YRotationComponentResource_test123"), SubResource("XRotationComponentResource_test123")])

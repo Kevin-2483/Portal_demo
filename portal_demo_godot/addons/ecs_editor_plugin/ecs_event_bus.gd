@@ -143,28 +143,76 @@ func clear_all_ecs_nodes():
 	
 	print("ECSEventBus: Clear signal sent to ", _registered_ecs_nodes.size(), " ECSNodes")
 
-# 获取注册的 ECSNode 统计信息
+# 获取实体状态信息统计
 func get_ecs_nodes_info() -> Dictionary:
 	if not _is_editor_mode:
 		return {}
-		
-	_cleanup_invalid_nodes()
 	
 	var info = {
 		"total_nodes": _registered_ecs_nodes.size(),
-		"valid_nodes": 0,
+		"connected_nodes": 0,
 		"entities_created": 0
 	}
 	
 	for node in _registered_ecs_nodes:
-		if is_instance_valid(node):
-			info.valid_nodes += 1
-			if node.has_method("is_entity_created") and node.call("is_entity_created"):
-				info.entities_created += 1
+		if not is_instance_valid(node):
+			continue
+			
+		info.connected_nodes += 1
+		
+		# 检查是否有实体
+		if node.has_method("is_entity_created") and node.call("is_entity_created"):
+			info.entities_created += 1
 	
 	return info
 
-# 私有方法：清理无效的节点引用
+# 重新加载场景到ECS - 强制所有ECSNode重读编辑器状态
+func reload_scene_to_ecs() -> bool:
+	if not _is_editor_mode:
+		print("ECSEventBus: reload_scene_to_ecs only available in editor mode")
+		return false
+	
+	if not is_game_core_ready():
+		print("ECSEventBus: GameCore not ready, cannot reload scene to ECS")
+		return false
+	
+	print("ECSEventBus: Starting scene to ECS reload...")
+	_cleanup_invalid_nodes()
+	
+	var reloaded_count = 0
+	var failed_count = 0
+	
+	# 遍历所有注册的ECSNode
+	for node in _registered_ecs_nodes:
+		if not is_instance_valid(node):
+			failed_count += 1
+			continue
+		
+		# 检查ECSNode是否有重新加载方法
+		if node.has_method("reload_from_scene"):
+			if node.call("reload_from_scene"):
+				reloaded_count += 1
+				print("ECSEventBus: Reloaded ECSNode: ", node.get_path())
+			else:
+				failed_count += 1
+				print("ECSEventBus: Failed to reload ECSNode: ", node.get_path())
+		else:
+			# 如果没有专用方法，尝试通用的重新创建流程
+			if node.has_method("force_recreate_entity"):
+				if node.call("force_recreate_entity"):
+					reloaded_count += 1
+					print("ECSEventBus: Force recreated ECSNode: ", node.get_path())
+				else:
+					failed_count += 1
+					print("ECSEventBus: Failed to force recreate ECSNode: ", node.get_path())
+			else:
+				print("ECSEventBus: ECSNode has no reload method: ", node.get_path())
+				failed_count += 1
+	
+	var total_processed = reloaded_count + failed_count
+	print("ECSEventBus: Scene reload completed. Success: %d, Failed: %d, Total: %d" % [reloaded_count, failed_count, total_processed])
+	
+	return reloaded_count > 0# 私有方法：清理无效的节点引用
 func _cleanup_invalid_nodes():
 	var valid_nodes: Array[Node] = []
 	for node in _registered_ecs_nodes:

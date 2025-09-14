@@ -4,6 +4,7 @@
 #include "systems/z_rotation_system.h"
 #include "systems/physics_system.h"
 #include "systems/physics_command_system.h"
+#include "physics_world_manager.h"
 #include <iostream>
 
 namespace portal_core
@@ -40,6 +41,10 @@ namespace portal_core
       instance_->system_manager_.reset();
       std::cout << "PortalGameWorld: SystemManager reset completed." << std::endl;
     }
+
+    // 彻底销毁物理世界管理器单例
+    PhysicsWorldManager::destroy_instance();
+    std::cout << "PortalGameWorld: PhysicsWorldManager destroyed." << std::endl;
 
     instance_.reset();
     std::cout << "PortalGameWorld: Instance destroyed." << std::endl;
@@ -117,7 +122,7 @@ namespace portal_core
   {
     // 1. 使用 SystemManager 来管理系统执行
     system_manager_.update_systems(registry_, delta_time);
-    
+
     // 2. 在所有系统更新后，处理队列中的事件
     event_manager_.process_queued_events(delta_time);
   }

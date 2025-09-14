@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3 uid="uid://cke8bh1x7j4pq"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_cube"]
+
+[sub_resource type="PhysicsBodyComponentResource" id="PhysicsBodyComponentResource_cube"]
+restitution = 0.3
+
+[node name="MeshInstance3D" type="MeshInstance3D"]
+mesh = SubResource("BoxMesh_cube")
+
+[node name="ECSNode" type="ECSNode" parent="."]
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_cube")])

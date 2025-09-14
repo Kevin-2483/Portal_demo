@@ -1,8 +1,10 @@
-[gd_scene load_steps=17 format=3 uid="uid://c7ilvgiaaeo0"]
+[gd_scene load_steps=19 format=3 uid="uid://c7ilvgiaaeo0"]
 
 [ext_resource type="Material" uid="uid://bj8k2mam3n4o5" path="res://materials/ground_material.tres" id="1_ground"]
 [ext_resource type="Material" uid="uid://dad0e1f2g3h4i" path="res://materials/sphere_material.tres" id="2_sphere"]
 [ext_resource type="Material" uid="uid://0bt5jyw2m8r" path="res://materials/box_material.tres" id="3_box"]
+[ext_resource type="PackedScene" uid="uid://dpd8bsj6a370t" path="res://templates/ball.tscn" id="4_2y8vu"]
+[ext_resource type="PackedScene" uid="uid://cke8bh1x7j4pq" path="res://templates/cube.tscn" id="5_ohoit"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_1d6j8"]
 size = Vector3(10, 0.4, 10)
@@ -75,9 +77,339 @@ linear_damping = 0.06
 angular_damping = 0.06
 
 [node name="PhysicsTestScene" type="Node3D"]
+metadata/ecs_snapshots = {
+"snapshot_1757742937": {
+"created_time": 1.75774e+09,
+"data": {
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene": {
+&"name": &"PhysicsTestScene",
+&"transform": {
+"position": Vector3(0, 0, 0),
+"rotation": Vector3(0, 0, 0),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "Node3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/Camera3D": {
+&"name": &"Camera3D",
+&"transform": {
+"position": Vector3(0, 0.560416, 12),
+"rotation": Vector3(0.0293739, 0, 0),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "Camera3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/DirectionalLight3D": {
+&"name": &"DirectionalLight3D",
+&"transform": {
+"position": Vector3(0, 4, 0),
+"rotation": Vector3(-0.785398, 0.785398, 0),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "DirectionalLight3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/Ground": {
+&"name": &"Ground",
+&"transform": {
+"position": Vector3(0, -7.08638, 0),
+"rotation": Vector3(0, 0, 0),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "MeshInstance3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/Ground/GroundECS": {
+&"name": &"GroundECS",
+&"type": "ECSNode"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects": {
+&"name": &"TestObjects",
+&"transform": {
+"position": Vector3(0, 0, 0),
+"rotation": Vector3(0, 0, 0),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "Node3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Box1": {
+&"name": &"Box1",
+&"transform": {
+"position": Vector3(1.00002, 1.27994, -3.76408e-06),
+"rotation": Vector3(-1.83386e-07, 0.00277956, -3.14159),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "MeshInstance3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Box1/BoxECS": {
+&"name": &"BoxECS",
+&"type": "ECSNode"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Box2": {
+&"name": &"Box2",
+&"transform": {
+"position": Vector3(3, 1.53641, 0),
+"rotation": Vector3(0.73906, 0, 0),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "MeshInstance3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Box2/BoxECS": {
+&"name": &"BoxECS",
+&"type": "ECSNode"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Capsule1": {
+&"name": &"Capsule1",
+&"transform": {
+"position": Vector3(-2, 2.33641, 2),
+"rotation": Vector3(0, 0, 0),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "MeshInstance3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Capsule1/CapsuleECS": {
+&"name": &"CapsuleECS",
+&"type": "ECSNode"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Cylinder1": {
+&"name": &"Cylinder1",
+&"transform": {
+"position": Vector3(2, 2.83641, -2),
+"rotation": Vector3(0, 0, 0),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "MeshInstance3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Cylinder1/CylinderECS": {
+&"name": &"CylinderECS",
+&"type": "ECSNode"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/MeshInstance3D": {
+&"name": &"MeshInstance3D",
+&"transform": {
+"position": Vector3(0, -0.683515, 4.01083),
+"rotation": Vector3(0, 0, 0),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "MeshInstance3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/MeshInstance3D/ECSNode": {
+&"name": &"ECSNode",
+&"type": "ECSNode"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Sphere1": {
+&"name": &"Sphere1",
+&"transform": {
+"position": Vector3(-1.37195, 13.4554, 0),
+"rotation": Vector3(0.825746, -3.14159, 5.23992e-15),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "MeshInstance3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Sphere1/SphereECS": {
+&"name": &"SphereECS",
+&"type": "ECSNode"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Sphere2": {
+&"name": &"Sphere2",
+&"transform": {
+"position": Vector3(-1, 1.33641, 0),
+"rotation": Vector3(0, 0, 0),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "MeshInstance3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Sphere2/SphereECS": {
+&"name": &"SphereECS",
+&"type": "ECSNode"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/UI": {
+&"name": &"UI",
+&"rect": {
+"position": Vector2(0, 0),
+"size": Vector2(1152, 648)
+},
+&"type": "Control"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/UI/Instructions": {
+&"name": &"Instructions",
+&"rect": {
+"position": Vector2(10, 303),
+"size": Vector2(590, 335)
+},
+&"type": "Label"
+}
+},
+"name": "Snapshot 2025-09-13 13:55:37",
+"node_count": 22,
+"timestamp": "2025-09-13T13:55:37"
+},
+"snapshot_1757742945": {
+"created_time": 1.75774e+09,
+"data": {
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene": {
+&"name": &"PhysicsTestScene",
+&"transform": {
+"position": Vector3(0, 0, 0),
+"rotation": Vector3(0, 0, 0),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "Node3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/Camera3D": {
+&"name": &"Camera3D",
+&"transform": {
+"position": Vector3(0, 0.560416, 12),
+"rotation": Vector3(0.0293739, 0, 0),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "Camera3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/DirectionalLight3D": {
+&"name": &"DirectionalLight3D",
+&"transform": {
+"position": Vector3(0, 4, 0),
+"rotation": Vector3(-0.785398, 0.785398, 0),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "DirectionalLight3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/Ground": {
+&"name": &"Ground",
+&"transform": {
+"position": Vector3(0, -7.08638, 0),
+"rotation": Vector3(0, 0, 0),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "MeshInstance3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/Ground/GroundECS": {
+&"name": &"GroundECS",
+&"type": "ECSNode"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects": {
+&"name": &"TestObjects",
+&"transform": {
+"position": Vector3(0, 0, 0),
+"rotation": Vector3(0, 0, 0),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "Node3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Box1": {
+&"name": &"Box1",
+&"transform": {
+"position": Vector3(1.00001, -2.64184, -3.85289e-06),
+"rotation": Vector3(-1.7279e-06, 0.0041945, 3.14158),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "MeshInstance3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Box1/BoxECS": {
+&"name": &"BoxECS",
+&"type": "ECSNode"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Box2": {
+&"name": &"Box2",
+&"transform": {
+"position": Vector3(2.66447, -2.57102, 0.00389439),
+"rotation": Vector3(0.909882, -0.271363, -0.383742),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "MeshInstance3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Box2/BoxECS": {
+&"name": &"BoxECS",
+&"type": "ECSNode"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Capsule1": {
+&"name": &"Capsule1",
+&"transform": {
+"position": Vector3(-1.62555, -1.76468, 2.15248),
+"rotation": Vector3(-0.0694989, -0.00598683, 0.171785),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "MeshInstance3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Capsule1/CapsuleECS": {
+&"name": &"CapsuleECS",
+&"type": "ECSNode"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Cylinder1": {
+&"name": &"Cylinder1",
+&"transform": {
+"position": Vector3(1.675, -1.2739, -2.00001),
+"rotation": Vector3(-0.0062365, 0.00164812, -0.2361),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "MeshInstance3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Cylinder1/CylinderECS": {
+&"name": &"CylinderECS",
+&"type": "ECSNode"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/MeshInstance3D": {
+&"name": &"MeshInstance3D",
+&"transform": {
+"position": Vector3(-0.958448, -2.99212, 4.35728),
+"rotation": Vector3(0.191413, 0.0558011, 0.565802),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "MeshInstance3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/MeshInstance3D/ECSNode": {
+&"name": &"ECSNode",
+&"type": "ECSNode"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Sphere1": {
+&"name": &"Sphere1",
+&"transform": {
+"position": Vector3(-1.14044, 9.47955, -0.138542),
+"rotation": Vector3(0.735415, 3.01204, -0.183653),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "MeshInstance3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Sphere1/SphereECS": {
+&"name": &"SphereECS",
+&"type": "ECSNode"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Sphere2": {
+&"name": &"Sphere2",
+&"transform": {
+"position": Vector3(-1.19989, -2.59242, 0.0722534),
+"rotation": Vector3(-0.0423518, 0.00249161, -0.117508),
+"scale": Vector3(1, 1, 1)
+},
+&"type": "MeshInstance3D"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/TestObjects/Sphere2/SphereECS": {
+&"name": &"SphereECS",
+&"type": "ECSNode"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/UI": {
+&"name": &"UI",
+&"rect": {
+"position": Vector2(0, 0),
+"size": Vector2(1152, 648)
+},
+&"type": "Control"
+},
+"/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene/UI/Instructions": {
+&"name": &"Instructions",
+&"rect": {
+"position": Vector2(10, 303),
+"size": Vector2(590, 335)
+},
+&"type": "Label"
+}
+},
+"name": "Snapshot 2025-09-13 13:55:45",
+"node_count": 22,
+"timestamp": "2025-09-13T13:55:45"
+}
+}
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.999569, -0.0293697, 0, 0.0293697, 0.999569, 0, 0.560416, 12)
+transform = Transform3D(1, 0, 0, 0, 0.965518, 0.260336, 0, -0.260336, 0.965518, 0, 0.560416, 12)
 fov = 60.0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
@@ -85,7 +417,7 @@ transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -
 shadow_enabled = true
 
 [node name="Ground" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -7.08638, 0)
 mesh = SubResource("BoxMesh_1d6j8")
 surface_material_override/0 = ExtResource("1_ground")
 
@@ -95,7 +427,7 @@ components = Array[Resource]([SubResource("PhysicsBodyComponentResource_x5o7s")]
 [node name="TestObjects" type="Node3D" parent="."]
 
 [node name="Sphere1" type="MeshInstance3D" parent="TestObjects"]
-transform = Transform3D(-1, -6.42604e-08, -5.92734e-08, 0, 0.678009, -0.735054, 8.74228e-08, -0.735054, -0.678009, -1.37195, 16.119, 0)
+transform = Transform3D(-1, -1.1099e-07, -1.02376e-07, 3.55271e-15, 0.678009, -0.735054, 1.50996e-07, -0.735054, -0.678009, -1.37195, 13.4554, 0)
 mesh = SubResource("SphereMesh_3k4l5")
 surface_material_override/0 = ExtResource("2_sphere")
 
@@ -103,7 +435,7 @@ surface_material_override/0 = ExtResource("2_sphere")
 components = Array[Resource]([SubResource("PhysicsBodyComponentResource_2y8vu")])
 
 [node name="Sphere2" type="MeshInstance3D" parent="TestObjects"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 4, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 1.33641, 0)
 mesh = SubResource("SphereMesh_3k4l5")
 surface_material_override/0 = ExtResource("2_sphere")
 
@@ -111,7 +443,7 @@ surface_material_override/0 = ExtResource("2_sphere")
 components = Array[Resource]([SubResource("PhysicsBodyComponentResource_sphere2")])
 
 [node name="Box1" type="MeshInstance3D" parent="TestObjects"]
-transform = Transform3D(-0.999996, 8.7931e-08, -0.00277956, -8.74228e-08, -1, -1.82966e-07, -0.00277956, -1.82723e-07, 0.999996, 1.00002, 3.94353, -3.76408e-06)
+transform = Transform3D(-0.999996, 1.51505e-07, 0.00277956, -1.50996e-07, -1, 1.83386e-07, 0.00277956, 1.82965e-07, 0.999996, 1.00002, 1.27994, -3.76408e-06)
 mesh = SubResource("BoxMesh_small")
 surface_material_override/0 = ExtResource("3_box")
 
@@ -119,7 +451,7 @@ surface_material_override/0 = ExtResource("3_box")
 components = Array[Resource]([SubResource("PhysicsBodyComponentResource_ohoit")])
 
 [node name="Box2" type="MeshInstance3D" parent="TestObjects"]
-transform = Transform3D(1, 0, 0, 0, 0.997541, -0.0700893, 0, 0.0700893, 0.997541, 3, 4.2, 0)
+transform = Transform3D(1, 0, 0, 0, 0.739102, -0.673594, 0, 0.673594, 0.739102, 3, 1.53641, 0)
 mesh = SubResource("BoxMesh_small")
 surface_material_override/0 = ExtResource("3_box")
 
@@ -127,18 +459,24 @@ surface_material_override/0 = ExtResource("3_box")
 components = Array[Resource]([SubResource("PhysicsBodyComponentResource_box2"), SubResource("XRotationComponentResource_x5o7s")])
 
 [node name="Capsule1" type="MeshInstance3D" parent="TestObjects"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 5, 2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 2.33641, 2)
 mesh = SubResource("CapsuleMesh_6m9n2")
 
 [node name="CapsuleECS" type="ECSNode" parent="TestObjects/Capsule1"]
 components = Array[Resource]([SubResource("PhysicsBodyComponentResource_capsule")])
 
 [node name="Cylinder1" type="MeshInstance3D" parent="TestObjects"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 5.5, -2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2.83641, -2)
 mesh = SubResource("CylinderMesh_7p8q4")
 
 [node name="CylinderECS" type="ECSNode" parent="TestObjects/Cylinder1"]
 components = Array[Resource]([SubResource("PhysicsBodyComponentResource_cylinder")])
+
+[node name="MeshInstance3D" parent="TestObjects" instance=ExtResource("4_2y8vu")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.683515, 4.01083)
+
+[node name="MeshInstance3D2" parent="TestObjects" instance=ExtResource("5_ohoit")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.72617, 0, 0)
 
 [node name="UI" type="Control" parent="."]
 layout_mode = 3
@@ -155,7 +493,7 @@ anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 10.0
-offset_top = -120.0
+offset_top = -345.0
 offset_right = 600.0
 offset_bottom = -10.0
 grow_vertical = 0

@@ -181,6 +181,38 @@ namespace portal_core
     }
 
     /**
+     * 强制清理物理系统（用于彻底关闭时的清理）
+     */
+    void force_cleanup_physics()
+    {
+      // 查找并强制清理物理相关系统
+      auto physics_system = get_system("PhysicsSystem");
+      if (physics_system)
+      {
+        std::cout << "SystemManager: Force cleaning up PhysicsSystem" << std::endl;
+        physics_system->cleanup();
+      }
+
+      // 清理物理事件系统
+      auto physics_event_system = get_system("PhysicsEventSystem");
+      if (physics_event_system)
+      {
+        std::cout << "SystemManager: Force cleaning up PhysicsEventSystem" << std::endl;
+        physics_event_system->cleanup();
+      }
+
+      // 清理物理命令系统
+      auto physics_command_system = get_system("PhysicsCommandSystem");
+      if (physics_command_system)
+      {
+        std::cout << "SystemManager: Force cleaning up PhysicsCommandSystem" << std::endl;
+        physics_command_system->cleanup();
+      }
+
+      std::cout << "SystemManager: Physics systems force cleanup completed" << std::endl;
+    }
+
+    /**
      * 重置系统管理器状态（支持静态系统重新注册）
      * 清理系统实例并重新注册所有静态系统
      */

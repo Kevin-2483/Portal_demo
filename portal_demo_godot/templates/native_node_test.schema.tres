@@ -1,0 +1,309 @@
+[gd_resource type="Resource" script_class="TemplateSchemaResource" load_steps=3 format=3 uid="uid://cc3nlvjn6a612"]
+
+[ext_resource type="Script" uid="uid://b608t3ae0oceh" path="res://addons/template_schema_generator/template_schema_resource.gd" id="1_f7kqb"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_native"]
+
+[resource]
+script = ExtResource("1_f7kqb")
+template_path = "res://templates/native_node_test.tscn"
+template_name = "native_node_test"
+description = "Auto-generated schema for native_node_test"
+version = "1.0"
+created_time = "2025-09-13T18:12:20"
+root_node_properties = {
+"NativeNodeTest/Camera3D.current": {
+"category": "Native",
+"default_value": false,
+"description": "Native property of Camera3D",
+"node_class": "Camera3D",
+"node_path": "NativeNodeTest/Camera3D",
+"type": 1,
+"type_name": "bool"
+},
+"NativeNodeTest/Camera3D.far": {
+"category": "Native",
+"default_value": 200.0,
+"description": "Native property of Camera3D",
+"node_class": "Camera3D",
+"node_path": "NativeNodeTest/Camera3D",
+"type": 3,
+"type_name": "float"
+},
+"NativeNodeTest/Camera3D.fov": {
+"category": "Native",
+"default_value": 60.0,
+"description": "Native property of Camera3D",
+"node_class": "Camera3D",
+"node_path": "NativeNodeTest/Camera3D",
+"type": 3,
+"type_name": "float"
+},
+"NativeNodeTest/Camera3D.near": {
+"category": "Native",
+"default_value": 0.1,
+"description": "Native property of Camera3D",
+"node_class": "Camera3D",
+"node_path": "NativeNodeTest/Camera3D",
+"type": 3,
+"type_name": "float"
+},
+"NativeNodeTest/Camera3D.position": {
+"category": "Native",
+"default_value": Vector3(0, 5, 5),
+"description": "Native property of Camera3D",
+"node_class": "Camera3D",
+"node_path": "NativeNodeTest/Camera3D",
+"type": 9,
+"type_name": "Vector3"
+},
+"NativeNodeTest/Camera3D.projection": {
+"category": "Native",
+"default_value": 0,
+"description": "Native property of Camera3D",
+"node_class": "Camera3D",
+"node_path": "NativeNodeTest/Camera3D",
+"type": 2,
+"type_name": "int"
+},
+"NativeNodeTest/Camera3D.rotation": {
+"category": "Native",
+"default_value": Vector3(-0.785398, 0, 0),
+"description": "Native property of Camera3D",
+"node_class": "Camera3D",
+"node_path": "NativeNodeTest/Camera3D",
+"type": 9,
+"type_name": "Vector3"
+},
+"NativeNodeTest/Camera3D.scale": {
+"category": "Native",
+"default_value": Vector3(1, 1, 1),
+"description": "Native property of Camera3D",
+"node_class": "Camera3D",
+"node_path": "NativeNodeTest/Camera3D",
+"type": 9,
+"type_name": "Vector3"
+},
+"NativeNodeTest/Camera3D.visible": {
+"category": "Native",
+"default_value": true,
+"description": "Native property of Camera3D",
+"node_class": "Camera3D",
+"node_path": "NativeNodeTest/Camera3D",
+"type": 1,
+"type_name": "bool"
+},
+"NativeNodeTest/Light3D.light_color": {
+"category": "Native",
+"default_value": Color(0.8, 0.9, 1, 1),
+"description": "Native property of DirectionalLight3D",
+"node_class": "DirectionalLight3D",
+"node_path": "NativeNodeTest/Light3D",
+"type": 20,
+"type_name": "Color"
+},
+"NativeNodeTest/Light3D.light_energy": {
+"category": "Native",
+"default_value": 1.5,
+"description": "Native property of DirectionalLight3D",
+"node_class": "DirectionalLight3D",
+"node_path": "NativeNodeTest/Light3D",
+"type": 3,
+"type_name": "float"
+},
+"NativeNodeTest/Light3D.position": {
+"category": "Native",
+"default_value": Vector3(0, 0, 0),
+"description": "Native property of DirectionalLight3D",
+"node_class": "DirectionalLight3D",
+"node_path": "NativeNodeTest/Light3D",
+"type": 9,
+"type_name": "Vector3"
+},
+"NativeNodeTest/Light3D.rotation": {
+"category": "Native",
+"default_value": Vector3(0, 0, 0),
+"description": "Native property of DirectionalLight3D",
+"node_class": "DirectionalLight3D",
+"node_path": "NativeNodeTest/Light3D",
+"type": 9,
+"type_name": "Vector3"
+},
+"NativeNodeTest/Light3D.scale": {
+"category": "Native",
+"default_value": Vector3(1, 1, 1),
+"description": "Native property of DirectionalLight3D",
+"node_class": "DirectionalLight3D",
+"node_path": "NativeNodeTest/Light3D",
+"type": 9,
+"type_name": "Vector3"
+},
+"NativeNodeTest/Light3D.shadow_enabled": {
+"category": "Native",
+"default_value": true,
+"description": "Native property of DirectionalLight3D",
+"node_class": "DirectionalLight3D",
+"node_path": "NativeNodeTest/Light3D",
+"type": 1,
+"type_name": "bool"
+},
+"NativeNodeTest/Light3D.visible": {
+"category": "Native",
+"default_value": true,
+"description": "Native property of DirectionalLight3D",
+"node_class": "DirectionalLight3D",
+"node_path": "NativeNodeTest/Light3D",
+"type": 1,
+"type_name": "bool"
+},
+"NativeNodeTest/MeshInstance3D.cast_shadow": {
+"category": "Native",
+"default_value": 2,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "NativeNodeTest/MeshInstance3D",
+"type": 2,
+"type_name": "int"
+},
+"NativeNodeTest/MeshInstance3D.mesh": {
+"category": "Native",
+"default_value": SubResource("SphereMesh_native"),
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "NativeNodeTest/MeshInstance3D",
+"type": 24,
+"type_name": "Object"
+},
+"NativeNodeTest/MeshInstance3D.position": {
+"category": "Native",
+"default_value": Vector3(0, 0, 0),
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "NativeNodeTest/MeshInstance3D",
+"type": 9,
+"type_name": "Vector3"
+},
+"NativeNodeTest/MeshInstance3D.rotation": {
+"category": "Native",
+"default_value": Vector3(0, 0, 0),
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "NativeNodeTest/MeshInstance3D",
+"type": 9,
+"type_name": "Vector3"
+},
+"NativeNodeTest/MeshInstance3D.scale": {
+"category": "Native",
+"default_value": Vector3(1, 1, 1),
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "NativeNodeTest/MeshInstance3D",
+"type": 9,
+"type_name": "Vector3"
+},
+"NativeNodeTest/MeshInstance3D.visibility_range_begin": {
+"category": "Native",
+"default_value": 5.0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "NativeNodeTest/MeshInstance3D",
+"type": 3,
+"type_name": "float"
+},
+"NativeNodeTest/MeshInstance3D.visibility_range_end": {
+"category": "Native",
+"default_value": 100.0,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "NativeNodeTest/MeshInstance3D",
+"type": 3,
+"type_name": "float"
+},
+"NativeNodeTest/MeshInstance3D.visible": {
+"category": "Native",
+"default_value": true,
+"description": "Native property of MeshInstance3D",
+"node_class": "MeshInstance3D",
+"node_path": "NativeNodeTest/MeshInstance3D",
+"type": 1,
+"type_name": "bool"
+},
+"position": {
+"category": "Native",
+"default_value": Vector3(5, 10, -2),
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 9,
+"type_name": "Vector3"
+},
+"rotation": {
+"category": "Native",
+"default_value": Vector3(0.5, 1, 0),
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 9,
+"type_name": "Vector3"
+},
+"scale": {
+"category": "Native",
+"default_value": Vector3(2, 2, 2),
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 9,
+"type_name": "Vector3"
+},
+"visible": {
+"category": "Native",
+"default_value": true,
+"description": "Native property of Node3D",
+"node_class": "Node3D",
+"node_path": "root",
+"type": 1,
+"type_name": "bool"
+}
+}
+ecs_component_properties = {}
+presets = Array[Dictionary]([{
+"component_overrides": {},
+"created_time": "2025-09-13T18:12:20",
+"description": "Default template configuration",
+"name": "Default",
+"root_overrides": {}
+}, {
+"component_overrides": {},
+"created_time": "2025-09-13T18:12:20",
+"description": "Elevated position",
+"name": "Elevated",
+"root_overrides": {
+"position": Vector3(0, 5, 0)
+}
+}, {
+"component_overrides": {},
+"created_time": "2025-09-13T18:12:20",
+"description": "Ground level position",
+"name": "Ground Level",
+"root_overrides": {
+"position": Vector3(0, 0, 0)
+}
+}, {
+"component_overrides": {},
+"created_time": "2025-09-13T18:12:20",
+"description": "Large scale (2x)",
+"name": "Large",
+"root_overrides": {
+"scale": Vector3(2, 2, 2)
+}
+}, {
+"component_overrides": {},
+"created_time": "2025-09-13T18:12:20",
+"description": "Small scale (0.5x)",
+"name": "Small",
+"root_overrides": {
+"scale": Vector3(0.5, 0.5, 0.5)
+}
+}])
+tags = Array[String]([])
+category = ""

@@ -47,7 +47,7 @@ REGISTER_SYSTEM(PhysicsQuerySystem, {"PhysicsSystem"}, {}, 30);       // 依赖�
 ```cpp
 // X/Y/Z 旋转系统 - 完全独立
 REGISTER_SYSTEM_SIMPLE(XRotationSystem, 100);
-REGISTER_SYSTEM_SIMPLE(YRotationSystem, 101); 
+REGISTER_SYSTEM_SIMPLE(YRotationSystem, 101);
 REGISTER_SYSTEM_SIMPLE(ZRotationSystem, 102);
 ```
 

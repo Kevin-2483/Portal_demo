@@ -1,0 +1,312 @@
+[gd_resource type="Resource" script_class="TemplateSchemaResource" load_steps=2 format=3 uid="uid://dua7bu3nhgv5a"]
+
+[ext_resource type="Script" uid="uid://b608t3ae0oceh" path="res://addons/template_schema_generator/template_schema_resource.gd" id="1_4murq"]
+
+[resource]
+script = ExtResource("1_4murq")
+template_path = "res://templates/multi_component_test.tscn"
+template_name = "multi_component_test"
+description = "Auto-generated schema for multi_component_test"
+version = "1.0"
+created_time = "2025-09-13T18:03:48"
+root_node_properties = {
+"position": {
+"category": "Transform",
+"default_value": Vector3(0, 2, 0),
+"description": "Basic transform property: position",
+"type": 9,
+"type_name": "Vector3"
+},
+"rotation": {
+"category": "Transform",
+"default_value": Vector3(0, 0, 0),
+"description": "Basic transform property: rotation",
+"type": 9,
+"type_name": "Vector3"
+},
+"scale": {
+"category": "Transform",
+"default_value": Vector3(1, 1, 1),
+"description": "Basic transform property: scale",
+"type": 9,
+"type_name": "Vector3"
+}
+}
+ecs_component_properties = {
+"PhysicsBodyComponentResource": {
+"allow_sleeping": {
+"default_value": true,
+"description": "Auto-detected from component",
+"hint": 0,
+"hint_string": "",
+"type": 1,
+"type_name": "bool",
+"usage": 6
+},
+"angular_damping": {
+"default_value": 0.05,
+"description": "Auto-detected from component",
+"hint": 1,
+"hint_string": "0.0,1.0,0.01",
+"type": 3,
+"type_name": "float",
+"usage": 6
+},
+"angular_velocity": {
+"default_value": Vector3(0, 0, 0),
+"description": "Auto-detected from component",
+"hint": 0,
+"hint_string": "",
+"type": 9,
+"type_name": "Vector3",
+"usage": 6
+},
+"body_type": {
+"default_value": 1,
+"description": "Auto-detected from component",
+"hint": 2,
+"hint_string": "Static:0,Dynamic:1,Kinematic:2,Trigger:3",
+"type": 2,
+"type_name": "int",
+"usage": 6
+},
+"center_of_mass": {
+"default_value": Vector3(0, 0, 0),
+"description": "Auto-detected from component",
+"hint": 0,
+"hint_string": "",
+"type": 9,
+"type_name": "Vector3",
+"usage": 6
+},
+"collision_group": {
+"default_value": 0,
+"description": "Auto-detected from component",
+"hint": 1,
+"hint_string": "-32768,32767,1",
+"type": 2,
+"type_name": "int",
+"usage": 6
+},
+"collision_layer": {
+"default_value": 1,
+"description": "Auto-detected from component",
+"hint": 11,
+"hint_string": "",
+"type": 2,
+"type_name": "int",
+"usage": 6
+},
+"collision_mask": {
+"default_value": -1,
+"description": "Auto-detected from component",
+"hint": 11,
+"hint_string": "",
+"type": 2,
+"type_name": "int",
+"usage": 6
+},
+"density": {
+"default_value": 1000.0,
+"description": "Auto-detected from component",
+"hint": 1,
+"hint_string": "1.0,10000.0,1.0",
+"type": 3,
+"type_name": "float",
+"usage": 6
+},
+"enable_ccd": {
+"default_value": false,
+"description": "Auto-detected from component",
+"hint": 0,
+"hint_string": "",
+"type": 1,
+"type_name": "bool",
+"usage": 6
+},
+"friction": {
+"default_value": 0.5,
+"description": "Auto-detected from component",
+"hint": 1,
+"hint_string": "0.0,2.0,0.01",
+"type": 3,
+"type_name": "float",
+"usage": 6
+},
+"gravity_scale": {
+"default_value": 1.0,
+"description": "Auto-detected from component",
+"hint": 1,
+"hint_string": "0.0,5.0,0.1",
+"type": 3,
+"type_name": "float",
+"usage": 6
+},
+"is_active": {
+"default_value": true,
+"description": "Auto-detected from component",
+"hint": 0,
+"hint_string": "",
+"type": 1,
+"type_name": "bool",
+"usage": 6
+},
+"linear_damping": {
+"default_value": 0.05,
+"description": "Auto-detected from component",
+"hint": 1,
+"hint_string": "0.0,1.0,0.01",
+"type": 3,
+"type_name": "float",
+"usage": 6
+},
+"linear_velocity": {
+"default_value": Vector3(0, 0, 0),
+"description": "Auto-detected from component",
+"hint": 0,
+"hint_string": "",
+"type": 9,
+"type_name": "Vector3",
+"usage": 6
+},
+"lock_angular_x": {
+"default_value": false,
+"description": "Auto-detected from component",
+"hint": 0,
+"hint_string": "",
+"type": 1,
+"type_name": "bool",
+"usage": 6
+},
+"lock_angular_y": {
+"default_value": false,
+"description": "Auto-detected from component",
+"hint": 0,
+"hint_string": "",
+"type": 1,
+"type_name": "bool",
+"usage": 6
+},
+"lock_angular_z": {
+"default_value": false,
+"description": "Auto-detected from component",
+"hint": 0,
+"hint_string": "",
+"type": 1,
+"type_name": "bool",
+"usage": 6
+},
+"lock_linear_x": {
+"default_value": false,
+"description": "Auto-detected from component",
+"hint": 0,
+"hint_string": "",
+"type": 1,
+"type_name": "bool",
+"usage": 6
+},
+"lock_linear_y": {
+"default_value": false,
+"description": "Auto-detected from component",
+"hint": 0,
+"hint_string": "",
+"type": 1,
+"type_name": "bool",
+"usage": 6
+},
+"lock_linear_z": {
+"default_value": false,
+"description": "Auto-detected from component",
+"hint": 0,
+"hint_string": "",
+"type": 1,
+"type_name": "bool",
+"usage": 6
+},
+"mass": {
+"default_value": 2.0,
+"description": "Auto-detected from component",
+"hint": 1,
+"hint_string": "0.1,1000.0,0.1",
+"type": 3,
+"type_name": "float",
+"usage": 6
+},
+"max_angular_velocity": {
+"default_value": 47.1,
+"description": "Auto-detected from component",
+"hint": 1,
+"hint_string": "1.0,100.0,1.0",
+"type": 3,
+"type_name": "float",
+"usage": 6
+},
+"max_linear_velocity": {
+"default_value": 500.0,
+"description": "Auto-detected from component",
+"hint": 1,
+"hint_string": "1.0,1000.0,1.0",
+"type": 3,
+"type_name": "float",
+"usage": 6
+},
+"restitution": {
+"default_value": 0.3,
+"description": "Auto-detected from component",
+"hint": 1,
+"hint_string": "0.0,1.0,0.01",
+"type": 3,
+"type_name": "float",
+"usage": 6
+},
+"shape_size": {
+"default_value": Vector3(1, 1, 1),
+"description": "Auto-detected from component",
+"hint": 0,
+"hint_string": "",
+"type": 9,
+"type_name": "Vector3",
+"usage": 6
+},
+"shape_type": {
+"default_value": 0,
+"description": "Auto-detected from component",
+"hint": 2,
+"hint_string": "Box:0,Sphere:1,Capsule:2",
+"type": 2,
+"type_name": "int",
+"usage": 6
+}
+},
+"XRotationComponentResource": {
+"speed": {
+"default_value": 1.5,
+"description": "Auto-detected from component",
+"hint": 1,
+"hint_string": "-10.0,10.0,0.1",
+"type": 3,
+"type_name": "float",
+"usage": 6
+}
+},
+"YRotationComponentResource": {
+"speed": {
+"default_value": 2.0,
+"description": "Auto-detected from component",
+"hint": 1,
+"hint_string": "-10.0,10.0,0.1",
+"type": 3,
+"type_name": "float",
+"usage": 6
+}
+}
+}
+presets = Array[Dictionary]([{
+"component_overrides": {},
+"created_time": "2025-09-13T18:03:48",
+"description": "Default template configuration",
+"name": "Default",
+"root_overrides": {}
+}])
+tags = Array[String]([])
+category = ""

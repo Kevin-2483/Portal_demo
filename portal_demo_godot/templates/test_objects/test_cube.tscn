@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://cl2lwfgpvuhqs"]
+
+[ext_resource type="Resource" uid="uid://b43xs3kpp3twr" path="res://component_presets/PhysicsBodyComponentResource/default_physics.tres" id="1_33k0x"]
+
+[node name="test_cube" type="Node3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+
+[node name="ECSNode" type="Node" parent="."]
+script = ExtResource("res://gdextension/src/godot_ecs_node.gd")
+components = Array[Resource]([ExtResource("1_33k0x")])

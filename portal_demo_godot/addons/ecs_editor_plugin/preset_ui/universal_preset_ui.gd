@@ -6,17 +6,18 @@ extends MarginContainer
 ## 这个脚本可以为任何继承自 IPresettableResource 的资源提供预设功能
 ## 无需为每种资源类型重复编写预设UI代码
 
-@onready var preset_label: Label = $VBoxContainer/HeaderContainer/PresetLabel
-@onready var preset_options: OptionButton = $VBoxContainer/HeaderContainer/PresetOptions
-@onready var button_container: HBoxContainer = $VBoxContainer/ButtonContainer
-@onready var load_button: Button = $VBoxContainer/ButtonContainer/LoadButton
-@onready var save_button: Button = $VBoxContainer/ButtonContainer/SaveButton
-@onready var delete_button: Button = $VBoxContainer/ButtonContainer/DeleteButton
-@onready var reset_button: Button = $VBoxContainer/ButtonContainer/ResetButton
-@onready var auto_fill_container: VBoxContainer = $VBoxContainer/AutoFillContainer
-@onready var auto_fill_label: Label = $VBoxContainer/AutoFillContainer/AutoFillLabel
-@onready var auto_fill_button_container: HBoxContainer = $VBoxContainer/AutoFillContainer/AutoFillButtonContainer
-@onready var warning_label: RichTextLabel = $VBoxContainer/WarningContainer/WarningLabel
+# UI 节点引用 - 使用动态查找方式以确保在编辑器插件中正常工作
+var preset_label: Label
+var preset_options: OptionButton
+var button_container: HBoxContainer
+var load_button: Button
+var save_button: Button
+var delete_button: Button
+var reset_button: Button
+var auto_fill_container: VBoxContainer
+var auto_fill_label: Label
+var auto_fill_button_container: HBoxContainer
+var warning_label: RichTextLabel
 
 # 当前处理的资源
 var inspected_resource: Resource
@@ -35,6 +36,9 @@ const PRESET_ROOT_DIR = "res://component_presets/"
 const PRESET_FILE_EXTENSION = ".tres"
 
 func _ready() -> void:
+	# 初始化UI节点引用
+	_init_ui_references()
+	
 	# 创建防抖定时器
 	constraint_update_timer = Timer.new()
 	constraint_update_timer.wait_time = 0.1  # 100ms 防抖延迟
@@ -43,24 +47,87 @@ func _ready() -> void:
 	add_child(constraint_update_timer)
 	
 	print("UniversalPresetUI: Initialized successfully")
+
+## 初始化UI节点引用
+func _init_ui_references() -> void:
+	print("Initializing UI references...")
+	
+	preset_label = get_node_or_null("VBoxContainer/HeaderContainer/PresetLabel")
+	preset_options = get_node_or_null("VBoxContainer/HeaderContainer/PresetOptions")
+	button_container = get_node_or_null("VBoxContainer/ButtonContainer")
+	load_button = get_node_or_null("VBoxContainer/ButtonContainer/LoadButton")
+	save_button = get_node_or_null("VBoxContainer/ButtonContainer/SaveButton")
+	delete_button = get_node_or_null("VBoxContainer/ButtonContainer/DeleteButton")
+	reset_button = get_node_or_null("VBoxContainer/ButtonContainer/ResetButton")
+	auto_fill_container = get_node_or_null("VBoxContainer/AutoFillContainer")
+	auto_fill_label = get_node_or_null("VBoxContainer/AutoFillContainer/AutoFillLabel")
+	auto_fill_button_container = get_node_or_null("VBoxContainer/AutoFillContainer/AutoFillButtonContainer")
+	warning_label = get_node_or_null("VBoxContainer/WarningContainer/WarningLabel")
+	
+	# 验证关键节点
+	var missing_nodes = []
+	if not preset_options:
+		missing_nodes.append("PresetOptions")
+	if not load_button:
+		missing_nodes.append("LoadButton")
+	if not save_button:
+		missing_nodes.append("SaveButton")
+	if not delete_button:
+		missing_nodes.append("DeleteButton")
+	if not reset_button:
+		missing_nodes.append("ResetButton")
+	
+	if missing_nodes.size() > 0:
+		print("Warning: Missing UI nodes: ", missing_nodes)
+	else:
+		print("All UI nodes found successfully")
 	
 ## 设置编辑器接口引用（由插件调用）
 func set_editor_interface(p_editor_interface: EditorInterface) -> void:
 	editor_interface = p_editor_interface
 	
-	# 连接所有按钮信号
-	if load_button:
+	# 连接所有按钮信号 - 确保按钮存在
+	call_deferred("_connect_ui_signals")
+
+## 连接UI信号的延迟方法
+func _connect_ui_signals() -> void:
+	print("Connecting UI signals...")
+	
+	# 确保UI引用已初始化
+	if not preset_options:
+		_init_ui_references()
+	
+	# 连接按钮信号
+	if load_button and not load_button.pressed.is_connected(_on_load_pressed):
 		load_button.pressed.connect(_on_load_pressed)
-	if save_button:
+		print("Load button signal connected")
+	elif not load_button:
+		print("Warning: Cannot connect load_button - node is null")
+		
+	if save_button and not save_button.pressed.is_connected(_on_save_pressed):
 		save_button.pressed.connect(_on_save_pressed)
-	if delete_button:
+		print("Save button signal connected")
+	elif not save_button:
+		print("Warning: Cannot connect save_button - node is null")
+		
+	if delete_button and not delete_button.pressed.is_connected(_on_delete_pressed):
 		delete_button.pressed.connect(_on_delete_pressed)
-	if reset_button:
+		print("Delete button signal connected")
+	elif not delete_button:
+		print("Warning: Cannot connect delete_button - node is null")
+		
+	if reset_button and not reset_button.pressed.is_connected(_on_reset_pressed):
 		reset_button.pressed.connect(_on_reset_pressed)
+		print("Reset button signal connected")
+	elif not reset_button:
+		print("Warning: Cannot connect reset_button - node is null")
 	
 	# 监听预设选择变化
-	if preset_options:
+	if preset_options and not preset_options.item_selected.is_connected(_on_preset_selected):
 		preset_options.item_selected.connect(_on_preset_selected)
+		print("Preset selection signal connected")
+	elif not preset_options:
+		print("Warning: Cannot connect preset_options - node is null")
 	
 	# 延迟初始化，确保所有组件都已准备好
 	call_deferred("_delayed_initialization")
@@ -180,19 +247,49 @@ func refresh_presets() -> void:
 	_update_button_states()
 	
 	print("Preset options count: ", preset_options.get_item_count())
+	print("Current selected index: ", preset_options.selected)
+	
+	# 确保按钮状态正确
+	call_deferred("_force_button_state_update")
 
 ## 更新按钮启用状态
 func _update_button_states() -> void:
+	# 确保UI引用已初始化
+	if not preset_options:
+		print("Warning: preset_options not available, reinitializing UI references...")
+		_init_ui_references()
+		if not preset_options:
+			print("Error: Failed to initialize preset_options")
+			return
+	
 	var has_presets = preset_options.get_item_count() > 1  # 除了 "< Select Preset >" 之外还有其他项
 	var has_selection = preset_options.selected > 0
 	
+	print("Button state update - Item count: ", preset_options.get_item_count(), " Selected: ", preset_options.selected, " Has selection: ", has_selection)
+	
 	if load_button:
 		load_button.disabled = not has_selection
+		print("Load button disabled: ", load_button.disabled)
+	else:
+		print("Warning: load_button is null")
+		
 	if delete_button:
 		delete_button.disabled = not has_selection
+		print("Delete button disabled: ", delete_button.disabled)
+	else:
+		print("Warning: delete_button is null")
 
 ## 预设选择变化回调
 func _on_preset_selected(index: int) -> void:
+	print("Preset selected callback - index: ", index)
+	# 确保 selected 属性正确更新
+	if preset_options:
+		preset_options.selected = index
+	_update_button_states()
+
+## 强制更新按钮状态 - 延迟调用确保UI完全初始化
+func _force_button_state_update() -> void:
+	print("Force updating button states...")
 	_update_button_states()
 
 ## 加载预设
