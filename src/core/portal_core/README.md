@@ -581,31 +581,3 @@ if (physics_engine->check_center_crossing(entity, portal)) {
 }
 portal_manager->update(delta_time); // 仅状态更新，无检测
 ```
-
-## 许可证
-
-MIT License - 查看 [LICENSE](../../../LICENSE) 文件了解详情
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-### 开发指南
-
-1. Fork 本仓库
-2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 开启 Pull Request
-
-## 支持
-
-- 📧 Email: [portal-support@example.com](mailto:portal-support@example.com)
-- 💬 Discord: [Portal Dev Community](https://discord.gg/portal-dev)
-- 📖 Wiki: [详细文档](https://github.com/portal-core/wiki)
-
----
-
-**下一步**: 查看 [库详细文档](lib/README.md) 了解 V2 版本的具体实现。
-
-**进阶**: 查看 [引擎集成示例](../examples/) 了解具体引擎的集成方法。
