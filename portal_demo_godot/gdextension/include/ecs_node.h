@@ -13,6 +13,15 @@
 using namespace godot;
 
 /**
+ * 变更源枚举 - 用于区分不同的组件变更来源
+ */
+enum class ChangeSource {
+    EDITOR_UI,           // 编辑器界面操作
+    DYNAMIC_API,         // add/remove_godot_component API
+    RESOURCE_CHANGED     // 组件资源属性变化
+};
+
+/**
  * 通用 ECS 節點 - 連接 Godot 和 C++ ECS 世界的橋樑
  * 這是設計師唯一需要使用的節點類型
  * 重構後：使用多態，無需硬編碼任何特定組件類型！
@@ -27,6 +36,10 @@ private:
   bool entity_created;             // 標記實體是否已創建
   TypedArray<Resource> components; // 組件資源數組（設計師配置）
   NodePath target_node_path;       // 新增：用於指定要控制的目標 Node3D 節點
+
+  // 变更源控制 - 用于优化组件更新策略
+  ChangeSource current_change_source; // 当前变更来源
+  bool suppress_full_rebuild;         // 是否抑制完全重建
 
   // 性能優化：緩存 GameCoreManager 引用
   static GameCoreManager *cached_game_core_manager;
@@ -58,6 +71,9 @@ private:
   void apply_components_to_entity();  // 現在使用多態，無需硬編碼！
   void clear_all_non_basic_components(); // 新增：清除所有非基礎組件
   void clear_components_by_runtime_detection(entt::registry& registry); // 新增：運行時檢測清除
+
+  // 新增：插值渲染處理方法
+  void process_interpolated_rendering(entt::registry& registry, Node* target_node, double delta);
   void connect_resource_signals();
   void disconnect_resource_signals();
   void _on_resource_changed();
@@ -66,6 +82,10 @@ private:
   // 實時更新支持
   void _update_ecs_components();      // 現在使用多態，無需硬編碼！
   void _update_ecs_components_deferred();
+
+  // 单个组件更新的辅助方法
+  bool update_single_component(Resource* component_resource);
+  bool connect_single_component_signal(Resource* component_resource);
 
   // GameCoreManager 获取方法（简化版 - 使用 autoload）
   GameCoreManager *get_game_core_manager_efficient();

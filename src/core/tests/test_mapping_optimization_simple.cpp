@@ -219,26 +219,17 @@ private:
 };
 
 int main() {
-    try {
-        std::cout << "Starting simplified mapping optimization tests..." << std::endl;
-        
-        SimpleMappingOptimizationTest test;
-        bool success = test.run_simple_tests();
-        
-        std::cout << "\n" << (success ? "✅ All tests completed!" : "❌ Some tests had issues!") << std::endl;
-        std::cout << "\n--- Key Points Demonstrated ---" << std::endl;
-        std::cout << "1. Component listeners automatically handle entity lifecycle" << std::endl;
-        std::cout << "2. No manual mapping rebuilds needed during normal operation" << std::endl;
-        std::cout << "3. Incremental updates scale well with large entity counts" << std::endl;
-        std::cout << "4. Memory allocation overhead is minimized" << std::endl;
-        
-        return success ? 0 : 1;
-        
-    } catch (const std::exception& e) {
-        std::cerr << "Exception occurred: " << e.what() << std::endl;
-        return 1;
-    } catch (...) {
-        std::cerr << "Unknown exception occurred" << std::endl;
-        return 1;
-    }
+    std::cout << "Starting simplified mapping optimization tests..." << std::endl;
+    
+    SimpleMappingOptimizationTest test;
+    bool success = test.run_simple_tests();
+    
+    std::cout << "\n" << (success ? "✅ All tests completed!" : "❌ Some tests had issues!") << std::endl;
+    std::cout << "\n--- Key Points Demonstrated ---" << std::endl;
+    std::cout << "1. Component listeners automatically handle entity lifecycle" << std::endl;
+    std::cout << "2. No manual mapping rebuilds needed during normal operation" << std::endl;
+    std::cout << "3. Incremental updates scale well with large entity counts" << std::endl;
+    std::cout << "4. Memory allocation overhead is minimized" << std::endl;
+    
+    return success ? 0 : 1;
 }

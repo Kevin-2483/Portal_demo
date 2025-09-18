@@ -254,27 +254,18 @@ private:
 };
 
 int main() {
-    try {
-        std::cout << "Starting mega scale dual mapping performance tests..." << std::endl;
-        std::cout << "WARNING: This test will use significant memory and CPU time!" << std::endl;
-        std::cout << "Press Ctrl+C to cancel if needed..." << std::endl;
-        
-        std::this_thread::sleep_for(std::chrono::seconds(2));
-        
-        bool success = false;
-        { // 【修改点 5/5】将 test 对象放在独立作用域中，确保它在 main 结束前被完全析构
-            MegaScaleMappingTest test;
-            success = test.run_mega_scale_tests();
-        }
-        
-        std::cout << "\n" << (success ? "✅ All mega scale tests passed!" : "❌ Some mega scale tests failed!") << std::endl;
-        return success ? 0 : 1;
-        
-    } catch (const std::exception& e) {
-        std::cerr << "Exception occurred: " << e.what() << std::endl;
-        return 1;
-    } catch (...) {
-        std::cerr << "Unknown exception occurred" << std::endl;
-        return 1;
+    std::cout << "Starting mega scale dual mapping performance tests..." << std::endl;
+    std::cout << "WARNING: This test will use significant memory and CPU time!" << std::endl;
+    std::cout << "Press Ctrl+C to cancel if needed..." << std::endl;
+    
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    
+    bool success = false;
+    { // 【修改点 5/5】将 test 对象放在独立作用域中，确保它在 main 结束前被完全析构
+        MegaScaleMappingTest test;
+        success = test.run_mega_scale_tests();
     }
+    
+    std::cout << "\n" << (success ? "✅ All mega scale tests passed!" : "❌ Some mega scale tests failed!") << std::endl;
+    return success ? 0 : 1;
 }

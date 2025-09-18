@@ -168,13 +168,11 @@ if library_nodes and not GetOption("clean"):
         # 兼容某些版本在 Windows 上错误地添加了 "lib" 前缀的 godot-cpp SConstruct
         godot_cpp_lib_name_stem = f"libgodot-cpp.{env_base['platform']}.{env_base['target']}.{env_base['arch']}"
     else:
-        # 正常平台的计算方式 (Linux, macOS 等)
-        godot_cpp_lib_name_stem = f"godot-cpp.{env_base['platform']}.{env_base['target']}.{env_base['arch']}"
+        # 正常平台的计算方式 (Linux, macOS 等) - 修复：godot-cpp在所有平台都使用lib前缀
+        godot_cpp_lib_name_stem = f"libgodot-cpp.{env_base['platform']}.{env_base['target']}.{env_base['arch']}"
 
-    # 后面的代码保持不变
-    godot_cpp_full_lib_name = (
-        f"{env_base['LIBPREFIX']}{godot_cpp_lib_name_stem}{env_base['LIBSUFFIX']}"
-    )
+    # 后面的代码保持不变 - 修复：对于静态库，直接使用完整名称，不再添加前缀后缀
+    godot_cpp_full_lib_name = f"{godot_cpp_lib_name_stem}{env_base['LIBSUFFIX']}"
     godot_cpp_library = File(
         f"#portal_demo_godot/gdextension/godot-cpp/bin/{godot_cpp_full_lib_name}"
     )
@@ -227,13 +225,15 @@ if library_nodes and not GetOption("clean"):
                 print(f"    - 位于: {path}")
             print("")  # 加一个空行分隔
 
-    ### [修改] 使用平台判断来设置正确的 C++ 标准标志
+    ### [修改] 使用平台判断来设置正确的 C++ 标准标志，统一禁用异常处理
     if env_plugin["platform"] == "windows":
-        env_plugin.Append(CXXFLAGS=["/std:c++17", "/EHsc", "/utf-8"]) # /EHsc 是 Windows 上常用的异常处理模型
-        print("  - C++ 标准设置为 C++17 (MSVC)。")
+        # 禁用异常处理以与其他平台保持一致
+        env_plugin.Append(CXXFLAGS=["/std:c++17", "/utf-8"])
+        env_plugin.Append(CPPDEFINES=[("_HAS_EXCEPTIONS", 0)])
+        print("  - C++ 标准设置为 C++17 (MSVC)，异常处理已禁用。")
     else:
-        env_plugin.Append(CXXFLAGS=["-std=c++17"])
-        print("  - C++ 标准设置为 C++17。")
+        env_plugin.Append(CXXFLAGS=["-std=c++17", "-fno-exceptions"])
+        print("  - C++ 标准设置为 C++17，异常处理已禁用。")
 
 
     # --- 2.3 (关键步骤): 配置链接器以使用 godot-cpp 库 ---
@@ -241,12 +241,18 @@ if library_nodes and not GetOption("clean"):
         Dir("#portal_demo_godot/gdextension/godot-cpp/bin").abspath
     )
     env_plugin.Append(LIBPATH=[godot_cpp_bin_path])
-    # 从我们自己构建的节点获取库名
-    godot_cpp_lib_name = godot_cpp_library.name.replace(
-        env_plugin["LIBPREFIX"], ""
-    ).replace(env_plugin["LIBSUFFIX"], "")
+    # 从我们自己构建的节点获取库名 - 修复：正确处理库名称提取
+    # godot_cpp_library.name 是完整的文件名，如 "libgodot-cpp.macos.template_debug.arm64.a"
+    # 我们需要移除前缀 "lib" 和后缀 ".a" 来得到链接器需要的库名
+    godot_cpp_lib_name = godot_cpp_library.name
+    if godot_cpp_lib_name.startswith("lib"):
+        godot_cpp_lib_name = godot_cpp_lib_name[3:]  # 移除 "lib" 前缀
+    if godot_cpp_lib_name.endswith(".a"):
+        godot_cpp_lib_name = godot_cpp_lib_name[:-2]  # 移除 ".a" 后缀
     env_plugin.Append(LIBS=[godot_cpp_lib_name])
     print(f"  - 配置链接器以使用库: {godot_cpp_lib_name}")
+    print(f"  - 完整库文件名: {godot_cpp_library.name}")
+    print(f"  - 库文件路径: {godot_cpp_bin_path}")
 
     ### [修改] 针对不同平台的环境微调
     if env_plugin["platform"] == "macos":
@@ -272,6 +278,7 @@ if library_nodes and not GetOption("clean"):
         + Glob(f"{build_dir}/portal_demo_godot/gdextension/src/render/*.cpp")  # 添加渲染系统
         + Glob(f"{build_dir}/src/core/*.cpp")
         + Glob(f"{build_dir}/src/core/systems/*.cpp")
+        + Glob(f"{build_dir}/src/core/renderComponents/*.cpp")  # 添加渲染组件
         + Glob(f"{build_dir}/src/core/physics/*.cpp")  # 添加物理调试系统
         + Glob(f"{build_dir}/src/core/physics_events/*.cpp")
         + Glob(f"{build_dir}/src/core/debug/*.cpp")  # 添加调试系统
@@ -417,12 +424,20 @@ if library_nodes and not GetOption("clean"):
         env_plugin.Append(CXXFLAGS=["/arch:AVX2"])
         print("  - 已为 Windows 配置 Jolt SIMD 优化 (/arch:AVX2)。")
     elif env_plugin["platform"] == "macos":
-        # 为 Jolt 添加 macOS 特定的优化（如果支援）
-        try:
+        # 为 Jolt 添加 macOS 特定的优化，根据架构选择合适的SIMD指令
+        if env_plugin["arch"] == "arm64":
+            # ARM64 使用 NEON SIMD 指令集
+            env_plugin.Append(CXXFLAGS=["-mcpu=apple-m1"])  # Apple Silicon 优化
+            print("  - 已为 macOS ARM64 配置 Jolt SIMD 优化 (Apple Silicon)。")
+        elif env_plugin["arch"] == "x86_64":
+            # x86_64 使用 SSE/AVX 指令集
             env_plugin.Append(CXXFLAGS=["-msse4.1"])  # SIMD 優化
-            print("  - 已为 macOS 配置 Jolt SIMD 优化 (-msse4.1)。")
-        except:
-            pass  # 如果不支援則跳過
+            print("  - 已为 macOS x86_64 配置 Jolt SIMD 优化 (-msse4.1)。")
+        elif env_plugin["arch"] == "universal":
+            # 通用构建不添加特定架构优化，避免冲突
+            print("  - 通用构建跳过架构特定的 SIMD 优化。")
+        else:
+            print(f"  - 未知架构 {env_plugin['arch']}，跳过 SIMD 优化。")
 
     print("  - 已配置 Jolt Physics 編譯設定")
 

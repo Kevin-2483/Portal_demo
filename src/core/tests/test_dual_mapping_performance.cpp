@@ -339,20 +339,11 @@ private:
 };
 
 int main() {
-    try {
-        std::cout << "Starting dual mapping performance optimization tests..." << std::endl;
-        
-        DualMappingPerformanceTest test;
-        bool success = test.run_dual_mapping_tests();
-        
-        std::cout << "\n" << (success ? "✅ All tests passed!" : "❌ Some tests failed!") << std::endl;
-        return success ? 0 : 1;
-        
-    } catch (const std::exception& e) {
-        std::cerr << "Exception occurred: " << e.what() << std::endl;
-        return 1;
-    } catch (...) {
-        std::cerr << "Unknown exception occurred" << std::endl;
-        return 1;
-    }
+    std::cout << "Starting dual mapping performance optimization tests..." << std::endl;
+    
+    DualMappingPerformanceTest test;
+    bool success = test.run_dual_mapping_tests();
+    
+    std::cout << "\n" << (success ? "✅ All tests passed!" : "❌ Some tests failed!") << std::endl;
+    return success ? 0 : 1;
 }

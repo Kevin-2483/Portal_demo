@@ -96,16 +96,13 @@ void EventManager::update_delayed_events(float delta_time) {
         it->remaining_time -= delta_time;
         
         if (it->remaining_time <= 0.0f) {
-            // 执行延迟事件
-            try {
+            // 直接执行回调，不使用异常处理
+            if (it->executor) {
                 it->executor();
-                if (debug_mode_) {
-                    std::cout << "EventManager: Executed delayed event in category: " 
-                              << it->category << std::endl;
-                }
-            } catch (const std::exception& e) {
-                std::cerr << "EventManager: Error executing delayed event: " 
-                          << e.what() << std::endl;
+            }
+            if (debug_mode_) {
+                std::cout << "EventManager: Executed delayed event in category: " 
+                          << it->category << std::endl;
             }
             
             it = delayed_events_.erase(it);
@@ -121,16 +118,13 @@ void EventManager::update_temporary_markers() {
         --it->remaining_frames;
         
         if (it->remaining_frames == 0) {
-            // 执行清理
-            try {
+            // 直接执行清理回调，不使用异常处理
+            if (it->cleanup_func) {
                 it->cleanup_func();
-                if (debug_mode_) {
-                    std::cout << "EventManager: Cleaned up temporary marker for entity " 
-                              << static_cast<uint32_t>(it->entity) << std::endl;
-                }
-            } catch (const std::exception& e) {
-                std::cerr << "EventManager: Error cleaning up temporary marker: " 
-                          << e.what() << std::endl;
+            }
+            if (debug_mode_) {
+                std::cout << "EventManager: Cleaned up temporary marker for entity " 
+                          << static_cast<uint32_t>(it->entity) << std::endl;
             }
             
             if (statistics_.temporary_markers_count > 0) {
@@ -343,10 +337,9 @@ void EventManager::force_garbage_collection() {
     
     // 执行注册的清理回调
     for (auto& callback : cleanup_callbacks_) {
-        try {
+        // 直接执行清理回调，不使用异常处理
+        if (callback) {
             callback();
-        } catch (const std::exception& e) {
-            std::cerr << "EventManager: Error in cleanup callback: " << e.what() << std::endl;
         }
     }
     

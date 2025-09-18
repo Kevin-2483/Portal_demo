@@ -75,6 +75,9 @@ namespace portal_core
 
       // 第二步：構建任務圖
       build_task_graph_manual(registered_systems);
+      
+      // 第三步：構建階段執行映射
+      build_phase_execution_map(registered_systems);
 
       initialized_ = true;
       std::cout << "SystemManager: Initialization complete." << std::endl;
@@ -99,7 +102,7 @@ namespace portal_core
 
       systems_[name] = std::move(system);
 
-      // 重新構建任務圖（如果已初始化）
+      // 重新構建任務圖和階段映射（如果已初始化）
       if (initialized_)
       {
         rebuild_task_graph();
@@ -117,7 +120,7 @@ namespace portal_core
         it->second->cleanup();
         systems_.erase(it);
 
-        // 重新構建任務圖
+        // 重新構建任務圖和階段映射
         if (initialized_)
         {
           rebuild_task_graph();
@@ -126,10 +129,28 @@ namespace portal_core
     }
 
     /**
-     * 更新所有系統
-     * 根據任務圖進行順序或並行執行
+     * 更新所有系統（按執行階段）
+     * 根據執行階段和優先級進行有序執行
      */
     void update_systems(entt::registry &registry, float delta_time)
+    {
+      if (!initialized_)
+      {
+        std::cerr << "SystemManager: Not initialized, call initialize() first." << std::endl;
+        return;
+      }
+
+      // 按階段執行系統
+      execute_phase_systems(registry, delta_time, SystemExecutionPhase::PRE_UPDATE);
+      execute_phase_systems(registry, delta_time, SystemExecutionPhase::UPDATE);
+      execute_phase_systems(registry, delta_time, SystemExecutionPhase::POST_UPDATE);
+    }
+
+    /**
+     * 更新所有系統（舊版本，保持向後兼容）
+     * 根據任務圖進行順序或並行執行
+     */
+    void update_systems_legacy(entt::registry &registry, float delta_time)
     {
       if (!initialized_)
       {
@@ -177,6 +198,7 @@ namespace portal_core
       }
       systems_.clear();
       parallel_layers_.clear();
+      phase_systems_.clear();
       initialized_ = false;
     }
 
@@ -254,6 +276,10 @@ namespace portal_core
   private:
     std::unordered_map<std::string, std::unique_ptr<ISystem>> systems_;
     std::vector<std::vector<std::string>> parallel_layers_; // 並行執行層次
+    
+    // 新的階段執行系統
+    std::unordered_map<SystemExecutionPhase, std::vector<std::string>> phase_systems_;
+    
     bool initialized_ = false;
     bool enable_parallel_execution_ = false;
 
@@ -457,12 +483,134 @@ namespace portal_core
     }
 
     /**
+     * 構建階段執行映射
+     */
+    void build_phase_execution_map(const std::vector<std::pair<std::string, SystemRegistry::SystemInfo>> &registered_systems)
+    {
+      phase_systems_.clear();
+      
+      // 初始化所有階段
+      phase_systems_[SystemExecutionPhase::PRE_UPDATE] = {};
+      phase_systems_[SystemExecutionPhase::UPDATE] = {};
+      phase_systems_[SystemExecutionPhase::POST_UPDATE] = {};
+      
+      // 按階段分組系統
+      for (const auto &pair : registered_systems)
+      {
+        const std::string &name = pair.first;
+        const SystemRegistry::SystemInfo &info = pair.second;
+        
+        if (systems_.find(name) != systems_.end())
+        {
+          phase_systems_[info.execution_phase].push_back(name);
+        }
+      }
+      
+      // 按階段內優先級排序每個階段的系統
+      for (auto &phase_pair : phase_systems_)
+      {
+        auto &systems_in_phase = phase_pair.second;
+        
+        // 根據階段內優先級排序（數字越小優先級越高）
+        std::sort(systems_in_phase.begin(), systems_in_phase.end(),
+                  [&registered_systems](const std::string &a, const std::string &b) {
+                    int priority_a = 0, priority_b = 0;
+                    
+                    for (const auto &pair : registered_systems)
+                    {
+                      if (pair.first == a) priority_a = pair.second.phase_priority;
+                      if (pair.first == b) priority_b = pair.second.phase_priority;
+                    }
+                    
+                    return priority_a < priority_b;
+                  });
+      }
+      
+      // 輸出階段執行映射信息
+      std::cout << "SystemManager: Phase execution mapping built:" << std::endl;
+      for (const auto &phase_pair : phase_systems_)
+      {
+        const char* phase_name = "";
+        switch (phase_pair.first)
+        {
+          case SystemExecutionPhase::PRE_UPDATE: phase_name = "PRE_UPDATE"; break;
+          case SystemExecutionPhase::UPDATE: phase_name = "UPDATE"; break;
+          case SystemExecutionPhase::POST_UPDATE: phase_name = "POST_UPDATE"; break;
+        }
+        
+        std::cout << "  " << phase_name << " (" << phase_pair.second.size() << " systems): ";
+        for (const auto &sys : phase_pair.second)
+        {
+          std::cout << sys << " ";
+        }
+        std::cout << std::endl;
+      }
+    }
+
+  public:
+    /**
+     * 執行指定階段的系統
+     */
+    void execute_phase_systems(entt::registry &registry, float delta_time, SystemExecutionPhase phase)
+    {
+      auto it = phase_systems_.find(phase);
+      if (it == phase_systems_.end() || it->second.empty())
+      {
+        return; // 該階段沒有系統
+      }
+      
+      const auto &systems_in_phase = it->second;
+      
+      if (enable_parallel_execution_ && systems_in_phase.size() > 1)
+      {
+        // 並行執行該階段的系統
+        std::vector<std::future<void>> futures;
+        
+        for (const std::string &system_name : systems_in_phase)
+        {
+          auto sys_it = systems_.find(system_name);
+          if (sys_it != systems_.end())
+          {
+            futures.emplace_back(std::async(std::launch::async,
+                                            [this, &registry, delta_time, system_name]()
+                                            {
+                                              auto sys_it = this->systems_.find(system_name);
+                                              if (sys_it != this->systems_.end())
+                                              {
+                                                sys_it->second->update(registry, delta_time);
+                                              }
+                                            }));
+          }
+        }
+        
+        // 等待該階段所有系統完成
+        for (auto &future : futures)
+        {
+          future.wait();
+        }
+      }
+      else
+      {
+        // 順序執行該階段的系統
+        for (const std::string &system_name : systems_in_phase)
+        {
+          auto sys_it = systems_.find(system_name);
+          if (sys_it != systems_.end())
+          {
+            sys_it->second->update(registry, delta_time);
+          }
+        }
+      }
+    }
+
+    /**
      * 重新構建任務圖（當動態添加/移除系統時）
      */
     void rebuild_task_graph()
     {
       const auto &registered_systems = SystemRegistry::get_registered_systems();
       build_task_graph_manual(registered_systems);
+      build_phase_execution_map(registered_systems);
     }
 
     /**

@@ -22,11 +22,11 @@ public:
                        entt::registry& registry);
     ~PhysicsEventAdapter() = default;
 
-    // 禁止拷贝，允许移动
+    // 禁止拷贝和移动（因为包含引用成员变量）
     PhysicsEventAdapter(const PhysicsEventAdapter&) = delete;
     PhysicsEventAdapter& operator=(const PhysicsEventAdapter&) = delete;
-    PhysicsEventAdapter(PhysicsEventAdapter&&) = default;
-    PhysicsEventAdapter& operator=(PhysicsEventAdapter&&) = default;
+    PhysicsEventAdapter(PhysicsEventAdapter&&) = delete;
+    PhysicsEventAdapter& operator=(PhysicsEventAdapter&&) = delete;
 
     /**
      * 初始化适配器，设置Jolt回调

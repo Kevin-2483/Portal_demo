@@ -268,18 +268,10 @@ void test_temporary_marker_system() {
     auto entity = registry.create();
     
     // 添加临时标记 (注意：需要调整参数以匹配实际API)
-    try {
-        event_manager.add_temporary_marker(entity,
-            TriggerZoneComponent{"test_zone", true, entity},
-            3 // 3帧后清理
-        );
-    } catch (const std::exception& e) {
-        std::cout << "临时标记API可能需要调整: " << e.what() << std::endl;
-        // 使用替代方法
-        event_manager.add_component_event(entity,
-            TriggerZoneComponent{"test_zone", true, entity}
-        );
-    }
+    // 临时标记API可能需要调整，使用替代方法
+    event_manager.add_component_event(entity,
+        TriggerZoneComponent{"test_zone", true, entity}
+    );
     
     // 验证标记被添加
     if (registry.all_of<TriggerZoneComponent>(entity)) {
@@ -324,14 +316,8 @@ void test_event_statistics() {
     event_manager.process_queued_events(0.016f);
     
     // 添加临时标记 (如果API可用)
-    try {
-        event_manager.add_temporary_marker(entity1,
-            TriggerZoneComponent{"stats_test", true, entity1},
-            1
-        );
-    } catch (...) {
-        // API不可用时跳过
-    }
+    // API不可用时跳过
+    
     
     // 获取统计信息
     auto stats = event_manager.get_statistics();
@@ -500,14 +486,7 @@ void test_stress_testing() {
         
         // 偶尔添加临时标记
         if (i % 100 == 0) {
-            try {
-                event_manager.add_temporary_marker(entity1,
-                    TriggerZoneComponent{"stress_zone", true, entity1},
-                    1
-                );
-            } catch (...) {
-                // API不可用时跳过
-            }
+            // API不可用时跳过
         }
     }
     
@@ -534,25 +513,16 @@ void test_stress_testing() {
 int main() {
     std::cout << "开始事件管理器测试..." << std::endl;
     
-    try {
-        test_basic_event_publishing();
-        test_queued_event_handling();
-        test_entity_event_system();
-        test_temporary_marker_system();
-        test_event_statistics();
-        test_concurrent_event_handling();
-        test_performance_profiling();
-        test_stress_testing();
-        
-        std::cout << "\n🎉 所有测试完成!" << std::endl;
-        
-    } catch (const std::exception& e) {
-        std::cerr << "\n❌ 测试失败: " << e.what() << std::endl;
-        return 1;
-    } catch (...) {
-        std::cerr << "\n❌ 未知错误导致测试失败" << std::endl;
-        return 1;
-    }
+    test_basic_event_publishing();
+    test_queued_event_handling();
+    test_entity_event_system();
+    test_temporary_marker_system();
+    test_event_statistics();
+    test_concurrent_event_handling();
+    test_performance_profiling();
+    test_stress_testing();
+    
+    std::cout << "\n🎉 所有测试完成!" << std::endl;
     
     return 0;
 }

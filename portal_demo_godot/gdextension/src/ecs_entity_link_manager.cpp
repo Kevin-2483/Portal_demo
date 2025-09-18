@@ -339,7 +339,7 @@ Dictionary ECSEntityLinkManager::get_statistics() const {
 
 void ECSEntityLinkManager::debug_print_all_links() const {
     UtilityFunctions::print("[ECSEntityLinkManager] === All Links Debug Info ===");
-    UtilityFunctions::print("Total links: ", entity_to_link_.size());
+    UtilityFunctions::print("Total links: ", static_cast<int64_t>(entity_to_link_.size()));
     
     for (const auto& pair : entity_to_link_) {
         const LinkInfo& link_info = pair.second;

@@ -157,14 +157,7 @@ private:
 
         // 验证系统仍然稳定（不会因为引用无效实体而崩溃）
         bool system_stable = true;
-        try
-        {
-            simulate_frames(3);
-        }
-        catch (...)
-        {
-            system_stable = false;
-        }
+        simulate_frames(3);
 
         bool passed = monitor_exists && system_stable;
         std::cout << (passed ? "✅" : "❌") << " Lifecycle management: Component created and system remains stable" << std::endl;

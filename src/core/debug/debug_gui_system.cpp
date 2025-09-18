@@ -806,10 +806,10 @@ void RenderStatsWindow::render() {
     // 显示统一渲染系统统计
     auto unified_stats = portal_core::debug::UnifiedDebugDraw::get_stats();
     ImGui::Text("统一渲染系统:");
-    ImGui::Text("总命令数: %zu", unified_stats.total_commands);
-    ImGui::Text("3D命令数: %zu", unified_stats.commands_3d);
-    ImGui::Text("UI命令数: %zu", unified_stats.commands_ui);
-    ImGui::Text("自定义命令数: %zu", unified_stats.commands_custom);
+    ImGui::Text("总命令数: %u", unified_stats.total_commands);
+    ImGui::Text("3D命令数: %u", unified_stats.commands_3d);
+    ImGui::Text("UI命令数: %u", unified_stats.commands_ui);
+    ImGui::Text("自定义命令数: %u", unified_stats.commands_custom);
     
     end_window();
 }

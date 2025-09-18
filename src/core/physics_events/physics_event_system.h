@@ -23,11 +23,11 @@ public:
                       entt::registry& registry);
     ~PhysicsEventSystem() = default;
 
-    // 禁止拷贝，允许移动
+    // 禁止拷贝和移动（因为包含引用成员变量）
     PhysicsEventSystem(const PhysicsEventSystem&) = delete;
     PhysicsEventSystem& operator=(const PhysicsEventSystem&) = delete;
-    PhysicsEventSystem(PhysicsEventSystem&&) = default;
-    PhysicsEventSystem& operator=(PhysicsEventSystem&&) = default;
+    PhysicsEventSystem(PhysicsEventSystem&&) = delete;
+    PhysicsEventSystem& operator=(PhysicsEventSystem&&) = delete;
 
     /**
      * 初始化物理事件系统

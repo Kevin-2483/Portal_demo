@@ -12,6 +12,7 @@
 
 // 包含 C++ ECS 組件
 #include "core/components/transform_component.h"
+#include "core/renderComponents/TransformRenderProxy.h"
 #include "core/portal_game_world.h"
 
 // 添加必要的頭文件用於運行時組件檢測
@@ -62,6 +63,8 @@ ECSNode::ECSNode()
 {
   entity = entt::null;
   entity_created = false;
+  current_change_source = ChangeSource::EDITOR_UI;  // 默认为编辑器操作
+  suppress_full_rebuild = false;                    // 默认不抑制重建
   UtilityFunctions::print("ECSNode: Constructor called");
 }
 
@@ -110,8 +113,8 @@ void ECSNode::_ready()
 
 void ECSNode::_process(double delta)
 {
-  // 🚀 全新的通用框架：不再硬編碼任何特定邏輯！
-  // 每一幀，遍歷所有組件資源，命令它們自己進行數據同步
+  // 🚀 分離渲染和邏輯更新的新架構
+  // 邏輯更新由ECS系統處理，渲染更新使用插值機制
 
   if (!entity_created)
   {
@@ -133,7 +136,9 @@ void ECSNode::_process(double delta)
   }
   auto &registry = game_world->get_registry();
 
-  // ✨ 多態魔法的終極展現：遍歷所有組件並命令它們自我同步！✨
+  // 🎯 新架構：分離邏輯更新和渲染更新
+  
+  // 1. 處理非渲染組件的同步（物理、音頻、UI等）
   for (int i = 0; i < components.size(); i++)
   {
     Ref<Resource> component_resource = components[i];
@@ -146,8 +151,60 @@ void ECSNode::_process(double delta)
     Ref<ECSComponentResource> ecs_resource = Object::cast_to<ECSComponentResource>(component_resource.ptr());
     if (ecs_resource.is_valid())
     {
-      // 🌟 這就是魔法時刻！每個組件決定自己如何同步到目標節點！
-      // 無論目標節點是 Node3D, Node2D, Control, 還是任何自定義節點類型！
+      // 檢查是否為TransformRenderProxy組件
+      String component_type = ecs_resource->get_component_type_name();
+      
+      if (component_type == "TransformRenderProxy")
+      {
+        // 🌟 TransformRenderProxy使用插值渲染機制
+        // 由InterpolationRenderManager處理，不在這裡直接同步
+        continue;
+      }
+      else
+      {
+        // 🔄 其他組件使用傳統同步機制
+        ecs_resource->sync_to_node(registry, entity, target_node);
+      }
+    }
+  }
+
+  // 2. 處理插值渲染更新（僅針對Transform相關組件）
+  process_interpolated_rendering(registry, target_node, delta);
+}
+
+void ECSNode::process_interpolated_rendering(entt::registry& registry, Node* target_node, double delta)
+{
+  // 檢查是否有TransformRenderProxy組件
+  if (!registry.all_of<portal_core::TransformRenderProxy>(entity))
+  {
+    return;
+  }
+
+  // 查找TransformRenderProxyComponentResource
+  Ref<Resource> transform_render_proxy_resource;
+  for (int i = 0; i < components.size(); i++)
+  {
+    Ref<Resource> component_resource = components[i];
+    if (component_resource.is_null())
+    {
+      continue;
+    }
+
+    Ref<ECSComponentResource> ecs_resource = Object::cast_to<ECSComponentResource>(component_resource.ptr());
+    if (ecs_resource.is_valid() && ecs_resource->get_component_type_name() == "TransformRenderProxy")
+    {
+      transform_render_proxy_resource = component_resource;
+      break;
+    }
+  }
+
+  // 如果找到TransformRenderProxyComponentResource，使用其插值渲染機制
+  if (transform_render_proxy_resource.is_valid())
+  {
+    Ref<ECSComponentResource> ecs_resource = Object::cast_to<ECSComponentResource>(transform_render_proxy_resource.ptr());
+    if (ecs_resource.is_valid())
+    {
+      // 🎨 使用插值渲染進行平滑的視覺更新
       ecs_resource->sync_to_node(registry, entity, target_node);
     }
   }
@@ -550,6 +607,22 @@ void ECSNode::disconnect_resource_signals()
 
 void ECSNode::_on_resource_changed()
 {
+  // 如果被抑制重建，直接返回
+  if (suppress_full_rebuild)
+  {
+    UtilityFunctions::print("ECSNode: Full rebuild suppressed, skipping resource change handling");
+    return;
+  }
+  
+  // 根据变更源决定处理策略
+  if (current_change_source == ChangeSource::DYNAMIC_API)
+  {
+    UtilityFunctions::print("ECSNode: Dynamic API change detected, using incremental update");
+    // 动态API变更：这里可以实现更精细的增量更新逻辑
+    // 目前先跳过，因为add/remove_godot_component已经处理了增量更新
+    return;
+  }
+  
   // 检查是否在编辑器模式，如果不是则直接返回，避免不必要的重建
   if (!Engine::get_singleton()->is_editor_hint())
   {
@@ -557,7 +630,7 @@ void ECSNode::_on_resource_changed()
     return;
   }
   
-  UtilityFunctions::print("ECSNode: Resource changed in editor mode");
+  UtilityFunctions::print("ECSNode: Resource changed in editor mode, performing full rebuild");
   
   if (entity_created && is_inside_tree())
   {
@@ -1082,22 +1155,36 @@ bool ECSNode::add_godot_component(Resource* component_resource)
     return false;
   }
   
+  // 设置变更源为动态API
+  current_change_source = ChangeSource::DYNAMIC_API;
+  suppress_full_rebuild = true;
+  
   // 添加组件到数组
   components.append(component_resource);
   
-  // 如果实体已创建，立即应用到ECS（但不重新连接信号，避免触发重建）
+  // 如果实体已创建，只应用这个新组件，不触发完全重建
   if (is_entity_created())
   {
-    // 直接连接新组件的信号，避免调用_update_ecs_components导致完全重建
-    Ref<Resource> resource = component_resource;
-    if (resource.is_valid() && !resource->is_connected("changed", Callable(this, "_on_resource_changed")))
+    // 只应用这个新组件到ECS实体
+    Ref<ECSComponentResource> ecs_resource = Object::cast_to<ECSComponentResource>(component_resource);
+    if (ecs_resource.is_valid())
     {
-      resource->connect("changed", Callable(this, "_on_resource_changed"));
+      auto game_world = GameCoreManager::get_game_world();
+      if (game_world)
+      {
+        auto &registry = game_world->get_registry();
+        ecs_resource->apply_to_entity(registry, entity);  // 只应用这一个组件
+        UtilityFunctions::print("ECSNode: Applied single component to entity: ", component_class);
+      }
     }
     
-    // 重新应用所有组件到实体
-    apply_components_to_entity();
+    // 连接信号（使用专门的单组件连接方法）
+    connect_single_component_signal(component_resource);
   }
+  
+  // 恢复默认状态
+  suppress_full_rebuild = false;
+  current_change_source = ChangeSource::EDITOR_UI;
   
   UtilityFunctions::print("ECSNode: Added component: ", component_class);
   return true;
@@ -1105,6 +1192,10 @@ bool ECSNode::add_godot_component(Resource* component_resource)
 
 bool ECSNode::remove_godot_component(const String& component_class)
 {
+  // 设置变更源为动态API
+  current_change_source = ChangeSource::DYNAMIC_API;
+  suppress_full_rebuild = true;
+  
   // 查找并移除指定类型的组件
   for (int i = 0; i < components.size(); i++)
   {
@@ -1136,10 +1227,18 @@ bool ECSNode::remove_godot_component(const String& component_class)
       
       components.remove_at(i);
       
+      // 恢复默认状态
+      suppress_full_rebuild = false;
+      current_change_source = ChangeSource::EDITOR_UI;
+      
       UtilityFunctions::print("ECSNode: Removed component: ", component_class);
       return true;
     }
   }
+  
+  // 恢复默认状态（即使没找到组件）
+  suppress_full_rebuild = false;
+  current_change_source = ChangeSource::EDITOR_UI;
   
   UtilityFunctions::print("ECSNode: Component not found: ", component_class);
   return false;
@@ -1176,4 +1275,87 @@ uint32_t ECSNode::get_entity_id() const
 	// 返回ECS实体ID，用于双向链接
 	// 使用entt::to_integral确保保留版本信息，避免ABA问题
 	return entt::to_integral(entity);
+}
+
+// 单个组件更新的辅助方法实现
+bool ECSNode::update_single_component(Resource* component_resource)
+{
+  if (!component_resource)
+  {
+    UtilityFunctions::print("ECSNode: Cannot update null component");
+    return false;
+  }
+  
+  if (!entity_created)
+  {
+    UtilityFunctions::print("ECSNode: Cannot update component - entity not created");
+    return false;
+  }
+
+  // 安全检查：确保 GameCore 已准备就绪
+  if (!is_game_core_ready())
+  {
+    UtilityFunctions::print("ECSNode: Cannot update component - GameCore not ready");
+    return false;
+  }
+
+  auto game_world = godot::GameCoreManager::get_game_world();
+  if (!game_world)
+  {
+    UtilityFunctions::print("ECSNode: Cannot update component - no game world");
+    return false;
+  }
+
+  auto &registry = game_world->get_registry();
+
+  // 尝试转换为ECS组件资源基类
+  Ref<ECSComponentResource> ecs_resource = Object::cast_to<ECSComponentResource>(component_resource);
+  if (ecs_resource.is_valid())
+  {
+    // 使用多态！调用子类实现的apply_to_entity方法
+    bool success = ecs_resource->apply_to_entity(registry, entity);
+    if (success)
+    {
+      UtilityFunctions::print("ECSNode: Successfully updated single component: ", ecs_resource->get_component_type_name());
+    }
+    else
+    {
+      UtilityFunctions::print("ECSNode: Failed to update single component: ", ecs_resource->get_component_type_name());
+    }
+    return success;
+  }
+  else
+  {
+    UtilityFunctions::print("ECSNode: Cannot update non-ECS component resource: ", component_resource->get_class());
+    return false;
+  }
+}
+
+bool ECSNode::connect_single_component_signal(Resource* component_resource)
+{
+  if (!component_resource)
+  {
+    UtilityFunctions::print("ECSNode: Cannot connect signal for null component");
+    return false;
+  }
+
+  // 检查资源是否已经连接了信号，避免重复连接
+  if (component_resource->is_connected("changed", Callable(this, "_on_resource_changed")))
+  {
+    UtilityFunctions::print("ECSNode: Signal already connected for component: ", component_resource->get_class());
+    return true;
+  }
+
+  // 连接资源变更信号
+  Error err = component_resource->connect("changed", Callable(this, "_on_resource_changed"));
+  if (err == OK)
+  {
+    UtilityFunctions::print("ECSNode: Successfully connected signal for component: ", component_resource->get_class());
+    return true;
+  }
+  else
+  {
+    UtilityFunctions::print("ECSNode: Failed to connect signal for component: ", component_resource->get_class(), " Error: ", err);
+    return false;
+  }
 }

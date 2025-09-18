@@ -10,6 +10,17 @@ namespace portal_core
 {
 
   /**
+   * 系統執行階段枚舉
+   * 定義系統在每幀中的執行時機
+   */
+  enum class SystemExecutionPhase
+  {
+    PRE_UPDATE = 0,   // 在主要更新邏輯之前執行（如輸入處理、事件預處理）
+    UPDATE = 1,       // 主要更新邏輯（如物理、遊戲邏輯）
+    POST_UPDATE = 2   // 在主要更新邏輯之後執行（如渲染、清理）
+  };
+
+  /**
    * 系統基礎介面
    * 所有系統都應該繼承這個類
    */
@@ -43,6 +54,18 @@ namespace portal_core
     virtual std::vector<std::string> get_conflicts() const { return {}; }
 
     /**
+     * 獲取系統執行階段
+     * 返回系統應該在哪個階段執行
+     */
+    virtual SystemExecutionPhase get_execution_phase() const { return SystemExecutionPhase::UPDATE; }
+
+    /**
+     * 獲取系統在階段內的優先級
+     * 數字越小優先級越高（越早執行）
+     */
+    virtual int get_phase_priority() const { return 0; }
+
+    /**
      * 系統初始化（可選）
      * @return true 如果初始化成功，false 否則
      */
@@ -70,6 +93,8 @@ namespace portal_core
       std::vector<std::string> dependencies;
       std::vector<std::string> conflicts;
       int priority = 0; // 優先級，數字越小越早執行
+      SystemExecutionPhase execution_phase = SystemExecutionPhase::UPDATE; // 執行階段
+      int phase_priority = 0; // 階段內優先級
     };
 
   private:
@@ -93,13 +118,17 @@ namespace portal_core
      * @param dependencies 依賴的系統名稱列表
      * @param conflicts 衝突的系統名稱列表
      * @param priority 優先級（數字越小越早執行）
+     * @param execution_phase 執行階段
+     * @param phase_priority 階段內優先級
      */
     static void register_system(
         const std::string &name,
         SystemFactory factory,
         const std::vector<std::string> &dependencies = {},
         const std::vector<std::string> &conflicts = {},
-        int priority = 0)
+        int priority = 0,
+        SystemExecutionPhase execution_phase = SystemExecutionPhase::UPDATE,
+        int phase_priority = 0)
     {
       // 检查是否已存在，避免重复注册
       auto &systems = get_systems();
@@ -116,6 +145,8 @@ namespace portal_core
       info.dependencies = dependencies;
       info.conflicts = conflicts;
       info.priority = priority;
+      info.execution_phase = execution_phase;
+      info.phase_priority = phase_priority;
 
       systems.emplace_back(name, std::move(info));
     }
@@ -167,11 +198,11 @@ namespace portal_core
   };
 
 /**
- * 自動註冊系統的輔助宏（支持重新注册）
+ * 自動註冊系統的輔助宏（支持重新注册和执行阶段）
  * 使用方式：
- * REGISTER_SYSTEM(SystemName, {"dependency1", "dependency2"}, {"conflict1"}, priority)
+ * REGISTER_SYSTEM_WITH_PHASE(SystemName, {"dependency1", "dependency2"}, {"conflict1"}, priority, phase, phase_priority)
  */
-#define REGISTER_SYSTEM(SystemClass, Dependencies, Conflicts, Priority)                 \
+#define REGISTER_SYSTEM_WITH_PHASE(SystemClass, Dependencies, Conflicts, Priority, ExecutionPhase, PhasePriority) \
   namespace                                                                             \
   {                                                                                     \
     void register_##SystemClass()                                                       \
@@ -181,7 +212,9 @@ namespace portal_core
           []() -> std::unique_ptr<ISystem> { return std::make_unique<SystemClass>(); }, \
           Dependencies,                                                                 \
           Conflicts,                                                                    \
-          Priority);                                                                    \
+          Priority,                                                                     \
+          ExecutionPhase,                                                               \
+          PhasePriority);                                                               \
     }                                                                                   \
     static bool _##SystemClass##_registered = []() { \
         register_##SystemClass(); \
@@ -190,9 +223,29 @@ namespace portal_core
   }
 
 /**
+ * 自動註冊系統的輔助宏（支持重新注册）
+ * 使用方式：
+ * REGISTER_SYSTEM(SystemName, {"dependency1", "dependency2"}, {"conflict1"}, priority)
+ */
+#define REGISTER_SYSTEM(SystemClass, Dependencies, Conflicts, Priority)                 \
+  REGISTER_SYSTEM_WITH_PHASE(SystemClass, Dependencies, Conflicts, Priority, SystemExecutionPhase::UPDATE, 0)
+
+/**
  * 簡化版註冊宏（無依賴和衝突）
  */
 #define REGISTER_SYSTEM_SIMPLE(SystemClass, Priority) \
   REGISTER_SYSTEM(SystemClass, {}, {}, Priority)
+
+/**
+ * 階段註冊宏（指定執行階段）
+ */
+#define REGISTER_SYSTEM_PRE_UPDATE(SystemClass, Priority, PhasePriority) \
+  REGISTER_SYSTEM_WITH_PHASE(SystemClass, {}, {}, Priority, SystemExecutionPhase::PRE_UPDATE, PhasePriority)
+
+#define REGISTER_SYSTEM_UPDATE(SystemClass, Priority, PhasePriority) \
+  REGISTER_SYSTEM_WITH_PHASE(SystemClass, {}, {}, Priority, SystemExecutionPhase::UPDATE, PhasePriority)
+
+#define REGISTER_SYSTEM_POST_UPDATE(SystemClass, Priority, PhasePriority) \
+  REGISTER_SYSTEM_WITH_PHASE(SystemClass, {}, {}, Priority, SystemExecutionPhase::POST_UPDATE, PhasePriority)
 
 } // namespace portal_core

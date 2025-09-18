@@ -64,7 +64,9 @@ void DebuggableRegistry::unregister_debuggable(IDebuggable* debuggable) {
         std::cout << "DebuggableRegistry: Unregistered debuggable object '" << name << "'" << std::endl;
     }
 }
+// ✅ 移除event_manager.cpp中的try-catch块
 
+// ✅ 移除debuggable_registry.cpp中的try-catch块
 void DebuggableRegistry::render_all_gui() {
     if (!debug_enabled_) {
         return;
@@ -72,15 +74,7 @@ void DebuggableRegistry::render_all_gui() {
     
     for (auto* debuggable : registered_objects_) {
         if (debuggable && debuggable->is_debug_enabled()) {
-            try {
-                debuggable->render_debug_gui();
-            } catch (const std::exception& e) {
-                std::cerr << "DebuggableRegistry: Exception in render_debug_gui() for '" 
-                          << debuggable->get_debug_name() << "': " << e.what() << std::endl;
-            } catch (...) {
-                std::cerr << "DebuggableRegistry: Unknown exception in render_debug_gui() for '" 
-                          << debuggable->get_debug_name() << "'" << std::endl;
-            }
+            debuggable->render_debug_gui();
         }
     }
 }
@@ -92,15 +86,7 @@ void DebuggableRegistry::render_all_world() {
     
     for (auto* debuggable : registered_objects_) {
         if (debuggable && debuggable->is_debug_enabled()) {
-            try {
-                debuggable->render_debug_world();
-            } catch (const std::exception& e) {
-                std::cerr << "DebuggableRegistry: Exception in render_debug_world() for '" 
-                          << debuggable->get_debug_name() << "': " << e.what() << std::endl;
-            } catch (...) {
-                std::cerr << "DebuggableRegistry: Unknown exception in render_debug_world() for '" 
-                          << debuggable->get_debug_name() << "'" << std::endl;
-            }
+            debuggable->render_debug_world();
         }
     }
 }

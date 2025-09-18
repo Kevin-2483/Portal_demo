@@ -62,11 +62,11 @@ public:
     explicit EventManager(entt::registry& registry);
     ~EventManager() = default;
 
-    // 禁止拷贝，允许移动
+    // 禁止拷贝和移动（因为包含引用成员变量）
     EventManager(const EventManager&) = delete;
     EventManager& operator=(const EventManager&) = delete;
-    EventManager(EventManager&&) = default;
-    EventManager& operator=(EventManager&&) = default;
+    EventManager(EventManager&&) = delete;
+    EventManager& operator=(EventManager&&) = delete;
 
     // === 模式一: Dispatcher 事件 (即时/队列) ===
 

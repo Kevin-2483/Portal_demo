@@ -23,11 +23,11 @@ public:
                            entt::registry& registry);
     ~LazyPhysicsQueryManager() = default;
 
-    // 禁止拷贝，允许移动
+    // 禁止拷贝和移动（因为包含引用成员变量）
     LazyPhysicsQueryManager(const LazyPhysicsQueryManager&) = delete;
     LazyPhysicsQueryManager& operator=(const LazyPhysicsQueryManager&) = delete;
-    LazyPhysicsQueryManager(LazyPhysicsQueryManager&&) = default;
-    LazyPhysicsQueryManager& operator=(LazyPhysicsQueryManager&&) = default;
+    LazyPhysicsQueryManager(LazyPhysicsQueryManager&&) = delete;
+    LazyPhysicsQueryManager& operator=(LazyPhysicsQueryManager&&) = delete;
 
     // === 懒加载射线检测 ===
 
