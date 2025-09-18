@@ -1,10 +1,5 @@
 # Portal Core Library V2 - 事件驱动传送门系统
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-cross--platform-lightgrey.svg)](https://github.com)
-
-这是一个完全重构的事件驱动传送门核心库，专为需要高性能、无缝传送门功能的游戏或应用程序设计。
 
 ## 🌟 V2 重大改进
 
