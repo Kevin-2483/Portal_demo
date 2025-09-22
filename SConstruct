@@ -241,18 +241,18 @@ if library_nodes and not GetOption("clean"):
         Dir("#portal_demo_godot/gdextension/godot-cpp/bin").abspath
     )
     env_plugin.Append(LIBPATH=[godot_cpp_bin_path])
-    # 从我们自己构建的节点获取库名 - 修复：正确处理库名称提取
-    # godot_cpp_library.name 是完整的文件名，如 "libgodot-cpp.macos.template_debug.arm64.a"
-    # 我们需要移除前缀 "lib" 和后缀 ".a" 来得到链接器需要的库名
-    godot_cpp_lib_name = godot_cpp_library.name
-    if godot_cpp_lib_name.startswith("lib"):
-        godot_cpp_lib_name = godot_cpp_lib_name[3:]  # 移除 "lib" 前缀
-    if godot_cpp_lib_name.endswith(".a"):
-        godot_cpp_lib_name = godot_cpp_lib_name[:-2]  # 移除 ".a" 后缀
-    env_plugin.Append(LIBS=[godot_cpp_lib_name])
-    print(f"  - 配置链接器以使用库: {godot_cpp_lib_name}")
-    print(f"  - 完整库文件名: {godot_cpp_library.name}")
-    print(f"  - 库文件路径: {godot_cpp_bin_path}")
+    # # 从我们自己构建的节点获取库名 - 修复：正确处理库名称提取
+    # # godot_cpp_library.name 是完整的文件名，如 "libgodot-cpp.macos.template_debug.arm64.a"
+    # # 我们需要移除前缀 "lib" 和后缀 ".a" 来得到链接器需要的库名
+    # godot_cpp_lib_name = godot_cpp_library.name
+    # if godot_cpp_lib_name.startswith("lib"):
+    #     godot_cpp_lib_name = godot_cpp_lib_name[3:]  # 移除 "lib" 前缀
+    # if godot_cpp_lib_name.endswith(".a"):
+    #     godot_cpp_lib_name = godot_cpp_lib_name[:-2]  # 移除 ".a" 后缀
+    env_plugin.Append(LIBS=[godot_cpp_library])
+    # print(f"  - 配置链接器以使用库: {godot_cpp_lib_name}")
+    # print(f"  - 完整库文件名: {godot_cpp_library.name}")
+    # print(f"  - 库文件路径: {godot_cpp_bin_path}")
 
     ### [修改] 针对不同平台的环境微调
     if env_plugin["platform"] == "macos":

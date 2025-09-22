@@ -39,8 +39,7 @@ void ECSNode::_bind_methods()
   ClassDB::bind_method(D_METHOD("_on_clear_ecs_nodes"), &ECSNode::_on_clear_ecs_nodes); // 新增
   ClassDB::bind_method(D_METHOD("is_entity_created"), &ECSNode::is_entity_created);     // 新增
   ClassDB::bind_method(D_METHOD("reload_from_scene"), &ECSNode::reload_from_scene);         // 新增
-  ClassDB::bind_method(D_METHOD("force_recreate_entity"), &ECSNode::force_recreate_entity); // 新增
-  
+  ClassDB::bind_method(D_METHOD("force_recreate_entity"), &ECSNode::force_recreate_entity); // 新增  
   // === 简化的组件管理API绑定 ===
   ClassDB::bind_method(D_METHOD("has_godot_component", "component_class"), &ECSNode::has_godot_component);
   ClassDB::bind_method(D_METHOD("add_godot_component", "component_resource"), &ECSNode::add_godot_component);
@@ -113,9 +112,7 @@ void ECSNode::_ready()
 
 void ECSNode::_process(double delta)
 {
-  // 🚀 分離渲染和邏輯更新的新架構
-  // 邏輯更新由ECS系統處理，渲染更新使用插值機制
-
+  // _process 现在只负责插值渲染更新
   if (!entity_created)
   {
     return;
@@ -136,39 +133,7 @@ void ECSNode::_process(double delta)
   }
   auto &registry = game_world->get_registry();
 
-  // 🎯 新架構：分離邏輯更新和渲染更新
-  
-  // 1. 處理非渲染組件的同步（物理、音頻、UI等）
-  for (int i = 0; i < components.size(); i++)
-  {
-    Ref<Resource> component_resource = components[i];
-    if (component_resource.is_null())
-    {
-      continue;
-    }
-
-    // 嘗試轉換為ECS組件資源
-    Ref<ECSComponentResource> ecs_resource = Object::cast_to<ECSComponentResource>(component_resource.ptr());
-    if (ecs_resource.is_valid())
-    {
-      // 檢查是否為TransformRenderProxy組件
-      String component_type = ecs_resource->get_component_type_name();
-      
-      if (component_type == "TransformRenderProxy")
-      {
-        // 🌟 TransformRenderProxy使用插值渲染機制
-        // 由InterpolationRenderManager處理，不在這裡直接同步
-        continue;
-      }
-      else
-      {
-        // 🔄 其他組件使用傳統同步機制
-        ecs_resource->sync_to_node(registry, entity, target_node);
-      }
-    }
-  }
-
-  // 2. 處理插值渲染更新（僅針對Transform相關組件）
+  // 處理插值渲染更新（僅針對Transform相關組件）
   process_interpolated_rendering(registry, target_node, delta);
 }
 

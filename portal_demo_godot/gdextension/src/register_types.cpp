@@ -2,6 +2,7 @@
 #include "game_core_manager.h"      // 引入遊戲核心管理器
 #include "ecs_node.h"               // 通用 ECS 節點
 #include "ecs_component_resource.h" // ECS組件資源基類
+#include "ecs_entity_link_manager.h" // ECS實體鏈接管理器
 #include "component_registrar.h"
 
 // 编辑器插件相关
@@ -25,6 +26,7 @@ void initialize_gdextension_module(ModuleInitializationLevel p_level)
   {
     // 注册核心类
     ClassDB::register_class<GameCoreManager>();
+    ClassDB::register_class<ECSEntityLinkManager>();
     GDREGISTER_ABSTRACT_CLASS(ECSComponentResource);
     GDREGISTER_ABSTRACT_CLASS(IPresettableResource);
     ClassDB::register_class<ECSNode>();

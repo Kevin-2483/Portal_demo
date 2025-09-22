@@ -398,7 +398,7 @@ namespace portal_core
         std::unique_ptr<PhysicsActivationListener> activation_listener_;
 
         // 時間管理
-        float fixed_timestep_ = 1.0f / 60.0f;
+        float fixed_timestep_ = 1.0f / 64.0f;
         float accumulated_time_ = 0.0f;
         int collision_steps_ = 1;
 

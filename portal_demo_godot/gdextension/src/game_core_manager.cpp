@@ -10,18 +10,25 @@
 #include <godot_cpp/classes/packed_scene.hpp>
 #include <godot_cpp/classes/dir_access.hpp>
 #include "ecs_entity_link_manager.h"
+#include "transform_render_proxy_component_resource.h"
 
 // 模板路径常量
 const char *TEMPLATES_PATH = "res://templates";
 
 // 包含 C++ 核心
 #include "core/portal_game_world.h"
+#include "core/renderComponents/InterpolationRenderManager.h"
 
 using namespace godot;
 
 // 靜態成員初始化
 int GameCoreManager::reference_count_ = 0;
 GameCoreManager *GameCoreManager::editor_instance_ = nullptr;
+portal_core::InterpolationRenderManager *GameCoreManager::interpolation_render_manager_ = nullptr;
+
+// 统一时间基准
+std::chrono::high_resolution_clock::time_point GameCoreManager::global_start_time_;
+bool GameCoreManager::time_initialized_ = false;
 
 // 模板管理静态成员初始化
 std::unordered_map<std::string, godot::Ref<godot::PackedScene>> GameCoreManager::templates_;
@@ -97,10 +104,14 @@ void GameCoreManager::_bind_methods()
   ADD_SIGNAL(MethodInfo("templates_loaded"));
   ADD_SIGNAL(MethodInfo("entity_spawned", PropertyInfo(Variant::OBJECT, "entity"), PropertyInfo(Variant::STRING, "template_name")));
   ADD_SIGNAL(MethodInfo("entity_destroyed", PropertyInfo(Variant::OBJECT, "entity"), PropertyInfo(Variant::STRING, "template_name")));
-  
+
   // 绑定双向链接管理方法
   ClassDB::bind_static_method("GameCoreManager", D_METHOD("get_link_manager"), &GameCoreManager::get_link_manager);
   ClassDB::bind_static_method("GameCoreManager", D_METHOD("setup_entity_destroy_callbacks"), &GameCoreManager::setup_entity_destroy_callbacks);
+
+  // 绑定插值渲染管理器方法（不直接暴露指针类型）
+  ClassDB::bind_static_method("GameCoreManager", D_METHOD("initialize_interpolation_render_manager"), &GameCoreManager::initialize_interpolation_render_manager);
+  ClassDB::bind_static_method("GameCoreManager", D_METHOD("cleanup_interpolation_render_manager"), &GameCoreManager::cleanup_interpolation_render_manager);
 }
 
 // 構造函數：當節點被創建時調用
@@ -157,6 +168,7 @@ void GameCoreManager::_ready()
 // _process 函數：每一幀都被調用
 void GameCoreManager::_process(double delta)
 {
+  // _process 现在只负责渲染相关的更新
   if (!core_initialized_)
   {
     return;
@@ -185,10 +197,8 @@ void GameCoreManager::_process(double delta)
         }
       }
     }
-    return; // 暂停时不更新游戏逻辑
+    return; // 暂停时不更新
   }
-
-  time_passed_ += delta;
 
   // 處理延遲銷毀邏輯
   if (pending_destruction_)
@@ -213,13 +223,40 @@ void GameCoreManager::_process(double delta)
       }
     }
   }
+}
 
-  // 更新 C++/Entt 核心系統
-  auto *game_world = portal_core::PortalGameWorld::get_instance();
-  if (game_world)
-  {
-    game_world->update_systems(static_cast<float>(delta));
-  }
+void GameCoreManager::_physics_process(double delta)
+{
+    if (!core_initialized_ || is_paused_)
+    {
+        return;
+    }
+
+    // 1. 先执行所有耗时的核心逻辑更新
+    auto *game_world = portal_core::PortalGameWorld::get_instance();
+    if (game_world)
+    {
+        game_world->update_systems(static_cast<float>(delta));
+    }
+    else
+    {
+        std::cout << "[DEBUG] game_world is null!" << std::endl;
+    }
+
+    // 2. 在所有计算都完成之后，再获取当前时间作为逻辑时间戳
+    time_passed_ = get_global_time();
+    std::cout << "[DEBUG] _physics_process: delta=" << delta << ", time_passed_=" << time_passed_
+              << " (at logic end)" << std::endl;
+
+    // 3. 用这个更精确的时间戳来更新插值管理器
+    if (interpolation_render_manager_)
+    {
+        interpolation_render_manager_->update_logic_time(time_passed_);
+    }
+    else
+    {
+        std::cout << "[DEBUG] interpolation_render_manager_ is null!" << std::endl;
+    }
 }
 
 void GameCoreManager::_exit_tree()
@@ -245,8 +282,19 @@ void GameCoreManager::initialize_core()
 
   UtilityFunctions::print("Initializing game core...");
 
+  // 初始化全局时间基准
+  if (!time_initialized_)
+  {
+    global_start_time_ = std::chrono::high_resolution_clock::now();
+    time_initialized_ = true;
+    std::cout << "[DEBUG] Global time initialized" << std::endl;
+  }
+
   // 初始化 Portal Game World
   portal_core::PortalGameWorld::create_instance();
+
+  // 初始化插值渲染管理器
+  initialize_interpolation_render_manager();
 
   auto *game_world = portal_core::PortalGameWorld::get_instance();
   if (game_world)
@@ -259,7 +307,7 @@ void GameCoreManager::initialize_core()
     {
       load_all_templates();
     }
-    
+
     // 设置ECS实体销毁回调
     setup_entity_destroy_callbacks();
 
@@ -301,8 +349,22 @@ void GameCoreManager::shutdown_core()
     UtilityFunctions::print("GameCoreManager: Pre-shutdown cleanup completed");
   }
 
+  // 清理插值渲染管理器
+  cleanup_interpolation_render_manager();
+
   // 銷毀 Portal Game World
   portal_core::PortalGameWorld::destroy_instance();
+
+  // ------------------- 新增的关键清理代码 ------------------- //
+  UtilityFunctions::print("GameCoreManager: Clearing static template caches...");
+  templates_.clear();           // 强制释放所有 Ref<PackedScene>
+  template_properties_.clear(); // 释放所有模板属性字典
+  active_entities_.clear();     // 清理活跃实体记录
+  schema_properties_.clear();   // (如果 schema_properties_ 也是 static 的话)
+  schema_presets_.clear();      // (如果 schema_presets_ 也是 static 的话)
+  templates_loaded_ = false;    // 重置加载状态
+  UtilityFunctions::print("GameCoreManager: Static caches cleared.");
+  // -------------------------------------------------------- //
 
   core_initialized_ = false;
   UtilityFunctions::print("Game core shut down");
@@ -603,12 +665,15 @@ Node *GameCoreManager::spawn_entity(const String &template_name, Node *parent, c
 
   // 查找ECSNode并建立双向链接
   Node *ecs_node = find_ecs_node(instance);
-  if (ecs_node) {
+  if (ecs_node)
+  {
     // 获取ECS实体ID（假设ECSNode有get_entity_id方法）
     Variant entity_id_var = ecs_node->call("get_entity_id");
-    if (entity_id_var.get_type() == Variant::INT) {
+    if (entity_id_var.get_type() == Variant::INT)
+    {
       uint32_t entity_id = entity_id_var;
-      if (entity_id != 0) {
+      if (entity_id != 0)
+      {
         ECSEntityLinkManager::get_instance()->create_link(entity_id, instance, template_name);
         UtilityFunctions::print("[GameCoreManager] Created bidirectional link for entity ", entity_id, " <-> node ", instance->get_name());
       }
@@ -683,12 +748,15 @@ Node *GameCoreManager::spawn_entity_with_ecs_override(const String &template_nam
   active_entities_[instance] = template_key;
 
   // 建立双向链接（ECSNode已经在前面找到了）
-  if (ecs_node) {
+  if (ecs_node)
+  {
     // 获取ECS实体ID
     Variant entity_id_var = ecs_node->call("get_entity_id");
-    if (entity_id_var.get_type() == Variant::INT) {
+    if (entity_id_var.get_type() == Variant::INT)
+    {
       uint32_t entity_id = entity_id_var;
-      if (entity_id != 0) {
+      if (entity_id != 0)
+      {
         ECSEntityLinkManager::get_instance()->create_link(entity_id, instance, template_name);
         UtilityFunctions::print("[GameCoreManager] Created bidirectional link for ECS entity ", entity_id, " <-> node ", instance->get_name());
       }
@@ -1212,19 +1280,23 @@ Dictionary GameCoreManager::validate_property_overrides(const String &template_n
 
 // === 双向链接管理方法实现 ===
 
-ECSEntityLinkManager* GameCoreManager::get_link_manager() {
-    return ECSEntityLinkManager::get_instance();
+ECSEntityLinkManager *GameCoreManager::get_link_manager()
+{
+  return ECSEntityLinkManager::get_instance();
 }
 
-void GameCoreManager::setup_entity_destroy_callbacks() {
-    auto* link_manager = get_link_manager();
-    if (!link_manager) {
-        UtilityFunctions::print("[GameCoreManager] Warning: Link manager not available");
-        return;
-    }
-    
-    // 注册ECS实体销毁回调
-    link_manager->register_entity_destroy_callback([](uint32_t entity_id, Node* linked_node) {
+void GameCoreManager::setup_entity_destroy_callbacks()
+{
+  auto *link_manager = get_link_manager();
+  if (!link_manager)
+  {
+    UtilityFunctions::print("[GameCoreManager] Warning: Link manager not available");
+    return;
+  }
+
+  // 注册ECS实体销毁回调
+  link_manager->register_entity_destroy_callback([](uint32_t entity_id, Node *linked_node)
+                                                 {
         UtilityFunctions::print("[GameCoreManager] ECS entity ", entity_id, " destroyed, processing linked node");
         
         // 如果有链接的Godot节点，从active_entities_中移除
@@ -1241,11 +1313,11 @@ void GameCoreManager::setup_entity_destroy_callbacks() {
                 
                 UtilityFunctions::print("[GameCoreManager] Removed entity from active list: ", template_name);
             }
-        }
-    });
-    
-    // 注册Godot节点销毁回调
-    link_manager->register_node_destroy_callback([](uint32_t entity_id, Node* destroyed_node) {
+        } });
+
+  // 注册Godot节点销毁回调
+  link_manager->register_node_destroy_callback([](uint32_t entity_id, Node *destroyed_node)
+                                               {
         UtilityFunctions::print("[GameCoreManager] Godot node destroyed, processing linked ECS entity ", entity_id);
         
         // 从active_entities_中移除
@@ -1257,8 +1329,57 @@ void GameCoreManager::setup_entity_destroy_callbacks() {
                 
                 UtilityFunctions::print("[GameCoreManager] Removed destroyed node from active list: ", template_name);
             }
-        }
-    });
+        } });
+
+  UtilityFunctions::print("[GameCoreManager] Entity destroy callbacks setup completed");
+}
+
+// 插值渲染管理器相关方法实现
+portal_core::InterpolationRenderManager* GameCoreManager::get_interpolation_render_manager()
+{
+  return interpolation_render_manager_;
+}
+
+void GameCoreManager::initialize_interpolation_render_manager()
+{
+  if (!interpolation_render_manager_)
+  {
+    interpolation_render_manager_ = new portal_core::InterpolationRenderManager();
     
-    UtilityFunctions::print("[GameCoreManager] Entity destroy callbacks setup completed");
+    // 从Engine获取物理频率设置
+    float physics_ticks_per_second = Engine::get_singleton()->get_physics_ticks_per_second();
+    interpolation_render_manager_->initialize(physics_ticks_per_second);
+    
+    // 设置到TransformRenderProxyComponentResource
+    TransformRenderProxyComponentResource::set_interpolation_manager(interpolation_render_manager_);
+    
+    UtilityFunctions::print("InterpolationRenderManager initialized with physics frequency: ", physics_ticks_per_second, "Hz");
+  }
+}
+
+void GameCoreManager::cleanup_interpolation_render_manager()
+{
+  if (interpolation_render_manager_)
+  {
+    // 清除TransformRenderProxyComponentResource中的引用
+    TransformRenderProxyComponentResource::set_interpolation_manager(nullptr);
+    
+    delete interpolation_render_manager_;
+    interpolation_render_manager_ = nullptr;
+    
+    UtilityFunctions::print("InterpolationRenderManager cleaned up");
+  }
+}
+
+double GameCoreManager::get_global_time()
+{
+  if (!time_initialized_)
+  {
+    global_start_time_ = std::chrono::high_resolution_clock::now();
+    time_initialized_ = true;
+  }
+  
+  auto current_time = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(current_time - global_start_time_);
+  return duration.count() / 1e9; // 转换为秒
 }

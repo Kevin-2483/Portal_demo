@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://c7ilvgiaaeo0"]
+[gd_scene load_steps=25 format=3 uid="uid://c7ilvgiaaeo0"]
 
 [ext_resource type="Material" uid="uid://bj8k2mam3n4o5" path="res://materials/ground_material.tres" id="1_ground"]
 [ext_resource type="Material" uid="uid://dad0e1f2g3h4i" path="res://materials/sphere_material.tres" id="2_sphere"]
@@ -24,6 +24,8 @@ density = 500.0
 linear_damping = 0.01
 angular_damping = 0.01
 
+[sub_resource type="TransformRenderProxyComponentResource" id="TransformRenderProxyComponentResource_rtpb8"]
+
 [sub_resource type="PhysicsBodyComponentResource" id="PhysicsBodyComponentResource_sphere2"]
 shape_type = 1
 shape_size = Vector3(0.5, 0.5, 0.5)
@@ -33,6 +35,8 @@ density = 800.0
 linear_damping = 0.02
 angular_damping = 0.02
 
+[sub_resource type="TransformRenderProxyComponentResource" id="TransformRenderProxyComponentResource_vlvnr"]
+
 [sub_resource type="BoxMesh" id="BoxMesh_small"]
 size = Vector3(0.8, 0.8, 0.8)
 
@@ -40,6 +44,8 @@ size = Vector3(0.8, 0.8, 0.8)
 shape_size = Vector3(0.8, 0.8, 0.8)
 friction = 0.8
 restitution = 0.2
+
+[sub_resource type="TransformRenderProxyComponentResource" id="TransformRenderProxyComponentResource_q1vgu"]
 
 [sub_resource type="PhysicsBodyComponentResource" id="PhysicsBodyComponentResource_box2"]
 shape_size = Vector3(0.8, 0.8, 0.8)
@@ -50,6 +56,8 @@ linear_damping = 0.08
 angular_damping = 0.08
 
 [sub_resource type="XRotationComponentResource" id="XRotationComponentResource_x5o7s"]
+
+[sub_resource type="TransformRenderProxyComponentResource" id="TransformRenderProxyComponentResource_0ppf2"]
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_6m9n2"]
 height = 1.5
@@ -62,6 +70,8 @@ restitution = 0.6
 density = 700.0
 linear_damping = 0.03
 angular_damping = 0.03
+
+[sub_resource type="TransformRenderProxyComponentResource" id="TransformRenderProxyComponentResource_ohoit"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_7p8q4"]
 top_radius = 0.4
@@ -76,10 +86,12 @@ density = 1500.0
 linear_damping = 0.06
 angular_damping = 0.06
 
+[sub_resource type="TransformRenderProxyComponentResource" id="TransformRenderProxyComponentResource_7m6nq"]
+
 [node name="PhysicsTestScene" type="Node3D"]
 metadata/ecs_snapshots = {
 "snapshot_1757742937": {
-"created_time": 1.75774e+09,
+"created_time": 1757740000.0,
 "data": {
 "/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene": {
 &"name": &"PhysicsTestScene",
@@ -243,7 +255,7 @@ metadata/ecs_snapshots = {
 "timestamp": "2025-09-13T13:55:37"
 },
 "snapshot_1757742945": {
-"created_time": 1.75774e+09,
+"created_time": 1757740000.0,
 "data": {
 "/root/@EditorNode@21273/@Panel@14/@VBoxContainer@15/DockHSplitLeftL/DockHSplitLeftR/DockHSplitMain/@VBoxContainer@26/DockVSplitCenter/@VSplitContainer@54/@VBoxContainer@55/@EditorMainScreen@102/MainScreen/@CanvasItemEditor@11483/@VSplitContainer@11135/@HSplitContainer@11137/@HSplitContainer@11139/@Control@11140/@SubViewportContainer@11141/@SubViewport@11142/PhysicsTestScene": {
 &"name": &"PhysicsTestScene",
@@ -432,7 +444,7 @@ mesh = SubResource("SphereMesh_3k4l5")
 surface_material_override/0 = ExtResource("2_sphere")
 
 [node name="SphereECS" type="ECSNode" parent="TestObjects/Sphere1"]
-components = Array[Resource]([SubResource("PhysicsBodyComponentResource_2y8vu")])
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_2y8vu"), SubResource("TransformRenderProxyComponentResource_rtpb8")])
 
 [node name="Sphere2" type="MeshInstance3D" parent="TestObjects"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 1.33641, 0)
@@ -440,7 +452,7 @@ mesh = SubResource("SphereMesh_3k4l5")
 surface_material_override/0 = ExtResource("2_sphere")
 
 [node name="SphereECS" type="ECSNode" parent="TestObjects/Sphere2"]
-components = Array[Resource]([SubResource("PhysicsBodyComponentResource_sphere2")])
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_sphere2"), SubResource("TransformRenderProxyComponentResource_vlvnr")])
 
 [node name="Box1" type="MeshInstance3D" parent="TestObjects"]
 transform = Transform3D(-0.999996, 1.51505e-07, 0.00277956, -1.50996e-07, -1, 1.83386e-07, 0.00277956, 1.82965e-07, 0.999996, 1.00002, 1.27994, -3.76408e-06)
@@ -448,7 +460,7 @@ mesh = SubResource("BoxMesh_small")
 surface_material_override/0 = ExtResource("3_box")
 
 [node name="BoxECS" type="ECSNode" parent="TestObjects/Box1"]
-components = Array[Resource]([SubResource("PhysicsBodyComponentResource_ohoit")])
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_ohoit"), SubResource("TransformRenderProxyComponentResource_q1vgu")])
 
 [node name="Box2" type="MeshInstance3D" parent="TestObjects"]
 transform = Transform3D(1, 0, 0, 0, 0.739102, -0.673594, 0, 0.673594, 0.739102, 3, 1.53641, 0)
@@ -456,21 +468,21 @@ mesh = SubResource("BoxMesh_small")
 surface_material_override/0 = ExtResource("3_box")
 
 [node name="BoxECS" type="ECSNode" parent="TestObjects/Box2"]
-components = Array[Resource]([SubResource("PhysicsBodyComponentResource_box2"), SubResource("XRotationComponentResource_x5o7s")])
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_box2"), SubResource("XRotationComponentResource_x5o7s"), SubResource("TransformRenderProxyComponentResource_0ppf2")])
 
 [node name="Capsule1" type="MeshInstance3D" parent="TestObjects"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 2.33641, 2)
 mesh = SubResource("CapsuleMesh_6m9n2")
 
 [node name="CapsuleECS" type="ECSNode" parent="TestObjects/Capsule1"]
-components = Array[Resource]([SubResource("PhysicsBodyComponentResource_capsule")])
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_capsule"), SubResource("TransformRenderProxyComponentResource_ohoit")])
 
 [node name="Cylinder1" type="MeshInstance3D" parent="TestObjects"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 2.83641, -2)
 mesh = SubResource("CylinderMesh_7p8q4")
 
 [node name="CylinderECS" type="ECSNode" parent="TestObjects/Cylinder1"]
-components = Array[Resource]([SubResource("PhysicsBodyComponentResource_cylinder")])
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_cylinder"), SubResource("TransformRenderProxyComponentResource_7m6nq")])
 
 [node name="MeshInstance3D" parent="TestObjects" instance=ExtResource("4_2y8vu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.683515, 4.01083)
