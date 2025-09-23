@@ -5,6 +5,7 @@
 #include "../components/x_rotation_component.h"
 #include "../system_base.h"
 #include "../math_constants.h"
+#include "../debug/portal_debug_logging.h"
 
 namespace portal_core
 {
@@ -43,13 +44,6 @@ namespace portal_core
         while (x_rotation.current_rotation < -2.0f * M_PI)
           x_rotation.current_rotation += 2.0f * M_PI;
 
-        printf("XRotationSystem: Entity %u X-rotation: %f radians (speed: %f)\n",
-               static_cast<unsigned>(entity), x_rotation.current_rotation, x_rotation.speed);
-      }
-
-      if (entity_count > 0)
-      {
-        printf("XRotationSystem: Updated %zu entities with X-axis rotation\n", entity_count);
       }
     }
 

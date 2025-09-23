@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://c7ilvgiaaeo0"]
+[gd_scene load_steps=25 format=3 uid="uid://c7ilvgiaaeo0"]
 
 [ext_resource type="Material" uid="uid://bj8k2mam3n4o5" path="res://materials/ground_material.tres" id="1_ground"]
 [ext_resource type="Material" uid="uid://dad0e1f2g3h4i" path="res://materials/sphere_material.tres" id="2_sphere"]
@@ -25,6 +25,8 @@ linear_damping = 0.01
 angular_damping = 0.01
 
 [sub_resource type="TransformRenderProxyComponentResource" id="TransformRenderProxyComponentResource_rtpb8"]
+debug_mode = false
+show_interpolation_info = false
 
 [sub_resource type="PhysicsBodyComponentResource" id="PhysicsBodyComponentResource_sphere2"]
 shape_type = 1
@@ -36,6 +38,8 @@ linear_damping = 0.02
 angular_damping = 0.02
 
 [sub_resource type="TransformRenderProxyComponentResource" id="TransformRenderProxyComponentResource_vlvnr"]
+debug_mode = false
+show_interpolation_info = false
 
 [sub_resource type="BoxMesh" id="BoxMesh_small"]
 size = Vector3(0.8, 0.8, 0.8)
@@ -46,6 +50,8 @@ friction = 0.8
 restitution = 0.2
 
 [sub_resource type="TransformRenderProxyComponentResource" id="TransformRenderProxyComponentResource_q1vgu"]
+debug_mode = false
+show_interpolation_info = false
 
 [sub_resource type="PhysicsCommandComponentResource" id="PhysicsCommandComponentResource_ohoit"]
 add_force = Vector3(0, 5000, 0)
@@ -62,9 +68,9 @@ density = 1200.0
 linear_damping = 0.08
 angular_damping = 0.08
 
-[sub_resource type="XRotationComponentResource" id="XRotationComponentResource_x5o7s"]
-
 [sub_resource type="TransformRenderProxyComponentResource" id="TransformRenderProxyComponentResource_0ppf2"]
+debug_mode = false
+show_interpolation_info = false
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_6m9n2"]
 height = 1.5
@@ -79,6 +85,8 @@ linear_damping = 0.03
 angular_damping = 0.03
 
 [sub_resource type="TransformRenderProxyComponentResource" id="TransformRenderProxyComponentResource_ohoit"]
+debug_mode = false
+show_interpolation_info = false
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_7p8q4"]
 top_radius = 0.4
@@ -94,6 +102,8 @@ linear_damping = 0.06
 angular_damping = 0.06
 
 [sub_resource type="TransformRenderProxyComponentResource" id="TransformRenderProxyComponentResource_7m6nq"]
+debug_mode = false
+show_interpolation_info = false
 
 [node name="PhysicsTestScene" type="Node3D"]
 metadata/ecs_snapshots = {
@@ -475,7 +485,7 @@ mesh = SubResource("BoxMesh_small")
 surface_material_override/0 = ExtResource("3_box")
 
 [node name="BoxECS" type="ECSNode" parent="TestObjects/Box2"]
-components = Array[Resource]([SubResource("PhysicsBodyComponentResource_box2"), SubResource("XRotationComponentResource_x5o7s"), SubResource("TransformRenderProxyComponentResource_0ppf2")])
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_box2"), SubResource("TransformRenderProxyComponentResource_0ppf2")])
 
 [node name="Capsule1" type="MeshInstance3D" parent="TestObjects"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 2.33641, 2)

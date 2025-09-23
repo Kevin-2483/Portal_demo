@@ -6,6 +6,8 @@
 restitution = 0.3
 
 [sub_resource type="TransformRenderProxyComponentResource" id="TransformRenderProxyComponentResource_42v7m"]
+debug_mode = false
+show_interpolation_info = false
 
 [node name="MeshInstance3D" type="MeshInstance3D"]
 mesh = SubResource("BoxMesh_cube")

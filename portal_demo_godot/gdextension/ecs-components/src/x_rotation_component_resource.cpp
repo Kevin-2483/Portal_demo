@@ -1,3 +1,4 @@
+#if 0
 #include "x_rotation_component_resource.h"
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/classes/node3d.hpp>
@@ -117,3 +118,4 @@ void XRotationComponentResource::sync_to_node(entt::registry& registry, entt::en
 }
 
 REGISTER_COMPONENT_RESOURCE(XRotationComponentResource)
+#endif

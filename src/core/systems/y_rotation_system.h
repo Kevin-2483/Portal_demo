@@ -5,6 +5,7 @@
 #include "../components/y_rotation_component.h"
 #include "../system_base.h"
 #include "../math_constants.h"
+#include "../debug/portal_debug_logging.h"
 
 namespace portal_core
 {
@@ -43,13 +44,6 @@ namespace portal_core
         while (y_rotation.current_rotation < -2.0f * M_PI)
           y_rotation.current_rotation += 2.0f * M_PI;
 
-        printf("YRotationSystem: Entity %u Y-rotation: %f radians (speed: %f)\n",
-               static_cast<unsigned>(entity), y_rotation.current_rotation, y_rotation.speed);
-      }
-
-      if (entity_count > 0)
-      {
-        printf("YRotationSystem: Updated %zu entities with Y-axis rotation\n", entity_count);
       }
     }
 

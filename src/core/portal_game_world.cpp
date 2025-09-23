@@ -1,9 +1,4 @@
 #include "portal_game_world.h"
-#include "systems/x_rotation_system.h"
-#include "systems/y_rotation_system.h"
-#include "systems/z_rotation_system.h"
-#include "systems/physics_system.h"
-#include "systems/physics_command_system.h"
 #include "physics_world_manager.h"
 #include <iostream>
 #include "debug/portal_debug_logging.h"

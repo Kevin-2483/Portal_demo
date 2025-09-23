@@ -18,6 +18,7 @@ const char *TEMPLATES_PATH = "res://templates";
 // 包含 C++ 核心
 #include "core/portal_game_world.h"
 #include "core/renderComponents/InterpolationRenderManager.h"
+#include "core/debug/portal_debug_logging.h"
 
 using namespace godot;
 
@@ -240,13 +241,13 @@ void GameCoreManager::_physics_process(double delta)
     }
     else
     {
-        std::cout << "[DEBUG] game_world is null!" << std::endl;
+        PORTAL_DEBUG_LOG("[DEBUG] game_world is null!");
     }
 
     // 2. 在所有计算都完成之后，再获取当前时间作为逻辑时间戳
     time_passed_ = get_global_time();
-    std::cout << "[DEBUG] _physics_process: delta=" << delta << ", time_passed_=" << time_passed_
-              << " (at logic end)" << std::endl;
+    PORTAL_DEBUG_LOG("[DEBUG] _physics_process: delta=" << delta << ", time_passed_=" << time_passed_
+              << " (at logic end)");
 
     // 3. 用这个更精确的时间戳来更新插值管理器
     if (interpolation_render_manager_)
@@ -255,7 +256,7 @@ void GameCoreManager::_physics_process(double delta)
     }
     else
     {
-        std::cout << "[DEBUG] interpolation_render_manager_ is null!" << std::endl;
+        PORTAL_DEBUG_LOG("[DEBUG] interpolation_render_manager_ is null!");
     }
 }
 
@@ -287,7 +288,7 @@ void GameCoreManager::initialize_core()
   {
     global_start_time_ = std::chrono::high_resolution_clock::now();
     time_initialized_ = true;
-    std::cout << "[DEBUG] Global time initialized" << std::endl;
+    PORTAL_DEBUG_LOG("[DEBUG] Global time initialized");
   }
 
   // 初始化 Portal Game World

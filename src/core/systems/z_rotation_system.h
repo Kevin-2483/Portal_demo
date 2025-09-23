@@ -5,6 +5,7 @@
 #include "../components/z_rotation_component.h"
 #include "../system_base.h"
 #include "../math_constants.h"
+#include "../debug/portal_debug_logging.h"
 
 namespace portal_core
 {
@@ -43,13 +44,6 @@ namespace portal_core
         while (z_rotation.current_rotation < -2.0f * M_PI)
           z_rotation.current_rotation += 2.0f * M_PI;
 
-        printf("ZRotationSystem: Entity %u Z-rotation: %f radians (speed: %f)\n",
-               static_cast<unsigned>(entity), z_rotation.current_rotation, z_rotation.speed);
-      }
-
-      if (entity_count > 0)
-      {
-        printf("ZRotationSystem: Updated %zu entities with Z-axis rotation\n", entity_count);
       }
     }
 

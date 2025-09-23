@@ -5,6 +5,7 @@
 #include <cstdint>
 #include "math_constants.h"
 #include "debug/portal_debug_logging.h"
+#include "debug/portal_debug_logging.h"
 
 // Jolt Physics 錯誤處理回調
 static void TraceImpl(const char *inFMT, ...)
@@ -12,7 +13,6 @@ static void TraceImpl(const char *inFMT, ...)
     va_list list;
     va_start(list, inFMT);
     char buffer[1024];
-    vsnprintf(buffer, sizeof(buffer), inFMT, list);
     va_end(list);
     PORTAL_DEBUG_LOG("[Jolt] " << buffer);
 }
