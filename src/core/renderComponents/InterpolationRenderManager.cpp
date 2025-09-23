@@ -1,6 +1,7 @@
 #include "InterpolationRenderManager.h"
 #include <algorithm>
 #include <iostream>
+#include "../debug/portal_debug_logging.h"
 
 namespace portal_core
 {
@@ -24,8 +25,8 @@ namespace portal_core
   interpolation_cache_.clear();
   last_cache_clear_time_ = 0.0;
   
-  std::cout << "[DEBUG] InterpolationRenderManager: Initialized with logic tick rate "
-            << logic_tick_rate << "Hz (interval: " << logic_tick_interval_ << "s)" << std::endl;
+  PORTAL_DEBUG_LOG("[DEBUG] InterpolationRenderManager: Initialized with logic tick rate "
+            << logic_tick_rate << "Hz (interval: " << logic_tick_interval_ << "s)");
 }
 
     void InterpolationRenderManager::update_logic_time(double current_time)
@@ -34,9 +35,9 @@ namespace portal_core
         previous_logic_time_ = current_logic_time_;
         current_logic_time_ = current_time;
         
-        std::cout << "[DEBUG] InterpolationRenderManager::update_logic_time: "
+        PORTAL_DEBUG_LOG("[DEBUG] InterpolationRenderManager::update_logic_time: "
                   << "previous=" << previous_logic_time_ 
-                  << ", current=" << current_logic_time_ << std::endl;
+                  << ", current=" << current_logic_time_);
         
         // 清理过期的缓存
         cleanup_cache(current_time);
@@ -72,8 +73,8 @@ namespace portal_core
         if (!interpolation_enabled_ || !render_proxy.is_initialized)
         {
             // 添加调试信息
-            std::cout << "InterpolationRenderManager: No interpolation - enabled: "
-                      << interpolation_enabled_ << ", initialized: " << render_proxy.is_initialized << std::endl;
+            PORTAL_DEBUG_LOG("InterpolationRenderManager: No interpolation - enabled: "
+                      << interpolation_enabled_ << ", initialized: " << render_proxy.is_initialized);
 
             auto &cache_entry = interpolation_cache_[entity];
             cache_entry.transform_data = render_proxy.get_current();
@@ -173,13 +174,13 @@ namespace portal_core
         }
 
         // 调试信息
-        std::cout << "[DEBUG] render_time: " << render_time
+        PORTAL_DEBUG_LOG("[DEBUG] render_time: " << render_time
                   << ", previous_logic_time_: " << previous_logic_time_
                   << ", current_logic_time_: " << current_logic_time_
                   << ", logic_tick_interval_: " << logic_tick_interval_
                   << ", time_since_current: " << time_since_current
                   << ", time_between_ticks: " << time_between_ticks
-                  << ", alpha: " << alpha << std::endl;
+                  << ", alpha: " << alpha);
 
         // 确保alpha在0-1范围内
         return std::max(0.0f, std::min(1.0f, alpha));

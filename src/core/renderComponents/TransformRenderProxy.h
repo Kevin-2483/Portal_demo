@@ -4,6 +4,7 @@
 #include "RenderProxyComponent.h"
 #include "../math_types.h"
 #include <iostream>
+#include "../debug/portal_debug_logging.h"
 
 namespace portal_core {
 
@@ -94,20 +95,20 @@ struct TransformRenderProxy : public RenderProxyComponent {
      */
     TransformData get_interpolated(float alpha) const {
         // 添加调试信息
-        std::cout << "TransformRenderProxy::get_interpolated - alpha: " << alpha 
-                  << ", is_initialized: " << is_initialized << std::endl;
+        PORTAL_DEBUG_LOG("TransformRenderProxy::get_interpolated - alpha: " << alpha 
+                  << ", is_initialized: " << is_initialized);
         
         if (!is_initialized || alpha >= 1.0f) {
-            std::cout << "  -> Returning current (no interpolation)" << std::endl;
+            PORTAL_DEBUG_LOG("  -> Returning current (no interpolation)");
             return current;
         }
         
         if (alpha <= 0.0f) {
-            std::cout << "  -> Returning previous (alpha <= 0)" << std::endl;
+            PORTAL_DEBUG_LOG("  -> Returning previous (alpha <= 0)");
             return previous;
         }
         
-        std::cout << "  -> Performing interpolation" << std::endl;
+        PORTAL_DEBUG_LOG("  -> Performing interpolation");
         TransformData result;
         
         // 位置线性插值

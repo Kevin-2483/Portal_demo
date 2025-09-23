@@ -9,6 +9,7 @@
 #include <functional>
 #include <unordered_set>
 #include <algorithm>
+#include "debug/portal_debug_logging.h"
 
 namespace portal_core {
 
@@ -236,7 +237,7 @@ private:
 #ifdef _DEBUG
         else {
             // 可选：在调试模式下记录非法指针访问
-            // std::cerr << "Warning: Attempting to release invalid pointer to EventPool" << std::endl;
+            // PORTAL_DEBUG_ERROR("Warning: Attempting to release invalid pointer to EventPool");
         }
 #endif
     }

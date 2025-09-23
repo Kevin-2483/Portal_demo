@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <thread>
 #include <future>
+#include "debug/portal_debug_logging.h"
 
 namespace portal_core
 {
@@ -34,11 +35,11 @@ namespace portal_core
     {
       if (initialized_)
       {
-        std::cout << "SystemManager: Already initialized, skipping." << std::endl;
+        PORTAL_DEBUG_LOG("SystemManager: Already initialized, skipping.");
         return;
       }
 
-      std::cout << "SystemManager: Initializing..." << std::endl;
+      PORTAL_DEBUG_LOG("SystemManager: Initializing...");
 
       // 清空現有系統
       systems_.clear();
@@ -46,7 +47,7 @@ namespace portal_core
       // 從註冊表載入所有系統
       const auto &registered_systems = SystemRegistry::get_registered_systems();
 
-      std::cout << "SystemManager: Found " << registered_systems.size() << " registered systems." << std::endl;
+      PORTAL_DEBUG_LOG("SystemManager: Found " << registered_systems.size() << " registered systems.");
 
       // 第一步：創建所有系統實例
       for (const auto &pair : registered_systems)
@@ -60,16 +61,16 @@ namespace portal_core
           if (system->initialize())
           {
             systems_[name] = std::move(system);
-            std::cout << "SystemManager: Created system '" << name << "'" << std::endl;
+            PORTAL_DEBUG_LOG("SystemManager: Created system '" << name << "'");
           }
           else
           {
-            std::cerr << "SystemManager: Failed to initialize system '" << name << "'" << std::endl;
+            PORTAL_DEBUG_ERROR("SystemManager: Failed to initialize system '" << name << "'");
           }
         }
         else
         {
-          std::cerr << "SystemManager: Failed to create system '" << name << "'" << std::endl;
+          PORTAL_DEBUG_ERROR("SystemManager: Failed to create system '" << name << "'");
         }
       }
 
@@ -80,7 +81,7 @@ namespace portal_core
       build_phase_execution_map(registered_systems);
 
       initialized_ = true;
-      std::cout << "SystemManager: Initialization complete." << std::endl;
+      PORTAL_DEBUG_LOG("SystemManager: Initialization complete.");
     }
 
     /**
@@ -90,13 +91,13 @@ namespace portal_core
     {
       if (!system)
       {
-        std::cerr << "SystemManager: Cannot add null system '" << name << "'" << std::endl;
+        PORTAL_DEBUG_ERROR("SystemManager: Cannot add null system '" << name << "'");
         return;
       }
 
       if (!system->initialize())
       {
-        std::cerr << "SystemManager: Failed to initialize system '" << name << "'" << std::endl;
+        PORTAL_DEBUG_ERROR("SystemManager: Failed to initialize system '" << name << "'");
         return;
       }
 
@@ -136,7 +137,7 @@ namespace portal_core
     {
       if (!initialized_)
       {
-        std::cerr << "SystemManager: Not initialized, call initialize() first." << std::endl;
+        PORTAL_DEBUG_ERROR("SystemManager: Not initialized, call initialize() first.");
         return;
       }
 
@@ -154,7 +155,7 @@ namespace portal_core
     {
       if (!initialized_)
       {
-        std::cerr << "SystemManager: Not initialized, call initialize() first." << std::endl;
+        PORTAL_DEBUG_ERROR("SystemManager: Not initialized, call initialize() first.");
         return;
       }
 
@@ -174,8 +175,8 @@ namespace portal_core
     void set_parallel_execution(bool enabled)
     {
       enable_parallel_execution_ = enabled;
-      std::cout << "SystemManager: Parallel execution "
-                << (enabled ? "enabled" : "disabled") << std::endl;
+      PORTAL_DEBUG_LOG("SystemManager: Parallel execution "
+                << (enabled ? "enabled" : "disabled"));
     }
 
     /**
@@ -211,7 +212,7 @@ namespace portal_core
       auto physics_system = get_system("PhysicsSystem");
       if (physics_system)
       {
-        std::cout << "SystemManager: Force cleaning up PhysicsSystem" << std::endl;
+        PORTAL_DEBUG_LOG("SystemManager: Force cleaning up PhysicsSystem");
         physics_system->cleanup();
       }
 
@@ -219,7 +220,7 @@ namespace portal_core
       auto physics_event_system = get_system("PhysicsEventSystem");
       if (physics_event_system)
       {
-        std::cout << "SystemManager: Force cleaning up PhysicsEventSystem" << std::endl;
+        PORTAL_DEBUG_LOG("SystemManager: Force cleaning up PhysicsEventSystem");
         physics_event_system->cleanup();
       }
 
@@ -227,11 +228,11 @@ namespace portal_core
       auto physics_command_system = get_system("PhysicsCommandSystem");
       if (physics_command_system)
       {
-        std::cout << "SystemManager: Force cleaning up PhysicsCommandSystem" << std::endl;
+        PORTAL_DEBUG_LOG("SystemManager: Force cleaning up PhysicsCommandSystem");
         physics_command_system->cleanup();
       }
 
-      std::cout << "SystemManager: Physics systems force cleanup completed" << std::endl;
+      PORTAL_DEBUG_LOG("SystemManager: Physics systems force cleanup completed");
     }
 
     /**
@@ -246,7 +247,7 @@ namespace portal_core
       // 重新注册所有静态系统（解决静态注册清除后无法重新注册的问题）
       SystemRegistry::reset_and_re_register();
 
-      std::cout << "SystemManager: Reset completed with static system re-registration." << std::endl;
+      PORTAL_DEBUG_LOG("SystemManager: Reset completed with static system re-registration.");
     }
 
     /**
@@ -321,12 +322,12 @@ namespace portal_core
             dependencies[name].push_back(dependency);
             dependents[dependency].insert(name);
             in_degree[name]++;
-            std::cout << "SystemManager: '" << dependency << "' -> '" << name << "' dependency added." << std::endl;
+            PORTAL_DEBUG_LOG("SystemManager: '" << dependency << "' -> '" << name << "' dependency added.");
           }
           else
           {
-            std::cerr << "SystemManager: Warning - Dependency '" << dependency
-                      << "' for system '" << name << "' not found." << std::endl;
+            PORTAL_DEBUG_ERROR("SystemManager: Warning - Dependency '" << dependency
+                      << "' for system '" << name << "' not found.");
           }
         }
       }
@@ -334,14 +335,14 @@ namespace portal_core
       // 檢測並報告循環依賴
       if (!detect_circular_dependencies(in_degree, dependents))
       {
-        std::cerr << "SystemManager: Circular dependencies detected! System execution may be incorrect." << std::endl;
+        PORTAL_DEBUG_ERROR("SystemManager: Circular dependencies detected! System execution may be incorrect.");
       }
 
       // 分析並行執行層次
       analyze_parallel_layers(in_degree, dependents);
 
-      std::cout << "SystemManager: Task graph analysis complete. "
-                << parallel_layers_.size() << " execution layers identified." << std::endl;
+      PORTAL_DEBUG_LOG("SystemManager: Task graph analysis complete. "
+                << parallel_layers_.size() << " execution layers identified.");
     }
 
     /**
@@ -398,14 +399,14 @@ namespace portal_core
 
       if (!circular_systems.empty())
       {
-        std::cerr << "SystemManager: Circular dependency detected among systems: ";
+        PORTAL_DEBUG_ERROR_SIMPLE("SystemManager: Circular dependency detected among systems: ");
         for (size_t i = 0; i < circular_systems.size(); ++i)
         {
-          std::cerr << circular_systems[i];
+          PORTAL_DEBUG_ERROR_SIMPLE(circular_systems[i]);
           if (i < circular_systems.size() - 1)
-            std::cerr << ", ";
+            PORTAL_DEBUG_ERROR_SIMPLE(", ");
         }
-        std::cerr << std::endl;
+        PORTAL_DEBUG_ERROR_SIMPLE(std::endl);
         return false;
       }
 
@@ -446,8 +447,8 @@ namespace portal_core
         if (current_layer.empty())
         {
           // 檢測到循環依賴，跳出避免無限循環
-          std::cerr << "SystemManager: Cannot resolve dependencies for remaining "
-                    << remaining_systems.size() << " systems. Skipping them." << std::endl;
+          PORTAL_DEBUG_ERROR("SystemManager: Cannot resolve dependencies for remaining "
+                    << remaining_systems.size() << " systems. Skipping them.");
           break;
         }
 
@@ -472,13 +473,13 @@ namespace portal_core
           }
         }
 
-        std::cout << "SystemManager: Layer " << layer++ << " (" << current_layer.size()
-                  << " systems): ";
+        PORTAL_DEBUG_LOG_SIMPLE("SystemManager: Layer " << layer++ << " (" << current_layer.size()
+                  << " systems): ");
         for (const auto &sys : current_layer)
         {
-          std::cout << sys << " ";
+          PORTAL_DEBUG_LOG_SIMPLE(sys << " ");
         }
-        std::cout << std::endl;
+        PORTAL_DEBUG_LOG_SIMPLE(std::endl);
       }
     }
 
@@ -527,7 +528,7 @@ namespace portal_core
       }
       
       // 輸出階段執行映射信息
-      std::cout << "SystemManager: Phase execution mapping built:" << std::endl;
+      PORTAL_DEBUG_LOG("SystemManager: Phase execution mapping built:");
       for (const auto &phase_pair : phase_systems_)
       {
         const char* phase_name = "";
@@ -538,12 +539,12 @@ namespace portal_core
           case SystemExecutionPhase::POST_UPDATE: phase_name = "POST_UPDATE"; break;
         }
         
-        std::cout << "  " << phase_name << " (" << phase_pair.second.size() << " systems): ";
+        PORTAL_DEBUG_LOG_SIMPLE("  " << phase_name << " (" << phase_pair.second.size() << " systems): ");
         for (const auto &sys : phase_pair.second)
         {
-          std::cout << sys << " ";
+          PORTAL_DEBUG_LOG_SIMPLE(sys << " ");
         }
-        std::cout << std::endl;
+        PORTAL_DEBUG_LOG_SIMPLE(std::endl);
       }
     }
 
@@ -686,8 +687,8 @@ namespace portal_core
             future.wait();
           }
 
-          std::cout << "SystemManager: Layer " << layer_idx << " completed ("
-                    << layer.size() << " systems in parallel)" << std::endl;
+          PORTAL_DEBUG_LOG("SystemManager: Layer " << layer_idx << " completed ("
+                    << layer.size() << " systems in parallel)");
         }
       }
     }

@@ -4,6 +4,7 @@
 #include "components/transform_component.h"
 #include <iostream>
 #include <string>
+#include "debug/portal_debug_logging.h"
 
 namespace portal_core {
 
@@ -275,14 +276,14 @@ private:
      * 輸出警告日誌
      */
     static void log_warning(const std::string& component_name, const std::string& message) {
-        std::cerr << "[ComponentSafety] Warning - " << component_name << ": " << message << std::endl;
+        PORTAL_DEBUG_ERROR("[ComponentSafety] Warning - " << component_name << ": " << message);
     }
     
     /**
      * 輸出錯誤日誌
      */
     static void log_error(const std::string& component_name, const std::string& message) {
-        std::cerr << "[ComponentSafety] Error - " << component_name << ": " << message << std::endl;
+        PORTAL_DEBUG_ERROR("[ComponentSafety] Error - " << component_name << ": " << message);
     }
 };
 

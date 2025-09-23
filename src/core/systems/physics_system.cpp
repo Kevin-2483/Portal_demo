@@ -12,18 +12,19 @@
 
 #include <iostream>
 #include <chrono>
+#include "../debug/portal_debug_logging.h"
 
 namespace portal_core
 {
 
   bool PhysicsSystem::initialize()
   {
-    std::cout << "PhysicsSystem: Initializing..." << std::endl;
+    PORTAL_DEBUG_LOG("PhysicsSystem: Initializing...");
 
     // 初始化物理世界
     if (!initialize_physics_world())
     {
-      std::cerr << "PhysicsSystem: Failed to initialize physics world!" << std::endl;
+      PORTAL_DEBUG_ERROR("PhysicsSystem: Failed to initialize physics world!");
       return false;
     }
 
@@ -35,7 +36,7 @@ namespace portal_core
     // 启用调试渲染进行测试
     debug_rendering_enabled_ = true;
 
-    std::cout << "PhysicsSystem: Initialization complete. Debug rendering enabled." << std::endl;
+    PORTAL_DEBUG_LOG("PhysicsSystem: Initialization complete. Debug rendering enabled.");
     return true;
   }
 
@@ -51,7 +52,7 @@ namespace portal_core
     physics_body_removed_connection_ = registry.on_destroy<PhysicsBodyComponent>().connect<&PhysicsSystem::on_physics_body_removed>(*this);
     transform_updated_connection_ = registry.on_update<TransformComponent>().connect<&PhysicsSystem::on_transform_updated>(*this);
 
-    std::cout << "PhysicsSystem: Component listeners set up." << std::endl;
+    PORTAL_DEBUG_LOG("PhysicsSystem: Component listeners set up.");
     return true;
   }
 
@@ -110,17 +111,17 @@ namespace portal_core
     // 每60幀輸出一次性能統計
     if (++frame_counter_ % 60 == 0)
     {
-      std::cout << "PhysicsSystem: Bodies=" << stats_.num_physics_bodies
+      PORTAL_DEBUG_LOG("PhysicsSystem: Bodies=" << stats_.num_physics_bodies
                 << " Active=" << stats_.num_active_bodies
                 << " PhysicsTime=" << stats_.physics_step_time * 1000.0f << "ms"
                 << " SyncTime=" << stats_.sync_time * 1000.0f << "ms"
-                << " TotalTime=" << total_time * 1000.0f << "ms" << std::endl;
+                << " TotalTime=" << total_time * 1000.0f << "ms");
     }
   }
 
   void PhysicsSystem::cleanup()
   {
-    std::cout << "PhysicsSystem: Cleaning up..." << std::endl;
+    PORTAL_DEBUG_LOG("PhysicsSystem: Cleaning up...");
 
     // 斷開EnTT連接
     physics_body_added_connection_.release();
@@ -139,7 +140,7 @@ namespace portal_core
     physics_world_initialized_ = false;
     physics_world_ = nullptr;
 
-    std::cout << "PhysicsSystem: Cleanup complete." << std::endl;
+    PORTAL_DEBUG_LOG("PhysicsSystem: Cleanup complete.");
   }
 
   void PhysicsSystem::create_physics_body(entt::entity entity, entt::registry &registry)
@@ -147,7 +148,7 @@ namespace portal_core
     // 檢查是否已經有物理體
     if (entity_to_body_.count(entity))
     {
-      std::cout << "PhysicsSystem: Entity already has physics body, skipping creation." << std::endl;
+      PORTAL_DEBUG_LOG("PhysicsSystem: Entity already has physics body, skipping creation.");
       return;
     }
 
@@ -157,7 +158,7 @@ namespace portal_core
 
     if (!physics_body || !transform)
     {
-      std::cerr << "PhysicsSystem: Entity missing required components for physics body creation." << std::endl;
+      PORTAL_DEBUG_ERROR("PhysicsSystem: Entity missing required components for physics body creation.");
       return;
     }
 
@@ -168,32 +169,32 @@ namespace portal_core
 
     if (physics_corrected || transform_corrected)
     {
-      std::cout << "PhysicsSystem: Components auto-corrected for entity " << entity_id << std::endl;
+      PORTAL_DEBUG_LOG("PhysicsSystem: Components auto-corrected for entity " << entity_id);
     }
 
     // 檢查組件依賴關係
     if (!ComponentSafetyManager::validate_component_dependencies(registry, entity))
     {
-      std::cerr << "PhysicsSystem: Component dependency validation failed for entity " << entity_id << std::endl;
+      PORTAL_DEBUG_ERROR("PhysicsSystem: Component dependency validation failed for entity " << entity_id);
       return;
     }
 
     // 驗證物理體組件（現在應該都是有效的）
     if (!validate_physics_body_component(*physics_body))
     {
-      std::cerr << "PhysicsSystem: Physics body component still invalid after auto-correction for entity "
-                << entity_id << std::endl;
+      PORTAL_DEBUG_ERROR("PhysicsSystem: Physics body component still invalid after auto-correction for entity "
+                << entity_id);
       return;
     }
 
     // 創建Jolt物理體
     if (create_jolt_body(entity, *physics_body, *transform))
     {
-      std::cout << "PhysicsSystem: Created physics body for entity " << static_cast<uint32_t>(entity) << std::endl;
+      PORTAL_DEBUG_LOG("PhysicsSystem: Created physics body for entity " << static_cast<uint32_t>(entity));
     }
     else
     {
-      std::cerr << "PhysicsSystem: Failed to create physics body for entity " << static_cast<uint32_t>(entity) << std::endl;
+      PORTAL_DEBUG_ERROR("PhysicsSystem: Failed to create physics body for entity " << static_cast<uint32_t>(entity));
     }
   }
 
@@ -219,7 +220,7 @@ namespace portal_core
       physics_body->body_id = JPH::BodyID();
     }
 
-    std::cout << "PhysicsSystem: Destroyed physics body for entity " << static_cast<uint32_t>(entity) << std::endl;
+    PORTAL_DEBUG_LOG("PhysicsSystem: Destroyed physics body for entity " << static_cast<uint32_t>(entity));
   }
 
   void PhysicsSystem::sync_physics_to_transform(entt::registry &registry)
@@ -335,8 +336,8 @@ namespace portal_core
             {
               // 這裡可以添加碰撞事件處理邏輯，现在有完整的接触信息
               // 暫時只輸出調試信息
-              // std::cout << "Collision between entities " << static_cast<uint32_t>(entity1)
-              //          << " and " << static_cast<uint32_t>(entity2) << std::endl;
+              // PORTAL_DEBUG_LOG("Collision between entities " << static_cast<uint32_t>(entity1)
+              //          << " and " << static_cast<uint32_t>(entity2));
             }
           });
 
@@ -421,21 +422,21 @@ namespace portal_core
     case PhysicsShapeType::BOX:
       if (component.shape.size.GetX() <= 0 || component.shape.size.GetY() <= 0 || component.shape.size.GetZ() <= 0)
       {
-        std::cerr << "PhysicsSystem: Invalid box size." << std::endl;
+        PORTAL_DEBUG_ERROR("PhysicsSystem: Invalid box size.");
         return false;
       }
       break;
     case PhysicsShapeType::SPHERE:
       if (component.shape.radius <= 0)
       {
-        std::cerr << "PhysicsSystem: Invalid sphere radius." << std::endl;
+        PORTAL_DEBUG_ERROR("PhysicsSystem: Invalid sphere radius.");
         return false;
       }
       break;
     case PhysicsShapeType::CAPSULE:
       if (component.shape.radius <= 0 || component.shape.height <= 0)
       {
-        std::cerr << "PhysicsSystem: Invalid capsule dimensions." << std::endl;
+        PORTAL_DEBUG_ERROR("PhysicsSystem: Invalid capsule dimensions.");
         return false;
       }
       break;
@@ -446,14 +447,14 @@ namespace portal_core
     // 檢查材質屬性
     if (component.material.friction < 0 || component.material.restitution < 0 || component.material.restitution > 1)
     {
-      std::cerr << "PhysicsSystem: Invalid material properties." << std::endl;
+      PORTAL_DEBUG_ERROR("PhysicsSystem: Invalid material properties.");
       return false;
     }
 
     // 檢查質量（動態物體）
     if (component.is_dynamic() && component.mass <= 0)
     {
-      std::cerr << "PhysicsSystem: Dynamic body must have positive mass." << std::endl;
+      PORTAL_DEBUG_ERROR("PhysicsSystem: Dynamic body must have positive mass.");
       return false;
     }
 
@@ -739,15 +740,15 @@ namespace portal_core
     if (++frame_count % 120 == 0)
     { // 每2秒输出一次
       auto stats = UnifiedDebugDraw::get_stats();
-      std::cout << "PhysicsSystem: Drew debug elements, render stats: " 
-                << stats.total_commands << " commands" << std::endl;
+      PORTAL_DEBUG_LOG("PhysicsSystem: Drew debug elements, render stats: " 
+                << stats.total_commands << " commands");
     }
 #else
     // 在测试环境中，只输出简单的调试信息
     static int frame_count = 0;
     if (++frame_count % 120 == 0)
     {
-      std::cout << "PhysicsSystem: Debug rendering disabled in test environment (frame " << frame_count << ")" << std::endl;
+      PORTAL_DEBUG_LOG("PhysicsSystem: Debug rendering disabled in test environment (frame " << frame_count << ")");
     }
 #endif
   }
@@ -761,8 +762,8 @@ namespace portal_core
       bool corrected = ComponentSafetyManager::validate_and_correct_physics_body(*physics_body, entity_id);
       if (corrected)
       {
-        std::cout << "PhysicsSystem: Auto-corrected PhysicsBodyComponent for entity "
-                  << entity_id << " on component addition" << std::endl;
+        PORTAL_DEBUG_LOG("PhysicsSystem: Auto-corrected PhysicsBodyComponent for entity "
+                  << entity_id << " on component addition");
       }
     }
 

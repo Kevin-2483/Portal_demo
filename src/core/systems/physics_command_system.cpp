@@ -5,6 +5,7 @@
 #include <iostream>
 #include <chrono>
 #include <algorithm>
+#include "../debug/portal_debug_logging.h"
 
 namespace portal_core
 {
@@ -13,7 +14,7 @@ namespace portal_core
 
   bool PhysicsCommandSystem::initialize()
   {
-    std::cout << "PhysicsCommandSystem: Initializing..." << std::endl;
+    PORTAL_DEBUG_LOG("PhysicsCommandSystem: Initializing...");
 
     // 獲取物理世界管理器
     physics_world_ = &PhysicsWorldManager::get_instance();
@@ -23,7 +24,7 @@ namespace portal_core
     commands_executed_this_frame_ = 0;
 
     initialized_ = true;
-    std::cout << "PhysicsCommandSystem: Initialization complete." << std::endl;
+    PORTAL_DEBUG_LOG("PhysicsCommandSystem: Initialization complete.");
     return true;
   }
 
@@ -71,13 +72,13 @@ namespace portal_core
 
   void PhysicsCommandSystem::cleanup()
   {
-    std::cout << "PhysicsCommandSystem: Cleaning up..." << std::endl;
+    PORTAL_DEBUG_LOG("PhysicsCommandSystem: Cleaning up...");
 
     entities_processed_this_frame_.clear();
     physics_world_ = nullptr;
     initialized_ = false;
 
-    std::cout << "PhysicsCommandSystem: Cleanup complete." << std::endl;
+    PORTAL_DEBUG_LOG("PhysicsCommandSystem: Cleanup complete.");
   }
 
   void PhysicsCommandSystem::execute_immediate_commands(entt::registry &registry)
@@ -307,7 +308,7 @@ namespace portal_core
       return execute_custom_command(command, entity, registry);
 
     default:
-      std::cerr << "PhysicsCommandSystem: Unknown command type: " << static_cast<int>(command.type) << std::endl;
+      PORTAL_DEBUG_ERROR("PhysicsCommandSystem: Unknown command type: " << static_cast<int>(command.type));
       return false;
     }
   }
@@ -587,7 +588,7 @@ namespace portal_core
       }
       else
       {
-        std::cerr << "PhysicsCommandSystem: Custom command execution failed: invalid function" << std::endl;
+        PORTAL_DEBUG_ERROR("PhysicsCommandSystem: Custom command execution failed: invalid function");
         return false;
       }
     }
@@ -664,13 +665,13 @@ namespace portal_core
 
   bool PhysicsQuerySystem::initialize()
   {
-    std::cout << "PhysicsQuerySystem: Initializing..." << std::endl;
+    PORTAL_DEBUG_LOG("PhysicsQuerySystem: Initializing...");
 
     physics_world_ = &PhysicsWorldManager::get_instance();
     stats_ = QuerySystemStats{};
 
     initialized_ = true;
-    std::cout << "PhysicsQuerySystem: Initialization complete." << std::endl;
+    PORTAL_DEBUG_LOG("PhysicsQuerySystem: Initialization complete.");
     return true;
   }
 
@@ -702,12 +703,12 @@ namespace portal_core
 
   void PhysicsQuerySystem::cleanup()
   {
-    std::cout << "PhysicsQuerySystem: Cleaning up..." << std::endl;
+    PORTAL_DEBUG_LOG("PhysicsQuerySystem: Cleaning up...");
 
     physics_world_ = nullptr;
     initialized_ = false;
 
-    std::cout << "PhysicsQuerySystem: Cleanup complete." << std::endl;
+    PORTAL_DEBUG_LOG("PhysicsQuerySystem: Cleanup complete.");
   }
 
   void PhysicsQuerySystem::execute_raycast_queries(entt::registry &registry)

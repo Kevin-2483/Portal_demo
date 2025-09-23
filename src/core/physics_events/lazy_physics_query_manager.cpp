@@ -1,6 +1,7 @@
 #include "lazy_physics_query_manager.h"
 #include "../components/physics_body_component.h"
 #include <iostream>
+#include "../debug/portal_debug_logging.h"
 
 namespace portal_core {
 
@@ -324,7 +325,7 @@ PhysicsEventDimension LazyPhysicsQueryManager::detect_query_dimension(const Vec3
 
 void LazyPhysicsQueryManager::debug_log(const std::string& message) const {
     if (debug_mode_) {
-        std::cout << "[LazyPhysicsQueryManager] " << message << std::endl;
+        PORTAL_DEBUG_LOG("[LazyPhysicsQueryManager] " << message);
     }
 }
 

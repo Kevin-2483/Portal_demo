@@ -11,6 +11,7 @@
 #include <chrono>
 #include <iostream>
 #include "event_pool_and_concurrency.h"
+#include "debug/portal_debug_logging.h"
 
 namespace portal_core {
 
@@ -492,12 +493,12 @@ void EventManager::add_temporary_marker(entt::entity target_entity,
 template<typename TEvent>
 bool EventManager::enqueue_concurrent(const TEvent& event) {
     if (!concurrent_mode_enabled_) {
-        std::cerr << "EventManager: Concurrent mode not enabled!" << std::endl;
+        PORTAL_DEBUG_ERROR("EventManager: Concurrent mode not enabled!");
         return false;
     }
     
     if (!concurrent_dispatcher_) {
-        std::cerr << "EventManager: Concurrent dispatcher not initialized!" << std::endl;
+        PORTAL_DEBUG_ERROR("EventManager: Concurrent dispatcher not initialized!");
         return false;
     }
     

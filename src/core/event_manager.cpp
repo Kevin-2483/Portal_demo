@@ -2,6 +2,7 @@
 #include <iostream>
 #include <algorithm>
 #include <chrono>
+#include "debug/portal_debug_logging.h"
 
 namespace portal_core {
 
@@ -22,8 +23,8 @@ EventManager::EventManager(entt::registry& registry)
     }
     
     if (debug_mode_) {
-        std::cout << "EventManager: Initialized with " << worker_thread_count_ 
-                  << " worker threads detected" << std::endl;
+        PORTAL_DEBUG_LOG("EventManager: Initialized with " << worker_thread_count_ 
+                  << " worker threads detected");
     }
 }
 
@@ -51,8 +52,8 @@ void EventManager::process_queued_events(float delta_time) {
     statistics_.last_process_time_ms = duration.count() / 1000.0f;
 
     if (debug_mode_) {
-        std::cout << "EventManager: Processed queued events in " 
-                  << statistics_.last_process_time_ms << "ms" << std::endl;
+        PORTAL_DEBUG_LOG("EventManager: Processed queued events in " 
+                  << statistics_.last_process_time_ms << "ms");
     }
 }
 
@@ -85,8 +86,8 @@ void EventManager::cleanup_expired_events() {
     }
 
     if (debug_mode_ && !to_destroy.empty()) {
-        std::cout << "EventManager: Cleaned up " << to_destroy.size() 
-                  << " expired event entities" << std::endl;
+        PORTAL_DEBUG_LOG("EventManager: Cleaned up " << to_destroy.size() 
+                  << " expired event entities");
     }
 }
 
@@ -101,8 +102,8 @@ void EventManager::update_delayed_events(float delta_time) {
                 it->executor();
             }
             if (debug_mode_) {
-                std::cout << "EventManager: Executed delayed event in category: " 
-                          << it->category << std::endl;
+                PORTAL_DEBUG_LOG("EventManager: Executed delayed event in category: " 
+                          << it->category);
             }
             
             it = delayed_events_.erase(it);
@@ -123,8 +124,8 @@ void EventManager::update_temporary_markers() {
                 it->cleanup_func();
             }
             if (debug_mode_) {
-                std::cout << "EventManager: Cleaned up temporary marker for entity " 
-                          << static_cast<uint32_t>(it->entity) << std::endl;
+                PORTAL_DEBUG_LOG("EventManager: Cleaned up temporary marker for entity " 
+                          << static_cast<uint32_t>(it->entity));
             }
             
             if (statistics_.temporary_markers_count > 0) {
@@ -140,8 +141,8 @@ void EventManager::update_temporary_markers() {
 
 void EventManager::log_event_if_debug(const std::string& event_type, const std::string& action) {
     if (debug_mode_) {
-        std::cout << "EventManager: " << action << " - " << event_type 
-                  << " (Frame: " << current_frame_ << ")" << std::endl;
+        PORTAL_DEBUG_LOG("EventManager: " << action << " - " << event_type 
+                  << " (Frame: " << current_frame_ << ")");
     }
 }
 
@@ -152,7 +153,7 @@ void EventManager::warmup_object_pools() {
     pool_manager_.warmup_pools();
     
     if (debug_mode_) {
-        std::cout << "EventManager: Object pools warmed up" << std::endl;
+        PORTAL_DEBUG_LOG("EventManager: Object pools warmed up");
     }
 }
 
@@ -186,8 +187,8 @@ void EventManager::set_concurrent_mode(bool enabled) {
         concurrency_statistics_.worker_threads = worker_thread_count_;
         
         if (debug_mode_) {
-            std::cout << "EventManager: Concurrent mode enabled with " 
-                      << worker_thread_count_ << " worker threads" << std::endl;
+            PORTAL_DEBUG_LOG("EventManager: Concurrent mode enabled with " 
+                      << worker_thread_count_ << " worker threads");
         }
     } else {
         // 清理并发调度器
@@ -196,7 +197,7 @@ void EventManager::set_concurrent_mode(bool enabled) {
         concurrency_statistics_.worker_threads = 0;
         
         if (debug_mode_) {
-            std::cout << "EventManager: Concurrent mode disabled" << std::endl;
+            PORTAL_DEBUG_LOG("EventManager: Concurrent mode disabled");
         }
     }
 }
@@ -214,7 +215,7 @@ void EventManager::set_worker_thread_count(size_t count) {
     }
     
     if (debug_mode_) {
-        std::cout << "EventManager: Worker thread count set to " << count << std::endl;
+        PORTAL_DEBUG_LOG("EventManager: Worker thread count set to " << count);
     }
 }
 
@@ -247,7 +248,7 @@ void EventManager::apply_configuration(const Configuration& config) {
     }
     
     if (debug_mode_) {
-        std::cout << "EventManager: Configuration applied successfully" << std::endl;
+        PORTAL_DEBUG_LOG("EventManager: Configuration applied successfully");
     }
 }
 
@@ -265,57 +266,57 @@ void EventManager::reset_statistics() {
     peak_memory_usage_ = 0;
     
     if (debug_mode_) {
-        std::cout << "EventManager: Statistics reset" << std::endl;
+        PORTAL_DEBUG_LOG("EventManager: Statistics reset");
     }
 }
 
 void EventManager::export_statistics_to_console() const {
-    std::cout << "\n=== EventManager Statistics ===" << std::endl;
-    std::cout << "Events:" << std::endl;
-    std::cout << "  Immediate: " << statistics_.immediate_events_count << std::endl;
-    std::cout << "  Queued: " << statistics_.queued_events_count << std::endl;
-    std::cout << "  Entity Events: " << statistics_.entity_events_count << std::endl;
-    std::cout << "  Temporary Markers: " << statistics_.temporary_markers_count << std::endl;
-    std::cout << "  Last Process Time: " << statistics_.last_process_time_ms << "ms" << std::endl;
+    PORTAL_DEBUG_LOG("\n=== EventManager Statistics ===");
+    PORTAL_DEBUG_LOG("Events:");
+    PORTAL_DEBUG_LOG("  Immediate: " << statistics_.immediate_events_count);
+    PORTAL_DEBUG_LOG("  Queued: " << statistics_.queued_events_count);
+    PORTAL_DEBUG_LOG("  Entity Events: " << statistics_.entity_events_count);
+    PORTAL_DEBUG_LOG("  Temporary Markers: " << statistics_.temporary_markers_count);
+    PORTAL_DEBUG_LOG("  Last Process Time: " << statistics_.last_process_time_ms << "ms");
     
-    std::cout << "\nPools:" << std::endl;
-    std::cout << "  Active Pools: " << pool_statistics_.total_pools_active << std::endl;
-    std::cout << "  Objects Created: " << pool_statistics_.total_objects_created << std::endl;
-    std::cout << "  Objects Reused: " << pool_statistics_.total_objects_reused << std::endl;
-    std::cout << "  Reuse Ratio: " << pool_statistics_.average_reuse_ratio * 100 << "%" << std::endl;
+    PORTAL_DEBUG_LOG("\nPools:");
+    PORTAL_DEBUG_LOG("  Active Pools: " << pool_statistics_.total_pools_active);
+    PORTAL_DEBUG_LOG("  Objects Created: " << pool_statistics_.total_objects_created);
+    PORTAL_DEBUG_LOG("  Objects Reused: " << pool_statistics_.total_objects_reused);
+    PORTAL_DEBUG_LOG("  Reuse Ratio: " << pool_statistics_.average_reuse_ratio * 100 << "%");
     
-    std::cout << "\nConcurrency:" << std::endl;
-    std::cout << "  Mode Active: " << (concurrency_statistics_.concurrent_mode_active ? "Yes" : "No") << std::endl;
-    std::cout << "  Worker Threads: " << concurrency_statistics_.worker_threads << std::endl;
-    std::cout << "  Concurrent Events Processed: " << concurrency_statistics_.concurrent_events_processed << std::endl;
-    std::cout << "  Concurrent Events Dropped: " << concurrency_statistics_.concurrent_events_dropped << std::endl;
-    std::cout << "  Queue Utilization: " << concurrency_statistics_.average_queue_utilization * 100 << "%" << std::endl;
+    PORTAL_DEBUG_LOG("\nConcurrency:");
+    PORTAL_DEBUG_LOG("  Mode Active: " << (concurrency_statistics_.concurrent_mode_active ? "Yes" : "No"));
+    PORTAL_DEBUG_LOG("  Worker Threads: " << concurrency_statistics_.worker_threads);
+    PORTAL_DEBUG_LOG("  Concurrent Events Processed: " << concurrency_statistics_.concurrent_events_processed);
+    PORTAL_DEBUG_LOG("  Concurrent Events Dropped: " << concurrency_statistics_.concurrent_events_dropped);
+    PORTAL_DEBUG_LOG("  Queue Utilization: " << concurrency_statistics_.average_queue_utilization * 100 << "%");
     
     if (performance_profiling_enabled_) {
-        std::cout << "\nPerformance:" << std::endl;
-        std::cout << "  Avg Immediate Time: " << performance_profile_.avg_immediate_event_time_ms << "ms" << std::endl;
-        std::cout << "  Avg Queued Time: " << performance_profile_.avg_queued_event_time_ms << "ms" << std::endl;
-        std::cout << "  Avg Concurrent Time: " << performance_profile_.avg_concurrent_event_time_ms << "ms" << std::endl;
-        std::cout << "  Frame Processing Time: " << performance_profile_.frame_processing_time_ms << "ms" << std::endl;
-        std::cout << "  Current Memory: " << performance_profile_.current_memory_usage_bytes << " bytes" << std::endl;
-        std::cout << "  Peak Memory: " << performance_profile_.peak_memory_usage_bytes << " bytes" << std::endl;
+        PORTAL_DEBUG_LOG("\nPerformance:");
+        PORTAL_DEBUG_LOG("  Avg Immediate Time: " << performance_profile_.avg_immediate_event_time_ms << "ms");
+        PORTAL_DEBUG_LOG("  Avg Queued Time: " << performance_profile_.avg_queued_event_time_ms << "ms");
+        PORTAL_DEBUG_LOG("  Avg Concurrent Time: " << performance_profile_.avg_concurrent_event_time_ms << "ms");
+        PORTAL_DEBUG_LOG("  Frame Processing Time: " << performance_profile_.frame_processing_time_ms << "ms");
+        PORTAL_DEBUG_LOG("  Current Memory: " << performance_profile_.current_memory_usage_bytes << " bytes");
+        PORTAL_DEBUG_LOG("  Peak Memory: " << performance_profile_.peak_memory_usage_bytes << " bytes");
     }
     
-    std::cout << "================================\n" << std::endl;
+    PORTAL_DEBUG_LOG("================================\n");
 }
 
 void EventManager::export_pool_diagnostics() const {
-    std::cout << "\n=== Pool Diagnostics ===" << std::endl;
+    PORTAL_DEBUG_LOG("\n=== Pool Diagnostics ===");
     
     for (const auto& [type_name, size] : pool_statistics_.pool_sizes) {
-        std::cout << "Pool [" << type_name << "]: " << size << " objects" << std::endl;
+        PORTAL_DEBUG_LOG("Pool [" << type_name << "]: " << size << " objects");
     }
     
     for (const auto& [type_name, memory] : memory_usage_by_type_) {
-        std::cout << "Memory [" << type_name << "]: " << memory << " bytes" << std::endl;
+        PORTAL_DEBUG_LOG("Memory [" << type_name << "]: " << memory << " bytes");
     }
     
-    std::cout << "========================\n" << std::endl;
+    PORTAL_DEBUG_LOG("========================\n");
 }
 
 // === 内存管理实现 (新增) ===
@@ -325,7 +326,7 @@ void EventManager::cleanup_expired_pools() {
         pool_manager_.cleanup_expired_pools();
         
         if (debug_mode_) {
-            std::cout << "EventManager: Expired pools cleaned up" << std::endl;
+            PORTAL_DEBUG_LOG("EventManager: Expired pools cleaned up");
         }
     }
 }
@@ -344,7 +345,7 @@ void EventManager::force_garbage_collection() {
     }
     
     if (debug_mode_) {
-        std::cout << "EventManager: Forced garbage collection completed" << std::endl;
+        PORTAL_DEBUG_LOG("EventManager: Forced garbage collection completed");
     }
 }
 
@@ -367,7 +368,7 @@ void EventManager::start_performance_profiling() {
     performance_profile_ = PerformanceProfile{};
     
     if (debug_mode_) {
-        std::cout << "EventManager: Performance profiling started" << std::endl;
+        PORTAL_DEBUG_LOG("EventManager: Performance profiling started");
     }
 }
 
@@ -375,7 +376,7 @@ void EventManager::stop_performance_profiling() {
     performance_profiling_enabled_ = false;
     
     if (debug_mode_) {
-        std::cout << "EventManager: Performance profiling stopped" << std::endl;
+        PORTAL_DEBUG_LOG("EventManager: Performance profiling stopped");
     }
 }
 

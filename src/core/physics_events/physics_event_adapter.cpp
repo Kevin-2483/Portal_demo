@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include "../debug/portal_debug_logging.h"
 
 namespace portal_core {
 
@@ -705,7 +706,7 @@ void PhysicsEventAdapter::process_persistent_contacts(float delta_time) {
 
 void PhysicsEventAdapter::debug_log(const std::string& message) {
     if (debug_mode_) {
-        std::cout << "[PhysicsEventAdapter] " << message << std::endl;
+        PORTAL_DEBUG_LOG("[PhysicsEventAdapter] " << message);
     }
 }
 

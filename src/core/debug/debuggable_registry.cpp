@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include "imgui.h"
+#include "portal_debug_logging.h"
 
 namespace portal_core {
 namespace debug {
@@ -16,14 +17,14 @@ DebuggableRegistry& DebuggableRegistry::instance() {
 
 void DebuggableRegistry::register_debuggable(IDebuggable* debuggable) {
     if (!debuggable) {
-        std::cerr << "DebuggableRegistry: Attempted to register null debuggable object" << std::endl;
+        PORTAL_DEBUG_ERROR("DebuggableRegistry: Attempted to register null debuggable object");
         return;
     }
     
     // 检查是否已经注册
     if (is_registered(debuggable)) {
-        std::cerr << "DebuggableRegistry: Object '" << debuggable->get_debug_name() 
-                  << "' is already registered" << std::endl;
+        PORTAL_DEBUG_ERROR("DebuggableRegistry: Object '" << debuggable->get_debug_name() 
+                  << "' is already registered");
         return;
     }
     
@@ -32,8 +33,8 @@ void DebuggableRegistry::register_debuggable(IDebuggable* debuggable) {
     // 检查名称冲突
     auto it = named_objects_.find(name);
     if (it != named_objects_.end()) {
-        std::cerr << "DebuggableRegistry: Debug name '" << name 
-                  << "' is already in use by another object" << std::endl;
+        PORTAL_DEBUG_ERROR("DebuggableRegistry: Debug name '" << name 
+                  << "' is already in use by another object");
         return;
     }
     
@@ -41,7 +42,7 @@ void DebuggableRegistry::register_debuggable(IDebuggable* debuggable) {
     registered_objects_.push_back(debuggable);
     named_objects_[name] = debuggable;
     
-    std::cout << "DebuggableRegistry: Registered debuggable object '" << name << "'" << std::endl;
+    PORTAL_DEBUG_LOG("DebuggableRegistry: Registered debuggable object '" << name << "'");
 }
 
 void DebuggableRegistry::unregister_debuggable(IDebuggable* debuggable) {
@@ -61,7 +62,7 @@ void DebuggableRegistry::unregister_debuggable(IDebuggable* debuggable) {
             named_objects_.erase(map_it);
         }
         
-        std::cout << "DebuggableRegistry: Unregistered debuggable object '" << name << "'" << std::endl;
+        PORTAL_DEBUG_LOG("DebuggableRegistry: Unregistered debuggable object '" << name << "'");
     }
 }
 // ✅ 移除event_manager.cpp中的try-catch块
@@ -174,8 +175,8 @@ bool DebuggableRegistry::is_registered(IDebuggable* debuggable) const {
 }
 
 void DebuggableRegistry::clear_all() {
-    std::cout << "DebuggableRegistry: Clearing all " << registered_objects_.size() 
-              << " registered objects" << std::endl;
+    PORTAL_DEBUG_LOG("DebuggableRegistry: Clearing all " << registered_objects_.size() 
+              << " registered objects");
     
     registered_objects_.clear();
     named_objects_.clear();

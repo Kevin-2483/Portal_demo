@@ -2,6 +2,7 @@
 #include "../components/transform_component.h"
 #include "../renderComponents/TransformRenderProxy.h"
 #include <iostream>
+#include "../debug/portal_debug_logging.h"
 
 namespace portal_core {
 
@@ -10,7 +11,7 @@ RenderSyncSystem::RenderSyncSystem()
 }
 
 bool RenderSyncSystem::initialize() {
-    std::cout << "RenderSyncSystem: Initializing..." << std::endl;
+    PORTAL_DEBUG_LOG("RenderSyncSystem: Initializing...");
     current_tick_time = 0.0;
     sync_count = 0;
     return true;
@@ -44,12 +45,12 @@ void RenderSyncSystem::update(entt::registry& registry, float delta_time) {
     update_statistics(registry);
     
     if (sync_count > 0) {
-        std::cout << "RenderSyncSystem: Synced " << sync_count << " entities" << std::endl;
+        PORTAL_DEBUG_LOG("RenderSyncSystem: Synced " << sync_count << " entities");
     }
 }
 
 void RenderSyncSystem::cleanup() {
-    std::cout << "RenderSyncSystem: Cleaning up..." << std::endl;
+    PORTAL_DEBUG_LOG("RenderSyncSystem: Cleaning up...");
 }
 
 std::vector<std::string> RenderSyncSystem::get_dependencies() const {
@@ -97,8 +98,8 @@ void RenderSyncSystem::create_render_proxy_for_entity(entt::registry& registry, 
         current_tick_time
     );
     
-    std::cout << "RenderSyncSystem: Created TransformRenderProxy for entity " 
-              << static_cast<uint32_t>(entity) << std::endl;
+    PORTAL_DEBUG_LOG("RenderSyncSystem: Created TransformRenderProxy for entity " 
+              << static_cast<uint32_t>(entity));
 }
 
 void RenderSyncSystem::cleanup_orphaned_proxies(entt::registry& registry) {
@@ -115,8 +116,8 @@ void RenderSyncSystem::cleanup_orphaned_proxies(entt::registry& registry) {
     // 移除孤立的渲染代理组件
     for (auto entity : orphaned_entities) {
         registry.remove<TransformRenderProxy>(entity);
-        std::cout << "RenderSyncSystem: Removed orphaned TransformRenderProxy from entity " 
-                  << static_cast<uint32_t>(entity) << std::endl;
+        PORTAL_DEBUG_LOG("RenderSyncSystem: Removed orphaned TransformRenderProxy from entity " 
+                  << static_cast<uint32_t>(entity));
     }
 }
 
@@ -131,9 +132,9 @@ void RenderSyncSystem::update_statistics(entt::registry& registry) {
     // 可以在调试模式下输出更详细的统计信息
     #ifdef DEBUG
     if (sync_count > 0) {
-        std::cout << "RenderSyncSystem Stats - Transform entities: " << transform_count 
+        PORTAL_DEBUG_LOG("RenderSyncSystem Stats - Transform entities: " << transform_count 
                   << ", Proxy entities: " << proxy_count 
-                  << ", Synced this frame: " << sync_count << std::endl;
+                  << ", Synced this frame: " << sync_count);
     }
     #endif
 }
@@ -148,8 +149,8 @@ void RenderSyncSystem::on_transform_component_removed(entt::registry& registry, 
     // 当TransformComponent被移除时，自动移除对应的渲染代理组件
     if (registry.all_of<TransformRenderProxy>(entity)) {
         registry.remove<TransformRenderProxy>(entity);
-        std::cout << "RenderSyncSystem: Removed TransformRenderProxy for removed TransformComponent on entity " 
-                  << static_cast<uint32_t>(entity) << std::endl;
+        PORTAL_DEBUG_LOG("RenderSyncSystem: Removed TransformRenderProxy for removed TransformComponent on entity " 
+                  << static_cast<uint32_t>(entity));
     }
 }
 

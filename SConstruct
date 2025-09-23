@@ -352,7 +352,6 @@ if library_nodes and not GetOption("clean"):
             CPPDEFINES=[
                 "JPH_ENABLE_ASSERTS",  # 调试版本启用断言
                 "JPH_FLOATING_POINT_EXCEPTIONS_ENABLED",
-                "PORTAL_TEMPLATE_DEBUG",  # 使用自定义宏而不是标准_DEBUG，避免链接冲突
             ]
         )
         print("  - 已配置调试宏: PORTAL_TEMPLATE_DEBUG")

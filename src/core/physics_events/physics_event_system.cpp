@@ -1,5 +1,6 @@
 #include "physics_event_system.h"
 #include <iostream>
+#include "../debug/portal_debug_logging.h"
 
 namespace portal_core {
 
@@ -22,7 +23,7 @@ bool PhysicsEventSystem::initialize() {
 
     // 初始化事件适配器（使用扩展初始化，设置组件监听器）
     if (!adapter_->initialize(registry_)) {
-        std::cerr << "PhysicsEventSystem: Failed to initialize event adapter" << std::endl;
+        PORTAL_DEBUG_ERROR("PhysicsEventSystem: Failed to initialize event adapter");
         return false;
     }
 
@@ -30,7 +31,7 @@ bool PhysicsEventSystem::initialize() {
     statistics_.system_initialized = true;
     
     if (debug_mode_) {
-        std::cout << "PhysicsEventSystem: Initialized successfully" << std::endl;
+        PORTAL_DEBUG_LOG("PhysicsEventSystem: Initialized successfully");
     }
     
     return true;
@@ -47,7 +48,7 @@ void PhysicsEventSystem::cleanup() {
     statistics_.system_initialized = false;
     
     if (debug_mode_) {
-        std::cout << "PhysicsEventSystem: Cleaned up" << std::endl;
+        PORTAL_DEBUG_LOG("PhysicsEventSystem: Cleaned up");
     }
 }
 
@@ -78,7 +79,7 @@ void PhysicsEventSystem::set_enabled(bool enabled) {
     }
     
     if (debug_mode_) {
-        std::cout << "PhysicsEventSystem: " << (enabled ? "Enabled" : "Disabled") << std::endl;
+        PORTAL_DEBUG_LOG("PhysicsEventSystem: " << (enabled ? "Enabled" : "Disabled"));
     }
 }
 
@@ -112,23 +113,23 @@ void PhysicsEventSystem::reset_statistics() {
 void PhysicsEventSystem::export_debug_info() const {
     auto stats = get_statistics();
     
-    std::cout << "=== PhysicsEventSystem Debug Info ===" << std::endl;
-    std::cout << "System Initialized: " << (stats.system_initialized ? "Yes" : "No") << std::endl;
-    std::cout << "System Enabled: " << (stats.system_enabled ? "Yes" : "No") << std::endl;
-    std::cout << "Processed Collisions: " << stats.processed_collisions << std::endl;
-    std::cout << "Processed Queries: " << stats.processed_queries << std::endl;
-    std::cout << "Active Area Monitors: " << stats.active_area_monitors << std::endl;
-    std::cout << "Active Plane Intersections: " << stats.active_plane_intersections << std::endl;
-    std::cout << "Last Update Time: " << stats.last_update_time << "s" << std::endl;
+    PORTAL_DEBUG_LOG("=== PhysicsEventSystem Debug Info ===");
+    PORTAL_DEBUG_LOG("System Initialized: " << (stats.system_initialized ? "Yes" : "No"));
+    PORTAL_DEBUG_LOG("System Enabled: " << (stats.system_enabled ? "Yes" : "No"));
+    PORTAL_DEBUG_LOG("Processed Collisions: " << stats.processed_collisions);
+    PORTAL_DEBUG_LOG("Processed Queries: " << stats.processed_queries);
+    PORTAL_DEBUG_LOG("Active Area Monitors: " << stats.active_area_monitors);
+    PORTAL_DEBUG_LOG("Active Plane Intersections: " << stats.active_plane_intersections);
+    PORTAL_DEBUG_LOG("Last Update Time: " << stats.last_update_time << "s");
     
     // 获取查询管理器统计信息
     if (query_manager_) {
         auto query_stats = query_manager_->get_query_statistics();
-        std::cout << "Pending Raycast Queries: " << query_stats.pending_raycast_queries << std::endl;
-        std::cout << "Pending Overlap Queries: " << query_stats.pending_overlap_queries << std::endl;
+        PORTAL_DEBUG_LOG("Pending Raycast Queries: " << query_stats.pending_raycast_queries);
+        PORTAL_DEBUG_LOG("Pending Overlap Queries: " << query_stats.pending_overlap_queries);
     }
     
-    std::cout << "=====================================" << std::endl;
+    PORTAL_DEBUG_LOG("=====================================");
 }
 
 void PhysicsEventSystem::update_statistics() const {

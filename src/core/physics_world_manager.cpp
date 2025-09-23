@@ -4,6 +4,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include "math_constants.h"
+#include "debug/portal_debug_logging.h"
 
 // Jolt Physics 錯誤處理回調
 static void TraceImpl(const char *inFMT, ...)
@@ -13,14 +14,14 @@ static void TraceImpl(const char *inFMT, ...)
     char buffer[1024];
     vsnprintf(buffer, sizeof(buffer), inFMT, list);
     va_end(list);
-    std::cout << "[Jolt] " << buffer << std::endl;
+    PORTAL_DEBUG_LOG("[Jolt] " << buffer);
 }
 
 #ifdef JPH_ENABLE_ASSERTS
 static bool AssertFailedImpl(const char *inExpression, const char *inMessage, const char *inFile, std::uint32_t inLine)
 {
-    std::cerr << "[Jolt Assert] " << inFile << ":" << inLine << ": (" << inExpression << ") "
-              << (inMessage != nullptr ? inMessage : "") << std::endl;
+    PORTAL_DEBUG_ERROR("[Jolt Assert] " << inFile << ":" << inLine << ": (" << inExpression << ") "
+              << (inMessage != nullptr ? inMessage : ""));
     return true;
 }
 #endif
@@ -266,10 +267,10 @@ namespace portal_core
     {
         if (instance_)
         {
-            std::cout << "PhysicsWorldManager: Destroying instance and cleaning up physics world..." << std::endl;
+            PORTAL_DEBUG_LOG("PhysicsWorldManager: Destroying instance and cleaning up physics world...");
             instance_->cleanup();
             instance_.reset();
-            std::cout << "PhysicsWorldManager: Instance destroyed." << std::endl;
+            PORTAL_DEBUG_LOG("PhysicsWorldManager: Instance destroyed.");
         }
     }
 
@@ -277,15 +278,15 @@ namespace portal_core
     {
         if (initialized_)
         {
-            std::cout << "PhysicsWorldManager: Already initialized." << std::endl;
+            PORTAL_DEBUG_LOG("PhysicsWorldManager: Already initialized.");
             return true;
         }
 
-        std::cout << "PhysicsWorldManager: Initializing Jolt Physics..." << std::endl;
+        PORTAL_DEBUG_LOG("PhysicsWorldManager: Initializing Jolt Physics...");
 
         if (!initialize_jolt())
         {
-            std::cerr << "PhysicsWorldManager: Failed to initialize Jolt Physics!" << std::endl;
+            PORTAL_DEBUG_ERROR("PhysicsWorldManager: Failed to initialize Jolt Physics!");
             return false;
         }
 
@@ -327,7 +328,7 @@ namespace portal_core
         physics_system_->OptimizeBroadPhase();
 
         initialized_ = true;
-        std::cout << "PhysicsWorldManager: Initialization complete." << std::endl;
+        PORTAL_DEBUG_LOG("PhysicsWorldManager: Initialization complete.");
         return true;
     }
 
@@ -338,7 +339,7 @@ namespace portal_core
             return;
         }
 
-        std::cout << "PhysicsWorldManager: Cleaning up..." << std::endl;
+        PORTAL_DEBUG_LOG("PhysicsWorldManager: Cleaning up...");
 
         // 清理物理系統
         physics_system_.reset();
@@ -355,7 +356,7 @@ namespace portal_core
         cleanup_jolt();
 
         initialized_ = false;
-        std::cout << "PhysicsWorldManager: Cleanup complete." << std::endl;
+        PORTAL_DEBUG_LOG("PhysicsWorldManager: Cleanup complete.");
     }
 
     bool PhysicsWorldManager::initialize_jolt()
@@ -373,7 +374,7 @@ namespace portal_core
         // 註冊所有物理類型
         RegisterTypes();
 
-        std::cout << "PhysicsWorldManager: Jolt Physics core initialized." << std::endl;
+        PORTAL_DEBUG_LOG("PhysicsWorldManager: Jolt Physics core initialized.");
         return true;
     }
 
@@ -386,7 +387,7 @@ namespace portal_core
         delete Factory::sInstance;
         Factory::sInstance = nullptr;
 
-        std::cout << "PhysicsWorldManager: Jolt Physics core cleaned up." << std::endl;
+        PORTAL_DEBUG_LOG("PhysicsWorldManager: Jolt Physics core cleaned up.");
     }
 
     void PhysicsWorldManager::update(float delta_time)
@@ -428,7 +429,7 @@ namespace portal_core
         RefConst<Shape> shape = create_shape(desc.shape);
         if (!shape)
         {
-            std::cerr << "PhysicsWorldManager: Failed to create shape for body." << std::endl;
+            PORTAL_DEBUG_ERROR("PhysicsWorldManager: Failed to create shape for body.");
             return BodyID();
         }
 
@@ -472,7 +473,7 @@ namespace portal_core
 
         if (body_id.IsInvalid())
         {
-            std::cerr << "PhysicsWorldManager: Failed to create physics body." << std::endl;
+            PORTAL_DEBUG_ERROR("PhysicsWorldManager: Failed to create physics body.");
             return body_id;
         }
 
@@ -480,8 +481,8 @@ namespace portal_core
         if (desc.body_type == PhysicsBodyType::TRIGGER)
         {
             body_interface.SetIsSensor(body_id, true);
-            std::cout << "PhysicsWorldManager: Set body " << body_id.GetIndexAndSequenceNumber()
-                      << " as sensor (trigger)" << std::endl;
+            PORTAL_DEBUG_LOG("PhysicsWorldManager: Set body " << body_id.GetIndexAndSequenceNumber()
+                      << " as sensor (trigger)");
         }
 
         return body_id;
@@ -534,7 +535,7 @@ namespace portal_core
         {
             if (desc.vertices.empty())
             {
-                std::cerr << "PhysicsWorldManager: No vertices provided for convex hull." << std::endl;
+                PORTAL_DEBUG_ERROR("PhysicsWorldManager: No vertices provided for convex hull.");
                 return nullptr;
             }
             Array<JPH::Vec3> vertices;
@@ -546,8 +547,8 @@ namespace portal_core
             ShapeSettings::ShapeResult result = settings.Create();
             if (result.HasError())
             {
-                std::cerr << "PhysicsWorldManager: Failed to create convex hull: "
-                          << result.GetError().c_str() << std::endl;
+                PORTAL_DEBUG_ERROR("PhysicsWorldManager: Failed to create convex hull: "
+                          << result.GetError().c_str());
                 return nullptr;
             }
             return result.Get();
@@ -556,7 +557,7 @@ namespace portal_core
         {
             if (desc.vertices.empty() || desc.indices.empty())
             {
-                std::cerr << "PhysicsWorldManager: No vertices or indices provided for mesh." << std::endl;
+                PORTAL_DEBUG_ERROR("PhysicsWorldManager: No vertices or indices provided for mesh.");
                 return nullptr;
             }
 
@@ -577,14 +578,14 @@ namespace portal_core
             ShapeSettings::ShapeResult result = settings.Create();
             if (result.HasError())
             {
-                std::cerr << "PhysicsWorldManager: Failed to create mesh: "
-                          << result.GetError().c_str() << std::endl;
+                PORTAL_DEBUG_ERROR("PhysicsWorldManager: Failed to create mesh: "
+                          << result.GetError().c_str());
                 return nullptr;
             }
             return result.Get();
         }
         default:
-            std::cerr << "PhysicsWorldManager: Unsupported shape type." << std::endl;
+            PORTAL_DEBUG_ERROR("PhysicsWorldManager: Unsupported shape type.");
             return nullptr;
         }
     }

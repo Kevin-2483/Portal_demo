@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iostream>
 #include <cstring>
+#include "../debug/portal_debug_logging.h"
 
 namespace portal_core {
 namespace render {
@@ -247,26 +248,26 @@ void UnifiedRenderManager::set_enabled(bool enabled) {
 }
 
 void UnifiedRenderManager::print_stats() const {
-    std::cout << "=== Unified Render Manager Stats ===" << std::endl;
-    std::cout << "Total Commands: " << current_stats_.total_commands << std::endl;
-    std::cout << "3D Commands: " << current_stats_.commands_3d << std::endl;
-    std::cout << "UI Commands: " << current_stats_.commands_ui << std::endl;
-    std::cout << "Custom Commands: " << current_stats_.commands_custom << std::endl;
-    std::cout << "Frame Time: " << current_stats_.frame_time_ms << "ms" << std::endl;
-    std::cout << "Registered Renderers: " << renderers_.size() << std::endl;
-    std::cout << "Current Frame ID: " << current_frame_id_ << std::endl;
-    std::cout << "Enabled: " << (enabled_ ? "Yes" : "No") << std::endl;
+    PORTAL_DEBUG_LOG("=== Unified Render Manager Stats ===");
+    PORTAL_DEBUG_LOG("Total Commands: " << current_stats_.total_commands);
+    PORTAL_DEBUG_LOG("3D Commands: " << current_stats_.commands_3d);
+    PORTAL_DEBUG_LOG("UI Commands: " << current_stats_.commands_ui);
+    PORTAL_DEBUG_LOG("Custom Commands: " << current_stats_.commands_custom);
+    PORTAL_DEBUG_LOG("Frame Time: " << current_stats_.frame_time_ms << "ms");
+    PORTAL_DEBUG_LOG("Registered Renderers: " << renderers_.size());
+    PORTAL_DEBUG_LOG("Current Frame ID: " << current_frame_id_);
+    PORTAL_DEBUG_LOG("Enabled: " << (enabled_ ? "Yes" : "No"));
 }
 
 void UnifiedRenderManager::print_renderers() const {
-    std::cout << "=== Registered Renderers ===" << std::endl;
+    PORTAL_DEBUG_LOG("=== Registered Renderers ===");
     for (size_t i = 0; i < renderers_.size(); ++i) {
         auto* renderer = renderers_[i];
         if (renderer) {
-            std::cout << "[" << i << "] " << renderer->get_renderer_name() 
-                      << " (Enabled: " << (renderer->is_enabled() ? "Yes" : "No") << ")" << std::endl;
+            PORTAL_DEBUG_LOG("[" << i << "] " << renderer->get_renderer_name() 
+                      << " (Enabled: " << (renderer->is_enabled() ? "Yes" : "No") << ")");
         } else {
-            std::cout << "[" << i << "] <null renderer>" << std::endl;
+            PORTAL_DEBUG_LOG("[" << i << "] <null renderer>");
         }
     }
 }

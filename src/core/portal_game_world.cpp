@@ -6,6 +6,7 @@
 #include "systems/physics_command_system.h"
 #include "physics_world_manager.h"
 #include <iostream>
+#include "debug/portal_debug_logging.h"
 
 namespace portal_core
 {
@@ -28,7 +29,7 @@ namespace portal_core
 
       // 初始化系統管理器
       instance_->system_manager_.initialize();
-      std::cout << "PortalGameWorld: Instance created and systems initialized." << std::endl;
+      PORTAL_DEBUG_LOG("PortalGameWorld: Instance created and systems initialized.");
     }
   }
 
@@ -39,15 +40,15 @@ namespace portal_core
       // 在销毁实例之前，重置系统管理器
       // 新的reset方法会清理并重新注册所有静态系统
       instance_->system_manager_.reset();
-      std::cout << "PortalGameWorld: SystemManager reset completed." << std::endl;
+      PORTAL_DEBUG_LOG("PortalGameWorld: SystemManager reset completed.");
     }
 
     // 彻底销毁物理世界管理器单例
     PhysicsWorldManager::destroy_instance();
-    std::cout << "PortalGameWorld: PhysicsWorldManager destroyed." << std::endl;
+    PORTAL_DEBUG_LOG("PortalGameWorld: PhysicsWorldManager destroyed.");
 
     instance_.reset();
-    std::cout << "PortalGameWorld: Instance destroyed." << std::endl;
+    PORTAL_DEBUG_LOG("PortalGameWorld: Instance destroyed.");
   }
 
   entt::entity PortalGameWorld::create_entity()

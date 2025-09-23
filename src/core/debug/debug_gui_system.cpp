@@ -9,6 +9,7 @@
 #include <chrono>
 #include <sstream>
 #include <iomanip>
+#include "portal_debug_logging.h"
 
 namespace portal_core {
 namespace debug {
@@ -24,14 +25,14 @@ DebugGUISystem& DebugGUISystem::instance() {
 
 bool DebugGUISystem::initialize() {
     if (initialized_) {
-        std::cout << "DebugGUISystem: Already initialized" << std::endl;
+        PORTAL_DEBUG_LOG("DebugGUISystem: Already initialized");
         return true;
     }
     
-    std::cout << "DebugGUISystem: Initializing..." << std::endl;
+    PORTAL_DEBUG_LOG("DebugGUISystem: Initializing...");
     
     if (!initialize_imgui()) {
-        std::cerr << "DebugGUISystem: Failed to initialize ImGui" << std::endl;
+        PORTAL_DEBUG_ERROR("DebugGUISystem: Failed to initialize ImGui");
         return false;
     }
     
@@ -41,14 +42,14 @@ bool DebugGUISystem::initialize() {
     // 具体窗口由阶段3的IDebuggable系统按需创建
     
     initialized_ = true;
-    std::cout << "DebugGUISystem: Initialization completed" << std::endl;
+    PORTAL_DEBUG_LOG("DebugGUISystem: Initialization completed");
     return true;
 }
 
 void DebugGUISystem::shutdown() {
     if (!initialized_) return;
     
-    std::cout << "DebugGUISystem: Shutting down..." << std::endl;
+    PORTAL_DEBUG_LOG("DebugGUISystem: Shutting down...");
     
     // 清理调试对象注册表（阶段3集成）
 #ifdef PORTAL_DEBUG_ENABLED
@@ -67,14 +68,14 @@ void DebugGUISystem::shutdown() {
     }
     
     initialized_ = false;
-    std::cout << "DebugGUISystem: Shutdown completed" << std::endl;
+    PORTAL_DEBUG_LOG("DebugGUISystem: Shutdown completed");
 }
 
 bool DebugGUISystem::initialize_imgui() {
     // 创建ImGui上下文
     imgui_context_ = ImGui::CreateContext();
     if (!imgui_context_) {
-        std::cerr << "DebugGUISystem: Failed to create ImGui context" << std::endl;
+        PORTAL_DEBUG_ERROR("DebugGUISystem: Failed to create ImGui context");
         return false;
     }
     
@@ -89,7 +90,7 @@ bool DebugGUISystem::initialize_imgui() {
     // 设置字体（可选，使用默认字体）
     io.Fonts->AddFontDefault();
     
-    std::cout << "DebugGUISystem: ImGui context created successfully" << std::endl;
+    PORTAL_DEBUG_LOG("DebugGUISystem: ImGui context created successfully");
     return true;
 }
 
@@ -120,7 +121,7 @@ void DebugGUISystem::setup_imgui_style() {
     colors[ImGuiCol_ButtonHovered] = ImVec4(0.30f, 0.30f, 0.35f, 1.00f);
     colors[ImGuiCol_ButtonActive] = ImVec4(0.40f, 0.40f, 0.45f, 1.00f);
     
-    std::cout << "DebugGUISystem: ImGui style configured" << std::endl;
+    PORTAL_DEBUG_LOG("DebugGUISystem: ImGui style configured");
 }
 
 void DebugGUISystem::update(float delta_time) {
@@ -264,7 +265,7 @@ void DebugGUISystem::register_window(std::unique_ptr<DebugWindow> window) {
     // 检查是否已存在
     auto it = window_map_.find(id);
     if (it != window_map_.end()) {
-        std::cerr << "DebugGUISystem: Window with ID '" << id << "' already exists" << std::endl;
+        PORTAL_DEBUG_ERROR("DebugGUISystem: Window with ID '" << id << "' already exists");
         return;
     }
     
@@ -272,13 +273,13 @@ void DebugGUISystem::register_window(std::unique_ptr<DebugWindow> window) {
     windows_.push_back(std::move(window));
     window_map_[id] = window_ptr;
     
-    std::cout << "DebugGUISystem: Registered window '" << id << "'" << std::endl;
+    PORTAL_DEBUG_LOG("DebugGUISystem: Registered window '" << id << "'");
 }
 
 void DebugGUISystem::unregister_window(const std::string& window_id) {
     auto it = window_map_.find(window_id);
     if (it == window_map_.end()) {
-        std::cerr << "DebugGUISystem: Window '" << window_id << "' not found" << std::endl;
+        PORTAL_DEBUG_ERROR("DebugGUISystem: Window '" << window_id << "' not found");
         return;
     }
     
@@ -293,7 +294,7 @@ void DebugGUISystem::unregister_window(const std::string& window_id) {
     }
     
     window_map_.erase(it);
-    std::cout << "DebugGUISystem: Unregistered window '" << window_id << "'" << std::endl;
+    PORTAL_DEBUG_LOG("DebugGUISystem: Unregistered window '" << window_id << "'");
 }
 
 DebugWindow* DebugGUISystem::find_window(const std::string& window_id) {
@@ -302,13 +303,13 @@ DebugWindow* DebugGUISystem::find_window(const std::string& window_id) {
 }
 
 void DebugGUISystem::print_stats() const {
-    std::cout << "=== DebugGUISystem Statistics ===" << std::endl;
-    std::cout << "Windows: " << stats_.window_count 
-              << " (Visible: " << stats_.visible_window_count << ")" << std::endl;
-    std::cout << "Frame time: " << std::fixed << std::setprecision(3) 
-              << stats_.frame_time_ms << "ms" << std::endl;
-    std::cout << "Render time: " << std::fixed << std::setprecision(3) 
-              << stats_.render_time_ms << "ms" << std::endl;
+    PORTAL_DEBUG_LOG("=== DebugGUISystem Statistics ===");
+    PORTAL_DEBUG_LOG("Windows: " << stats_.window_count 
+              << " (Visible: " << stats_.visible_window_count << ")");
+    PORTAL_DEBUG_LOG("Frame time: " << std::fixed << std::setprecision(3) 
+              << stats_.frame_time_ms << "ms");
+    PORTAL_DEBUG_LOG("Render time: " << std::fixed << std::setprecision(3) 
+              << stats_.render_time_ms << "ms");
 }
 
 // ==============================================================================

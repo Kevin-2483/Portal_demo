@@ -10,6 +10,7 @@
 #include <iostream>
 #include <algorithm>
 #include <entt/entt.hpp>
+#include "../debug/portal_debug_logging.h"
 
 namespace portal_core {
 
@@ -137,9 +138,9 @@ struct PhysicsBodyComponent {
         }
         
         if (modified) {
-            std::cerr << "PhysicsBodyComponent: Warning - Invalid box size detected and corrected from (" 
+            PORTAL_DEBUG_ERROR("PhysicsBodyComponent: Warning - Invalid box size detected and corrected from (" 
                       << size.GetX() << ", " << size.GetY() << ", " << size.GetZ() << ") to ("
-                      << safe_size.GetX() << ", " << safe_size.GetY() << ", " << safe_size.GetZ() << ")" << std::endl;
+                      << safe_size.GetX() << ", " << safe_size.GetY() << ", " << safe_size.GetZ() << ")");
         }
         
         shape = PhysicsShapeDesc::box(safe_size);
@@ -153,8 +154,8 @@ struct PhysicsBodyComponent {
         
         if (safe_radius <= 0.0f) {
             safe_radius = 0.5f;
-            std::cerr << "PhysicsBodyComponent: Warning - Invalid sphere radius " << radius 
-                      << " corrected to " << safe_radius << std::endl;
+            PORTAL_DEBUG_ERROR("PhysicsBodyComponent: Warning - Invalid sphere radius " << radius 
+                      << " corrected to " << safe_radius);
         }
         
         shape = PhysicsShapeDesc::sphere(safe_radius);
@@ -178,9 +179,9 @@ struct PhysicsBodyComponent {
         }
         
         if (modified) {
-            std::cerr << "PhysicsBodyComponent: Warning - Invalid capsule dimensions (" 
+            PORTAL_DEBUG_ERROR("PhysicsBodyComponent: Warning - Invalid capsule dimensions (" 
                       << radius << ", " << height << ") corrected to ("
-                      << safe_radius << ", " << safe_height << ")" << std::endl;
+                      << safe_radius << ", " << safe_height << ")");
         }
         
         shape = PhysicsShapeDesc::capsule(safe_radius, safe_height);
@@ -218,9 +219,9 @@ struct PhysicsBodyComponent {
         }
         
         if (modified) {
-            std::cerr << "PhysicsBodyComponent: Warning - Invalid material properties ("
+            PORTAL_DEBUG_ERROR("PhysicsBodyComponent: Warning - Invalid material properties ("
                       << friction << ", " << restitution << ", " << density << ") corrected to ("
-                      << safe_friction << ", " << safe_restitution << ", " << safe_density << ")" << std::endl;
+                      << safe_friction << ", " << safe_restitution << ", " << safe_density << ")");
         }
         
         material.friction = safe_friction;
@@ -247,20 +248,20 @@ struct PhysicsBodyComponent {
         if (body_type == PhysicsBodyType::DYNAMIC && mass <= 0.0f) {
             mass = 1.0f;
             corrected = true;
-            std::cerr << "PhysicsBodyComponent: Warning - Dynamic body mass corrected to 1.0f" << std::endl;
+            PORTAL_DEBUG_ERROR("PhysicsBodyComponent: Warning - Dynamic body mass corrected to 1.0f");
         }
         
         // 修正材質屬性
         if (material.friction < 0.0f) {
             material.friction = 0.0f;
             corrected = true;
-            std::cerr << "PhysicsBodyComponent: Warning - Friction corrected to 0.0f" << std::endl;
+            PORTAL_DEBUG_ERROR("PhysicsBodyComponent: Warning - Friction corrected to 0.0f");
         }
         
         if (material.restitution < 0.0f || material.restitution > 1.0f) {
             material.restitution = std::clamp(material.restitution, 0.0f, 1.0f);
             corrected = true;
-            std::cerr << "PhysicsBodyComponent: Warning - Restitution clamped to [0.0, 1.0]" << std::endl;
+            PORTAL_DEBUG_ERROR("PhysicsBodyComponent: Warning - Restitution clamped to [0.0, 1.0]");
         }
         
         // 修正密度（對需要質量的物體類型）
@@ -268,42 +269,42 @@ struct PhysicsBodyComponent {
             && material.density <= 0.0f) {
             material.density = 1000.0f;
             corrected = true;
-            std::cerr << "PhysicsBodyComponent: Warning - Density corrected to 1000.0f for " 
+            PORTAL_DEBUG_ERROR("PhysicsBodyComponent: Warning - Density corrected to 1000.0f for " 
                       << (body_type == PhysicsBodyType::DYNAMIC ? "dynamic" : "kinematic") 
-                      << " body" << std::endl;
+                      << " body");
         }
         
         // 修正速度限制
         if (max_linear_velocity <= 0.0f) {
             max_linear_velocity = 500.0f;
             corrected = true;
-            std::cerr << "PhysicsBodyComponent: Warning - Max linear velocity corrected to 500.0f" << std::endl;
+            PORTAL_DEBUG_ERROR("PhysicsBodyComponent: Warning - Max linear velocity corrected to 500.0f");
         }
         
         if (max_angular_velocity <= 0.0f) {
             max_angular_velocity = 47.1f;
             corrected = true;
-            std::cerr << "PhysicsBodyComponent: Warning - Max angular velocity corrected to 47.1f" << std::endl;
+            PORTAL_DEBUG_ERROR("PhysicsBodyComponent: Warning - Max angular velocity corrected to 47.1f");
         }
         
         // 修正阻尼值
         if (linear_damping < 0.0f || linear_damping > 1.0f) {
             linear_damping = std::clamp(linear_damping, 0.0f, 1.0f);
             corrected = true;
-            std::cerr << "PhysicsBodyComponent: Warning - Linear damping clamped to [0.0, 1.0]" << std::endl;
+            PORTAL_DEBUG_ERROR("PhysicsBodyComponent: Warning - Linear damping clamped to [0.0, 1.0]");
         }
         
         if (angular_damping < 0.0f || angular_damping > 1.0f) {
             angular_damping = std::clamp(angular_damping, 0.0f, 1.0f);
             corrected = true;
-            std::cerr << "PhysicsBodyComponent: Warning - Angular damping clamped to [0.0, 1.0]" << std::endl;
+            PORTAL_DEBUG_ERROR("PhysicsBodyComponent: Warning - Angular damping clamped to [0.0, 1.0]");
         }
         
         // 修正重力縮放
         if (gravity_scale < 0.0f) {
             gravity_scale = 0.0f;
             corrected = true;
-            std::cerr << "PhysicsBodyComponent: Warning - Gravity scale corrected to 0.0f (negative values not allowed)" << std::endl;
+            PORTAL_DEBUG_ERROR("PhysicsBodyComponent: Warning - Gravity scale corrected to 0.0f (negative values not allowed)");
         }
         
         return corrected;
@@ -328,7 +329,7 @@ struct PhysicsBodyComponent {
                 // 運動學物體需要有效密度
                 if (material.density <= 0.0f) {
                     material.density = 1000.0f;
-                    std::cerr << "PhysicsBodyComponent: Warning - Kinematic body density set to 1000.0f" << std::endl;
+                    PORTAL_DEBUG_ERROR("PhysicsBodyComponent: Warning - Kinematic body density set to 1000.0f");
                 }
                 break;
             case PhysicsBodyType::TRIGGER:
@@ -339,18 +340,18 @@ struct PhysicsBodyComponent {
                 // 動態物體需要有效質量和密度
                 if (mass <= 0.0f) {
                     mass = 1.0f;
-                    std::cerr << "PhysicsBodyComponent: Warning - Dynamic body mass set to 1.0f" << std::endl;
+                    PORTAL_DEBUG_ERROR("PhysicsBodyComponent: Warning - Dynamic body mass set to 1.0f");
                 }
                 if (material.density <= 0.0f) {
                     material.density = 1000.0f;
-                    std::cerr << "PhysicsBodyComponent: Warning - Dynamic body density set to 1000.0f" << std::endl;
+                    PORTAL_DEBUG_ERROR("PhysicsBodyComponent: Warning - Dynamic body density set to 1000.0f");
                 }
                 break;
         }
         
         if (old_type != new_type) {
-            std::cout << "PhysicsBodyComponent: Body type changed from " 
-                      << static_cast<int>(old_type) << " to " << static_cast<int>(new_type) << std::endl;
+            PORTAL_DEBUG_LOG("PhysicsBodyComponent: Body type changed from " 
+                      << static_cast<int>(old_type) << " to " << static_cast<int>(new_type));
         }
     }
     
