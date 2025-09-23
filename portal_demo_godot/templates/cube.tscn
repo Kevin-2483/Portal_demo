@@ -1,12 +1,14 @@
-[gd_scene load_steps=3 format=3 uid="uid://cke8bh1x7j4pq"]
+[gd_scene load_steps=4 format=3 uid="uid://cke8bh1x7j4pq"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_cube"]
 
 [sub_resource type="PhysicsBodyComponentResource" id="PhysicsBodyComponentResource_cube"]
 restitution = 0.3
 
+[sub_resource type="TransformRenderProxyComponentResource" id="TransformRenderProxyComponentResource_42v7m"]
+
 [node name="MeshInstance3D" type="MeshInstance3D"]
 mesh = SubResource("BoxMesh_cube")
 
 [node name="ECSNode" type="ECSNode" parent="."]
-components = Array[Resource]([SubResource("PhysicsBodyComponentResource_cube")])
+components = Array[Resource]([SubResource("PhysicsBodyComponentResource_cube"), SubResource("TransformRenderProxyComponentResource_42v7m")])

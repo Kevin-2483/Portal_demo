@@ -7,8 +7,8 @@ devenv_root = "/Users/kevin/Documents/Godot/Portal_demo";
 devenv_dotfile = ./.devenv;
 devenv_dotfile_string = ".devenv";
 container_name = null;
-devenv_tmpdir = "/tmp";
-devenv_runtime = "/tmp/devenv-cf261b4";
+devenv_tmpdir = "/var/folders/s0/d1gyq8dx5f34hql70w19_v1c0000gn/T/";
+devenv_runtime = "/var/folders/s0/d1gyq8dx5f34hql70w19_v1c0000gn/T/devenv-cf261b4";
 devenv_istesting = false;
 devenv_direnvrc_latest_version = 1;
 
@@ -30,8 +30,8 @@ devenv_root = "/Users/kevin/Documents/Godot/Portal_demo";
 devenv_dotfile = ./.devenv;
 devenv_dotfile_string = ".devenv";
 container_name = null;
-devenv_tmpdir = "/tmp";
-devenv_runtime = "/tmp/devenv-cf261b4";
+devenv_tmpdir = "/var/folders/s0/d1gyq8dx5f34hql70w19_v1c0000gn/T/";
+devenv_runtime = "/var/folders/s0/d1gyq8dx5f34hql70w19_v1c0000gn/T/devenv-cf261b4";
 devenv_istesting = false;
 devenv_direnvrc_latest_version = 1;
 

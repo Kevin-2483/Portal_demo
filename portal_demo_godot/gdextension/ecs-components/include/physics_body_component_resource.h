@@ -189,7 +189,6 @@ private:
     portal_core::PhysicsShapeDesc create_cpp_shape() const;
     portal_core::PhysicsMaterial create_cpp_material() const;
     void apply_properties_to_cpp_component(portal_core::PhysicsBodyComponent& cpp_component) const;
-    void sync_from_cpp_component(const portal_core::PhysicsBodyComponent& cpp_component);
     
     // 屬性變化處理
     void _on_property_changed();

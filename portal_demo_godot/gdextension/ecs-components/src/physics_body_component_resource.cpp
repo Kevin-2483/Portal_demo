@@ -335,38 +335,38 @@ String PhysicsBodyComponentResource::get_component_type_name() const
 
 void PhysicsBodyComponentResource::sync_to_node(entt::registry& registry, entt::entity entity, Node* target_node)
 {
-    // 只对动态物体进行位置同步
-    if (body_type != 1) { // 1 = Dynamic
-        return;
-    }
+//     // 只对动态物体进行位置同步
+//     if (body_type != 1) { // 1 = Dynamic
+//         return;
+//     }
     
-    // 检查目标节点是否是 Node3D
-    Node3D* node3d = Object::cast_to<Node3D>(target_node);
-    if (!node3d) {
-        return;
-    }
+//     // 检查目标节点是否是 Node3D
+//     Node3D* node3d = Object::cast_to<Node3D>(target_node);
+//     if (!node3d) {
+//         return;
+//     }
     
-    // 获取物理体组件
-    auto* physics_body = registry.try_get<portal_core::PhysicsBodyComponent>(entity);
-    if (!physics_body || !physics_body->is_valid()) {
-        return;
-    }
+//     // 获取物理体组件
+//     auto* physics_body = registry.try_get<portal_core::PhysicsBodyComponent>(entity);
+//     if (!physics_body || !physics_body->is_valid()) {
+//         return;
+//     }
     
-    // 获取Transform组件（物理系统会更新这个组件）
-    auto* transform_comp = registry.try_get<portal_core::TransformComponent>(entity);
-    if (!transform_comp) {
-        return;
-    }
+//     // 获取Transform组件（物理系统会更新这个组件）
+//     auto* transform_comp = registry.try_get<portal_core::TransformComponent>(entity);
+//     if (!transform_comp) {
+//         return;
+//     }
     
-    // 将 C++ Transform 转换为 Godot Transform
-    Vector3 godot_position(transform_comp->position.GetX(), transform_comp->position.GetY(), transform_comp->position.GetZ());
-    Quaternion godot_rotation(transform_comp->rotation.GetX(), transform_comp->rotation.GetY(), transform_comp->rotation.GetZ(), transform_comp->rotation.GetW());
-    Vector3 godot_scale(transform_comp->scale.GetX(), transform_comp->scale.GetY(), transform_comp->scale.GetZ());
+//     // 将 C++ Transform 转换为 Godot Transform
+//     Vector3 godot_position(transform_comp->position.GetX(), transform_comp->position.GetY(), transform_comp->position.GetZ());
+//     Quaternion godot_rotation(transform_comp->rotation.GetX(), transform_comp->rotation.GetY(), transform_comp->rotation.GetZ(), transform_comp->rotation.GetW());
+//     Vector3 godot_scale(transform_comp->scale.GetX(), transform_comp->scale.GetY(), transform_comp->scale.GetZ());
 
-    // 更新 Godot 节点的变换
-    node3d->set_position(godot_position);
-    node3d->set_quaternion(godot_rotation);
-    node3d->set_scale(godot_scale);
+//     // 更新 Godot 节点的变换
+//     node3d->set_position(godot_position);
+//     node3d->set_quaternion(godot_rotation);
+//     node3d->set_scale(godot_scale);
 }
 
 // 便利方法

@@ -101,7 +101,7 @@ if sys.platform == "win32":
     default_arch = "x86_64"
 elif sys.platform == "darwin":
     detected_platform = "macos"
-    default_arch = "universal"
+    default_arch = "arm64"
 else:
     detected_platform = "linux"
     # 假设 Linux 默认为 64 位

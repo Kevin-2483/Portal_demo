@@ -325,33 +325,96 @@ void PhysicsCommandComponentResource::create_commands_for_component(portal_core:
     // 添加力命令
     if (add_force.length() > 0.001f) {
         if (execution_delay > 0.0f) {
-            cpp_component.add_delayed_command(
-                portal_core::PhysicsCommand(portal_core::PhysicsCommandType::ADD_FORCE, 
-                    portal_core::Vector3(add_force.x, add_force.y, add_force.z)), execution_delay);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::ADD_FORCE, 
+                portal_core::Vector3(add_force.x, add_force.y, add_force.z));
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cpp_component.add_delayed_command(cmd, execution_delay);
         } else {
-            cpp_component.add_force(portal_core::Vector3(add_force.x, add_force.y, add_force.z), timing);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::ADD_FORCE, 
+                portal_core::Vector3(add_force.x, add_force.y, add_force.z));
+            cmd.timing = timing;
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cmd.command_id = cpp_component.next_command_id++;
+            
+            // 直接添加到相应的命令队列
+            switch (timing) {
+                case portal_core::PhysicsCommandTiming::IMMEDIATE:
+                    cpp_component.immediate_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::BEFORE_PHYSICS_STEP:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::AFTER_PHYSICS_STEP:
+                    cpp_component.after_physics_commands.push_back(cmd);
+                    break;
+                default:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+            }
         }
     }
     
     // 添加衝量命令
     if (add_impulse.length() > 0.001f) {
         if (execution_delay > 0.0f) {
-            cpp_component.add_delayed_command(
-                portal_core::PhysicsCommand(portal_core::PhysicsCommandType::ADD_IMPULSE, 
-                    portal_core::Vec3(add_impulse.x, add_impulse.y, add_impulse.z)), execution_delay);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::ADD_IMPULSE, 
+                portal_core::Vec3(add_impulse.x, add_impulse.y, add_impulse.z));
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cpp_component.add_delayed_command(cmd, execution_delay);
         } else {
-            cpp_component.add_impulse(portal_core::Vec3(add_impulse.x, add_impulse.y, add_impulse.z), timing);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::ADD_IMPULSE, 
+                portal_core::Vec3(add_impulse.x, add_impulse.y, add_impulse.z));
+            cmd.timing = timing;
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cmd.command_id = cpp_component.next_command_id++;
+            
+            // 直接添加到相应的命令队列
+            switch (timing) {
+                case portal_core::PhysicsCommandTiming::IMMEDIATE:
+                    cpp_component.immediate_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::BEFORE_PHYSICS_STEP:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::AFTER_PHYSICS_STEP:
+                    cpp_component.after_physics_commands.push_back(cmd);
+                    break;
+                default:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+            }
         }
     }
     
     // 添加扭矩命令
     if (add_torque.length() > 0.001f) {
         if (execution_delay > 0.0f) {
-            cpp_component.add_delayed_command(
-                portal_core::PhysicsCommand(portal_core::PhysicsCommandType::ADD_TORQUE, 
-                    portal_core::Vec3(add_torque.x, add_torque.y, add_torque.z)), execution_delay);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::ADD_TORQUE, 
+                portal_core::Vec3(add_torque.x, add_torque.y, add_torque.z));
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cpp_component.add_delayed_command(cmd, execution_delay);
         } else {
-            cpp_component.add_torque(portal_core::Vec3(add_torque.x, add_torque.y, add_torque.z), timing);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::ADD_TORQUE, 
+                portal_core::Vec3(add_torque.x, add_torque.y, add_torque.z));
+            cmd.timing = timing;
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cmd.command_id = cpp_component.next_command_id++;
+            
+            // 直接添加到相应的命令队列
+            switch (timing) {
+                case portal_core::PhysicsCommandTiming::IMMEDIATE:
+                    cpp_component.immediate_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::BEFORE_PHYSICS_STEP:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::AFTER_PHYSICS_STEP:
+                    cpp_component.after_physics_commands.push_back(cmd);
+                    break;
+                default:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+            }
         }
     }
     
@@ -362,6 +425,7 @@ void PhysicsCommandComponentResource::create_commands_for_component(portal_core:
             portal_core::Vec3(add_angular_impulse.x, add_angular_impulse.y, add_angular_impulse.z)
         );
         angular_impulse_cmd.timing = timing;
+        angular_impulse_cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
         angular_impulse_cmd.command_id = cpp_component.next_command_id++;
         
         if (execution_delay > 0.0f) {
@@ -388,33 +452,96 @@ void PhysicsCommandComponentResource::create_commands_for_component(portal_core:
     // 設置線性速度命令
     if (use_set_linear_velocity) {
         if (execution_delay > 0.0f) {
-            cpp_component.add_delayed_command(
-                portal_core::PhysicsCommand(portal_core::PhysicsCommandType::SET_LINEAR_VELOCITY, 
-                    portal_core::Vec3(set_linear_velocity.x, set_linear_velocity.y, set_linear_velocity.z)), execution_delay);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::SET_LINEAR_VELOCITY, 
+                portal_core::Vec3(set_linear_velocity.x, set_linear_velocity.y, set_linear_velocity.z));
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cpp_component.add_delayed_command(cmd, execution_delay);
         } else {
-            cpp_component.set_linear_velocity(portal_core::Vec3(set_linear_velocity.x, set_linear_velocity.y, set_linear_velocity.z), timing);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::SET_LINEAR_VELOCITY, 
+                portal_core::Vec3(set_linear_velocity.x, set_linear_velocity.y, set_linear_velocity.z));
+            cmd.timing = timing;
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cmd.command_id = cpp_component.next_command_id++;
+            
+            // 直接添加到相应的命令队列
+            switch (timing) {
+                case portal_core::PhysicsCommandTiming::IMMEDIATE:
+                    cpp_component.immediate_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::BEFORE_PHYSICS_STEP:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::AFTER_PHYSICS_STEP:
+                    cpp_component.after_physics_commands.push_back(cmd);
+                    break;
+                default:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+            }
         }
     }
     
     // 設置角速度命令
     if (use_set_angular_velocity) {
         if (execution_delay > 0.0f) {
-            cpp_component.add_delayed_command(
-                portal_core::PhysicsCommand(portal_core::PhysicsCommandType::SET_ANGULAR_VELOCITY, 
-                    portal_core::Vec3(set_angular_velocity.x, set_angular_velocity.y, set_angular_velocity.z)), execution_delay);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::SET_ANGULAR_VELOCITY, 
+                portal_core::Vec3(set_angular_velocity.x, set_angular_velocity.y, set_angular_velocity.z));
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cpp_component.add_delayed_command(cmd, execution_delay);
         } else {
-            cpp_component.set_angular_velocity(portal_core::Vec3(set_angular_velocity.x, set_angular_velocity.y, set_angular_velocity.z), timing);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::SET_ANGULAR_VELOCITY, 
+                portal_core::Vec3(set_angular_velocity.x, set_angular_velocity.y, set_angular_velocity.z));
+            cmd.timing = timing;
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cmd.command_id = cpp_component.next_command_id++;
+            
+            // 直接添加到相应的命令队列
+            switch (timing) {
+                case portal_core::PhysicsCommandTiming::IMMEDIATE:
+                    cpp_component.immediate_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::BEFORE_PHYSICS_STEP:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::AFTER_PHYSICS_STEP:
+                    cpp_component.after_physics_commands.push_back(cmd);
+                    break;
+                default:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+            }
         }
     }
     
     // 設置位置命令
     if (use_set_position) {
         if (execution_delay > 0.0f) {
-            cpp_component.add_delayed_command(
-                portal_core::PhysicsCommand(portal_core::PhysicsCommandType::SET_POSITION, 
-                    portal_core::Vec3(set_position.x, set_position.y, set_position.z)), execution_delay);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::SET_POSITION, 
+                portal_core::Vec3(set_position.x, set_position.y, set_position.z));
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cpp_component.add_delayed_command(cmd, execution_delay);
         } else {
-            cpp_component.set_position(portal_core::Vec3(set_position.x, set_position.y, set_position.z), timing);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::SET_POSITION, 
+                portal_core::Vec3(set_position.x, set_position.y, set_position.z));
+            cmd.timing = timing;
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cmd.command_id = cpp_component.next_command_id++;
+            
+            // 直接添加到相应的命令队列
+            switch (timing) {
+                case portal_core::PhysicsCommandTiming::IMMEDIATE:
+                    cpp_component.immediate_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::BEFORE_PHYSICS_STEP:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::AFTER_PHYSICS_STEP:
+                    cpp_component.after_physics_commands.push_back(cmd);
+                    break;
+                default:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+            }
         }
     }
     
@@ -426,42 +553,121 @@ void PhysicsCommandComponentResource::create_commands_for_component(portal_core:
         );
         
         if (execution_delay > 0.0f) {
-            cpp_component.add_delayed_command(
-                portal_core::PhysicsCommand(portal_core::PhysicsCommandType::TELEPORT, 
-                    std::make_pair(portal_core::Vector3(set_position.x, set_position.y, set_position.z), quat)), execution_delay);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::TELEPORT, 
+                std::make_pair(portal_core::Vector3(set_position.x, set_position.y, set_position.z), quat));
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cpp_component.add_delayed_command(cmd, execution_delay);
         } else {
-            cpp_component.teleport(
-                portal_core::Vector3(set_position.x, set_position.y, set_position.z), 
-                quat, timing);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::TELEPORT, 
+                std::make_pair(portal_core::Vector3(set_position.x, set_position.y, set_position.z), quat));
+            cmd.timing = timing;
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cmd.command_id = cpp_component.next_command_id++;
+            
+            // 直接添加到相应的命令队列
+            switch (timing) {
+                case portal_core::PhysicsCommandTiming::IMMEDIATE:
+                    cpp_component.immediate_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::BEFORE_PHYSICS_STEP:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::AFTER_PHYSICS_STEP:
+                    cpp_component.after_physics_commands.push_back(cmd);
+                    break;
+                default:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+            }
         }
     }
     
     // 重力縮放命令
     if (use_gravity_scale) {
         if (execution_delay > 0.0f) {
-            cpp_component.add_delayed_command(
-                portal_core::PhysicsCommand(portal_core::PhysicsCommandType::SET_GRAVITY_SCALE, gravity_scale), execution_delay);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::SET_GRAVITY_SCALE, gravity_scale);
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cpp_component.add_delayed_command(cmd, execution_delay);
         } else {
-            cpp_component.set_gravity_scale(gravity_scale, timing);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::SET_GRAVITY_SCALE, gravity_scale);
+            cmd.timing = timing;
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cmd.command_id = cpp_component.next_command_id++;
+            
+            // 直接添加到相应的命令队列
+            switch (timing) {
+                case portal_core::PhysicsCommandTiming::IMMEDIATE:
+                    cpp_component.immediate_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::BEFORE_PHYSICS_STEP:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::AFTER_PHYSICS_STEP:
+                    cpp_component.after_physics_commands.push_back(cmd);
+                    break;
+                default:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+            }
         }
     }
     
     // 激活/停用命令
     if (use_activate && activate_body) {
         if (execution_delay > 0.0f) {
-            cpp_component.add_delayed_command(
-                portal_core::PhysicsCommand(portal_core::PhysicsCommandType::ACTIVATE), execution_delay);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::ACTIVATE);
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cpp_component.add_delayed_command(cmd, execution_delay);
         } else {
-            cpp_component.activate(timing);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::ACTIVATE);
+            cmd.timing = timing;
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cmd.command_id = cpp_component.next_command_id++;
+            
+            // 直接添加到相应的命令队列
+            switch (timing) {
+                case portal_core::PhysicsCommandTiming::IMMEDIATE:
+                    cpp_component.immediate_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::BEFORE_PHYSICS_STEP:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::AFTER_PHYSICS_STEP:
+                    cpp_component.after_physics_commands.push_back(cmd);
+                    break;
+                default:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+            }
         }
     }
     
     if (use_deactivate && deactivate_body) {
         if (execution_delay > 0.0f) {
-            cpp_component.add_delayed_command(
-                portal_core::PhysicsCommand(portal_core::PhysicsCommandType::DEACTIVATE), execution_delay);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::DEACTIVATE);
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cpp_component.add_delayed_command(cmd, execution_delay);
         } else {
-            cpp_component.deactivate(timing);
+            portal_core::PhysicsCommand cmd(portal_core::PhysicsCommandType::DEACTIVATE);
+            cmd.timing = timing;
+            cmd.auto_remove = execute_once;  // 根据execute_once设置auto_remove
+            cmd.command_id = cpp_component.next_command_id++;
+            
+            // 直接添加到相应的命令队列
+            switch (timing) {
+                case portal_core::PhysicsCommandTiming::IMMEDIATE:
+                    cpp_component.immediate_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::BEFORE_PHYSICS_STEP:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+                case portal_core::PhysicsCommandTiming::AFTER_PHYSICS_STEP:
+                    cpp_component.after_physics_commands.push_back(cmd);
+                    break;
+                default:
+                    cpp_component.before_physics_commands.push_back(cmd);
+                    break;
+            }
         }
     }
     
