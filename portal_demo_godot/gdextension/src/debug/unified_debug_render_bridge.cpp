@@ -1,4 +1,5 @@
 #include "debug/unified_debug_render_bridge.h"
+#include "core/debug/portal_build_config.h"
 #include "core/render/unified_render_manager.h"
 #include "core/render/unified_debug_draw.h"
 #include "core/math_types.h"
@@ -10,6 +11,7 @@
 
 #ifdef PORTAL_DEBUG_GUI_ENABLED
 #include "core/debug/debug_gui_system.h"
+#include "core/debug/simple_text_window_manager.h"
 #endif
 
 using namespace godot;
@@ -32,9 +34,9 @@ void UnifiedDebugRenderBridge::_bind_methods() {
     ClassDB::bind_method(D_METHOD("initialize_renderer"), &UnifiedDebugRenderBridge::initialize_renderer);
     ClassDB::bind_method(D_METHOD("shutdown_renderer"), &UnifiedDebugRenderBridge::shutdown_renderer);
     ClassDB::bind_method(D_METHOD("is_initialized"), &UnifiedDebugRenderBridge::is_initialized);
+    ClassDB::bind_method(D_METHOD("reinitialize_renderer"), &UnifiedDebugRenderBridge::reinitialize_renderer);
     
     // 便利方法
-    ClassDB::bind_method(D_METHOD("draw_test_content"), &UnifiedDebugRenderBridge::draw_test_content);
     ClassDB::bind_method(D_METHOD("clear_all_debug"), &UnifiedDebugRenderBridge::clear_all_debug);
     ClassDB::bind_method(D_METHOD("toggle_renderer", "enabled"), &UnifiedDebugRenderBridge::toggle_renderer);
     
@@ -52,8 +54,6 @@ void UnifiedDebugRenderBridge::_bind_methods() {
     ClassDB::bind_method(D_METHOD("hide_all_gui_windows"), &UnifiedDebugRenderBridge::hide_all_gui_windows);
     ClassDB::bind_method(D_METHOD("toggle_gui_window", "window_id"), &UnifiedDebugRenderBridge::toggle_gui_window);
     ClassDB::bind_method(D_METHOD("print_gui_stats"), &UnifiedDebugRenderBridge::print_gui_stats);
-    ClassDB::bind_method(D_METHOD("create_test_gui_data"), &UnifiedDebugRenderBridge::create_test_gui_data);
-    ClassDB::bind_method(D_METHOD("add_performance_sample", "frame_time_ms"), &UnifiedDebugRenderBridge::add_performance_sample);
     
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "debug_gui_enabled"), "set_debug_gui_enabled", "get_debug_gui_enabled");
 #endif
@@ -158,9 +158,7 @@ void UnifiedDebugRenderBridge::_process(double delta) {
         
         // 每秒更新一次性能数据
         if (frame_accumulator_ >= 1.0f) {
-            float avg_frame_time = (frame_accumulator_ / frame_count_) * 1000.0f; // 转换为毫秒
-            add_performance_sample(avg_frame_time);
-            
+            // 性能采样功能已移除，仅重置计数器
             frame_accumulator_ = 0.0f;
             frame_count_ = 0;
         }
@@ -170,12 +168,12 @@ void UnifiedDebugRenderBridge::_process(double delta) {
     // 更新渲染器
     unified_renderer_->update(delta_f);
     
-    // 更新渲染管理器
+    // 分发命令到渲染器（在清理过期命令之前）
     auto& render_manager = portal_core::render::UnifiedRenderManager::instance();
-    render_manager.update(delta_f);
-    
-    // 分发命令到渲染器
     render_manager.flush_commands();
+    
+    // 更新渲染管理器（清理过期命令）
+    render_manager.update(delta_f);
     
     // 推进帧
     render_manager.advance_frame();
@@ -190,18 +188,28 @@ void UnifiedDebugRenderBridge::_exit_tree() {
 
 void UnifiedDebugRenderBridge::set_world_node(Node3D* world_node) {
     if (initialized_) {
-        UtilityFunctions::printerr("UnifiedDebugRenderBridge: Cannot change world node after initialization");
-        return;
+        UtilityFunctions::print("UnifiedDebugRenderBridge: Changing world node requires reinitialization");
+        shutdown_renderer();
+        world_node_ = world_node;
+        if (auto_register_) {
+            initialize_renderer();
+        }
+    } else {
+        world_node_ = world_node;
     }
-    world_node_ = world_node;
 }
 
 void UnifiedDebugRenderBridge::set_ui_node(Control* ui_node) {
     if (initialized_) {
-        UtilityFunctions::printerr("UnifiedDebugRenderBridge: Cannot change UI node after initialization");
-        return;
+        UtilityFunctions::print("UnifiedDebugRenderBridge: Changing UI node requires reinitialization");
+        shutdown_renderer();
+        ui_node_ = ui_node;
+        if (auto_register_) {
+            initialize_renderer();
+        }
+    } else {
+        ui_node_ = ui_node;
     }
-    ui_node_ = ui_node;
 }
 
 void UnifiedDebugRenderBridge::set_auto_register(bool auto_register) {
@@ -254,66 +262,16 @@ void UnifiedDebugRenderBridge::shutdown_renderer() {
     UtilityFunctions::print("UnifiedDebugRenderBridge: Shutdown completed");
 }
 
-void UnifiedDebugRenderBridge::draw_test_content() {
-    if (!initialized_) {
-        UtilityFunctions::printerr("UnifiedDebugRenderBridge: Not initialized, cannot draw test content");
-        return;
+bool UnifiedDebugRenderBridge::reinitialize_renderer() {
+    if (initialized_) {
+        shutdown_renderer();
     }
-    
-    UtilityFunctions::print("UnifiedDebugRenderBridge: Drawing test content");
-    
-    // 绘制3D测试内容
-    portal_core::debug::UnifiedDebugDraw::draw_coordinate_axes(
-        portal_core::Vector3(0, 0, 0), 2.0f);
-    
-    // 绘制一个测试盒子
-    portal_core::debug::UnifiedDebugDraw::draw_box(
-        portal_core::Vector3(1, 1, 1), portal_core::Vector3(0.5f, 0.5f, 0.5f), 
-        portal_core::render::Color4f::YELLOW
-    );
-    
-    // 绘制一个测试球体
-    portal_core::debug::UnifiedDebugDraw::draw_sphere(
-        portal_core::Vector3(-1, 1, 1), 0.5f, 
-        portal_core::render::Color4f::CYAN
-    );
-    
-    // 绘制一些连接线
-    portal_core::debug::UnifiedDebugDraw::draw_line(
-        portal_core::Vector3(-1, 1, 1), portal_core::Vector3(1, 1, 1), 
-        portal_core::render::Color4f::WHITE
-    );
-    
-    // 绘制UI测试内容
-    portal_core::debug::UnifiedDebugDraw::draw_ui_window(
-        portal_core::Vector2(10, 10), portal_core::Vector2(250, 120), 
-        "统一渲染系统测试", portal_core::render::Color4f(0.2f, 0.2f, 0.3f, 0.9f)
-    );
-    
-    portal_core::debug::UnifiedDebugDraw::draw_ui_text(
-        portal_core::Vector2(20, 40), "3D+UI统一渲染正常工作!", 
-        portal_core::render::Color4f::GREEN, 12.0f
-    );
-    
-    portal_core::debug::UnifiedDebugDraw::draw_ui_button(
-        portal_core::Vector2(20, 60), portal_core::Vector2(100, 25), 
-        "测试按钮", false, portal_core::render::Color4f(0.4f, 0.4f, 0.6f, 1.0f)
-    );
-    
-    portal_core::debug::UnifiedDebugDraw::draw_ui_progress_bar(
-        portal_core::Vector2(20, 95), portal_core::Vector2(200, 15), 
-        0.8f
-    );
-    
-    // 输出统计信息
-    auto stats = portal_core::debug::UnifiedDebugDraw::get_stats();
-    UtilityFunctions::print("Test content drawn. Commands: ", stats.total_commands, 
-                          " (3D: ", stats.commands_3d, ", UI: ", stats.commands_ui, ")");
+    return initialize_renderer();
 }
 
 void UnifiedDebugRenderBridge::clear_all_debug() {
-    portal_core::debug::UnifiedDebugDraw::clear_all();
-    UtilityFunctions::print("UnifiedDebugRenderBridge: All debug content cleared");
+    if (!initialized_) return;
+    unified_renderer_->clear_commands();
 }
 
 void UnifiedDebugRenderBridge::toggle_renderer(bool enabled) {
@@ -358,6 +316,13 @@ bool UnifiedDebugRenderBridge::initialize_debug_gui() {
         return false;
     }
     
+    // 初始化SimpleTextWindow管理器
+    auto& text_window_manager = portal_core::debug::SimpleTextWindowManager::instance();
+    if (!text_window_manager.initialize()) {
+        UtilityFunctions::printerr("UnifiedDebugRenderBridge: Failed to initialize SimpleTextWindow manager");
+        return false;
+    }
+    
     gui_system.set_enabled(debug_gui_enabled_);
     debug_gui_initialized_ = true;
     
@@ -369,6 +334,10 @@ void UnifiedDebugRenderBridge::shutdown_debug_gui() {
     if (!debug_gui_initialized_) return;
     
     UtilityFunctions::print("UnifiedDebugRenderBridge: Shutting down debug GUI system");
+    
+    // 关闭SimpleTextWindow管理器
+    auto& text_window_manager = portal_core::debug::SimpleTextWindowManager::instance();
+    text_window_manager.shutdown();
     
     auto& gui_system = portal_core::debug::DebugGUISystem::instance();
     gui_system.shutdown();
@@ -393,16 +362,11 @@ void UnifiedDebugRenderBridge::show_all_gui_windows() {
     
     auto& gui_system = portal_core::debug::DebugGUISystem::instance();
     
-    // 显示默认窗口
-    const char* window_ids[] = { "system_info", "performance", "render_stats", "imgui_demo" };
-    for (const char* id : window_ids) {
-        auto* window = gui_system.find_window(id);
-        if (window) {
-            window->set_visible(true);
-        }
-    }
+    // 显示所有已注册的窗口
+    auto& text_window_manager = portal_core::debug::SimpleTextWindowManager::instance();
+    text_window_manager.show_window(true);
     
-    UtilityFunctions::print("UnifiedDebugRenderBridge: All GUI windows shown");
+    UtilityFunctions::print("UnifiedDebugRenderBridge: Show all GUI windows called - SimpleTextWindow shown");
 }
 
 void UnifiedDebugRenderBridge::hide_all_gui_windows() {
@@ -410,16 +374,11 @@ void UnifiedDebugRenderBridge::hide_all_gui_windows() {
     
     auto& gui_system = portal_core::debug::DebugGUISystem::instance();
     
-    // 隐藏默认窗口
-    const char* window_ids[] = { "system_info", "performance", "render_stats", "imgui_demo" };
-    for (const char* id : window_ids) {
-        auto* window = gui_system.find_window(id);
-        if (window) {
-            window->set_visible(false);
-        }
-    }
+    // 隐藏所有已注册的窗口
+    auto& text_window_manager = portal_core::debug::SimpleTextWindowManager::instance();
+    text_window_manager.show_window(false);
     
-    UtilityFunctions::print("UnifiedDebugRenderBridge: All GUI windows hidden");
+    UtilityFunctions::print("UnifiedDebugRenderBridge: Hide all GUI windows called - SimpleTextWindow hidden");
 }
 
 void UnifiedDebugRenderBridge::toggle_gui_window(const godot::String& window_id) {
@@ -451,39 +410,6 @@ void UnifiedDebugRenderBridge::print_gui_stats() {
     UtilityFunctions::print("Windows: ", (int)stats.window_count, " (Visible: ", (int)stats.visible_window_count, ")");
     UtilityFunctions::print("Frame time: ", stats.frame_time_ms, "ms");
     UtilityFunctions::print("Render time: ", stats.render_time_ms, "ms");
-}
-
-void UnifiedDebugRenderBridge::create_test_gui_data() {
-    if (!debug_gui_initialized_) return;
-    
-    auto& gui_system = portal_core::debug::DebugGUISystem::instance();
-    
-    // 为性能窗口添加测试数据
-    auto* perf_window = gui_system.find_window("performance");
-    if (perf_window) {
-        auto* perf_win = static_cast<portal_core::debug::PerformanceWindow*>(perf_window);
-        
-        // 生成一些模拟的性能数据
-        for (int i = 0; i < 60; ++i) {
-            float base_time = 16.67f; // 60 FPS基准
-            float variation = (rand() % 200 - 100) / 100.0f; // ±1ms变化
-            float frame_time = base_time + variation;
-            perf_win->update_performance_data(frame_time);
-        }
-        
-        UtilityFunctions::print("UnifiedDebugRenderBridge: Test GUI performance data created");
-    }
-}
-
-void UnifiedDebugRenderBridge::add_performance_sample(float frame_time_ms) {
-    if (!debug_gui_initialized_) return;
-    
-    auto& gui_system = portal_core::debug::DebugGUISystem::instance();
-    auto* perf_window = gui_system.find_window("performance");
-    if (perf_window) {
-        auto* perf_win = static_cast<portal_core::debug::PerformanceWindow*>(perf_window);
-        perf_win->update_performance_data(frame_time_ms);
-    }
 }
 
 portal_core::debug::DebugGUISystem* UnifiedDebugRenderBridge::get_debug_gui_system() {

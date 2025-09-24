@@ -87,10 +87,22 @@ bool DebugGUISystem::initialize_imgui() {
     // 注意：当前 ImGui 版本可能不支持 docking 功能
     // io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     
+    // 设置后端标志，表明我们有纹理支持
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
+    
     // 设置字体（可选，使用默认字体）
     io.Fonts->AddFontDefault();
     
+    // 构建字体图集 - 这是关键步骤！
+    unsigned char* pixels;
+    int width, height;
+    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+    
+    // 设置字体纹理ID（这里使用一个虚拟ID，实际渲染时会处理）
+    io.Fonts->SetTexID((ImTextureID)(intptr_t)1);
+    
     PORTAL_DEBUG_LOG("DebugGUISystem: ImGui context created successfully");
+    PORTAL_DEBUG_LOG("DebugGUISystem: Font atlas built - size: " << width << "x" << height);
     return true;
 }
 
@@ -231,28 +243,67 @@ void DebugGUISystem::flush_to_unified_renderer() {
     ImDrawData* draw_data = ImGui::GetDrawData();
     if (!draw_data || draw_data->CmdListsCount == 0) return;
     
-    // 将ImGui绘制数据转换为统一渲染命令
+    // 获取统一渲染管理器
+    auto& render_manager = portal_core::render::UnifiedRenderManager::instance();
+    
+
+    
+    // 遍历所有命令列表
     for (int cmd_list_idx = 0; cmd_list_idx < draw_data->CmdListsCount; cmd_list_idx++) {
         const ImDrawList* cmd_list = draw_data->CmdLists[cmd_list_idx];
         
+        // 转换顶点数据
+        std::vector<portal_core::render::ImGuiVertex> vertices;
+        vertices.reserve(cmd_list->VtxBuffer.Size);
+        
+        for (int vtx_idx = 0; vtx_idx < cmd_list->VtxBuffer.Size; vtx_idx++) {
+            const ImDrawVert& imgui_vtx = cmd_list->VtxBuffer[vtx_idx];
+            portal_core::render::ImGuiVertex vertex;
+            vertex.pos = portal_core::Vector2(imgui_vtx.pos.x, imgui_vtx.pos.y);
+            vertex.uv = portal_core::Vector2(imgui_vtx.uv.x, imgui_vtx.uv.y);
+            vertex.col = imgui_vtx.col;
+            vertices.push_back(vertex);
+        }
+        
+        // 处理每个绘制命令
+        uint32_t idx_offset = 0;
         for (int cmd_idx = 0; cmd_idx < cmd_list->CmdBuffer.Size; cmd_idx++) {
-            const ImDrawCmd* cmd = &cmd_list->CmdBuffer[cmd_idx];
+            const ImDrawCmd& pcmd = cmd_list->CmdBuffer[cmd_idx];
             
-            if (cmd->UserCallback) {
-                // 处理用户回调
-                cmd->UserCallback(cmd_list, cmd);
-            } else {
-                // 转换为UI渲染命令
-                // 这里简化处理，实际应该转换顶点数据和纹理
-                Vector2 pos(cmd->ClipRect.x, cmd->ClipRect.y);
-                Vector2 size(cmd->ClipRect.z - cmd->ClipRect.x, cmd->ClipRect.w - cmd->ClipRect.y);
-                
-                portal_core::debug::UnifiedDebugDraw::draw_ui_rect(
-                    pos, size, 
-                    render::Color4f(1.0f, 1.0f, 1.0f, 0.1f), // 半透明白色
-                    true, 1.0f
-                );
+            // 跳过用户回调命令
+            if (pcmd.UserCallback != nullptr) {
+                idx_offset += pcmd.ElemCount;
+                continue;
             }
+            
+            // 创建网格数据
+            portal_core::render::ImGuiMeshData mesh_data;
+            mesh_data.vertices = vertices.data();
+            mesh_data.indices = &cmd_list->IdxBuffer[idx_offset];
+            mesh_data.vertex_count = static_cast<uint32_t>(vertices.size());
+            mesh_data.index_count = pcmd.ElemCount;
+            mesh_data.texture_id = pcmd.GetTexID();
+            
+            // 设置裁剪区域
+            if (pcmd.ClipRect.x < pcmd.ClipRect.z && pcmd.ClipRect.y < pcmd.ClipRect.w) {
+                mesh_data.use_clipping = true;
+                mesh_data.clip_rect_min = portal_core::Vector2(pcmd.ClipRect.x, pcmd.ClipRect.y);
+                mesh_data.clip_rect_max = portal_core::Vector2(pcmd.ClipRect.z, pcmd.ClipRect.w);
+            }
+            
+            // 创建渲染命令
+            portal_core::render::UnifiedRenderCommand command(
+                portal_core::render::RenderCommandType::DRAW_IMGUI_VERTICES,
+                mesh_data,
+                static_cast<uint32_t>(portal_core::render::RenderLayer::UI_OVERLAY),
+                portal_core::render::RENDER_FLAG_ALPHA_BLEND
+            );
+            command.duration = 0.1f;
+            
+            // 提交命令
+            render_manager.submit_command(command);
+            
+            idx_offset += pcmd.ElemCount;
         }
     }
 }
@@ -273,7 +324,7 @@ void DebugGUISystem::register_window(std::unique_ptr<DebugWindow> window) {
     windows_.push_back(std::move(window));
     window_map_[id] = window_ptr;
     
-    PORTAL_DEBUG_LOG("DebugGUISystem: Registered window '" << id << "'");
+
 }
 
 void DebugGUISystem::unregister_window(const std::string& window_id) {
@@ -294,7 +345,7 @@ void DebugGUISystem::unregister_window(const std::string& window_id) {
     }
     
     window_map_.erase(it);
-    PORTAL_DEBUG_LOG("DebugGUISystem: Unregistered window '" << window_id << "'");
+
 }
 
 DebugWindow* DebugGUISystem::find_window(const std::string& window_id) {
@@ -303,13 +354,7 @@ DebugWindow* DebugGUISystem::find_window(const std::string& window_id) {
 }
 
 void DebugGUISystem::print_stats() const {
-    PORTAL_DEBUG_LOG("=== DebugGUISystem Statistics ===");
-    PORTAL_DEBUG_LOG("Windows: " << stats_.window_count 
-              << " (Visible: " << stats_.visible_window_count << ")");
-    PORTAL_DEBUG_LOG("Frame time: " << std::fixed << std::setprecision(3) 
-              << stats_.frame_time_ms << "ms");
-    PORTAL_DEBUG_LOG("Render time: " << std::fixed << std::setprecision(3) 
-              << stats_.render_time_ms << "ms");
+    // Statistics available but not logged to reduce console output
 }
 
 // ==============================================================================
@@ -694,150 +739,8 @@ ImVec4 DebugLogViewer::get_level_color(LogLevel level) const {
 }
 
 // ==============================================================================
-// 内置窗口实现
+// 内置窗口实现已移除 - 保持纯净的调试接口
 // ==============================================================================
-
-SystemInfoWindow::SystemInfoWindow() 
-    : DebugWindow("system_info", "系统信息") {
-    set_size(Vector2(400, 300));
-    update_system_info();
-}
-
-void SystemInfoWindow::render() {
-    begin_window();
-    
-    if (!info_updated_ || ImGui::Button("刷新")) {
-        update_system_info();
-    }
-    
-    ImGui::Separator();
-    
-    ImGui::Text("平台信息:");
-    ImGui::TextWrapped("%s", platform_info_.c_str());
-    
-    ImGui::Separator();
-    
-    ImGui::Text("内存信息:");
-    ImGui::TextWrapped("%s", memory_info_.c_str());
-    
-    ImGui::Separator();
-    
-    ImGui::Text("CPU 使用率: %.1f%%", cpu_usage_);
-    
-    end_window();
-}
-
-void SystemInfoWindow::update_system_info() {
-    // 简化的系统信息收集
-    platform_info_ = "Portal Demo Debug System\n";
-    platform_info_ += "编译时间: " __DATE__ " " __TIME__ "\n";
-    
-#ifdef _WIN32
-    platform_info_ += "平台: Windows\n";
-#elif defined(__APPLE__)
-    platform_info_ += "平台: macOS\n";
-#elif defined(__linux__)
-    platform_info_ += "平台: Linux\n";
-#else
-    platform_info_ += "平台: Unknown\n";
-#endif
-    
-    memory_info_ = "内存信息暂不可用";
-    cpu_usage_ = 0.0f; // 简化，实际需要系统调用
-    
-    info_updated_ = true;
-}
-
-PerformanceWindow::PerformanceWindow() 
-    : DebugWindow("performance", "性能监控"),
-      render_time_chart_("渲染时间 (ms)", 120) {
-    set_size(Vector2(500, 400));
-}
-
-void PerformanceWindow::render() {
-    begin_window();
-    
-    performance_monitor_.render();
-    
-    ImGui::Separator();
-    
-    // 显示调试GUI系统自身的性能
-    const auto& gui_stats = DebugGUISystem::instance().get_stats();
-    ImGui::Text("GUI系统性能:");
-    ImGui::Text("窗口数量: %zu (%zu 可见)", gui_stats.window_count, gui_stats.visible_window_count);
-    ImGui::Text("GUI帧时间: %.3f ms", gui_stats.frame_time_ms);
-    ImGui::Text("GUI渲染时间: %.3f ms", gui_stats.render_time_ms);
-    
-    ImGui::Checkbox("显示详细统计", &show_detailed_stats_);
-    
-    if (show_detailed_stats_) {
-        ImGui::Separator();
-        render_time_chart_.render();
-    }
-    
-    end_window();
-}
-
-void PerformanceWindow::update_performance_data(float frame_time_ms) {
-    performance_monitor_.add_frame_time(frame_time_ms);
-    render_time_chart_.add_value(frame_time_ms);
-}
-
-RenderStatsWindow::RenderStatsWindow() 
-    : DebugWindow("render_stats", "渲染统计") {
-    set_size(Vector2(350, 250));
-}
-
-void RenderStatsWindow::render() {
-    begin_window();
-    
-    update_render_stats();
-    
-    ImGui::Text("渲染统计信息");
-    ImGui::Separator();
-    
-    ImGui::Text("绘制调用: %zu", render_stats_.draw_calls);
-    ImGui::Text("顶点数: %zu", render_stats_.vertices);
-    ImGui::Text("三角形数: %zu", render_stats_.triangles);
-    ImGui::Text("纹理内存: %zu MB", render_stats_.texture_memory_mb);
-    ImGui::Text("GPU 时间: %.3f ms", render_stats_.gpu_time_ms);
-    
-    ImGui::Separator();
-    
-    // 显示统一渲染系统统计
-    auto unified_stats = portal_core::debug::UnifiedDebugDraw::get_stats();
-    ImGui::Text("统一渲染系统:");
-    ImGui::Text("总命令数: %u", unified_stats.total_commands);
-    ImGui::Text("3D命令数: %u", unified_stats.commands_3d);
-    ImGui::Text("UI命令数: %u", unified_stats.commands_ui);
-    ImGui::Text("自定义命令数: %u", unified_stats.commands_custom);
-    
-    end_window();
-}
-
-void RenderStatsWindow::update_render_stats() {
-    // 从统一渲染管理器获取统计信息
-    auto& render_manager = portal_core::render::UnifiedRenderManager::instance();
-    auto stats = render_manager.get_render_stats();
-    
-    render_stats_.draw_calls = stats.total_commands;
-    render_stats_.vertices = 0; // 需要从实际渲染器获取
-    render_stats_.triangles = 0;
-    render_stats_.texture_memory_mb = 0;
-    render_stats_.gpu_time_ms = stats.frame_time_ms;
-}
-
-ImGuiDemoWindow::ImGuiDemoWindow() 
-    : DebugWindow("imgui_demo", "ImGui 演示") {
-    set_size(Vector2(600, 500));
-    set_visible(false); // 默认隐藏
-}
-
-void ImGuiDemoWindow::render() {
-    if (should_render()) {
-        ImGui::ShowDemoWindow(&visible_);
-    }
-}
 
 } // namespace debug
 } // namespace portal_core

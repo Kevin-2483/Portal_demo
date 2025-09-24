@@ -1,6 +1,6 @@
 #pragma once
 
-#include "debug_config.h"
+#include "core/debug/debug_config.h"
 
 #ifdef PORTAL_DEBUG_GUI_ENABLED
 
@@ -293,70 +293,9 @@ private:
 };
 
 // ==============================================================================
-// 内置调试窗口
+// 内置调试窗口已移除 - 保持纯净的调试接口
+// 用户可以通过继承DebugWindow基类来创建自定义调试窗口
 // ==============================================================================
-
-/**
- * 系统信息窗口
- */
-class SystemInfoWindow : public DebugWindow {
-public:
-    SystemInfoWindow();
-    void render() override;
-
-private:
-    void update_system_info();
-    
-    std::string platform_info_;
-    std::string memory_info_;
-    float cpu_usage_ = 0.0f;
-    bool info_updated_ = false;
-};
-
-/**
- * 性能监控窗口  
- */
-class PerformanceWindow : public DebugWindow {
-public:
-    PerformanceWindow();
-    void render() override;
-    
-    void update_performance_data(float frame_time_ms);
-
-private:
-    DebugPerformanceMonitor performance_monitor_;
-    DebugChart render_time_chart_;
-    bool show_detailed_stats_ = false;
-};
-
-/**
- * 渲染统计窗口
- */
-class RenderStatsWindow : public DebugWindow {
-public:
-    RenderStatsWindow();
-    void render() override;
-
-private:
-    void update_render_stats();
-    
-    struct RenderStats {
-        size_t draw_calls = 0;
-        size_t vertices = 0;
-        size_t triangles = 0;
-        size_t texture_memory_mb = 0;
-        float gpu_time_ms = 0.0f;
-    } render_stats_;
-};
-
-/**
- * ImGui演示窗口封装
- */
-class ImGuiDemoWindow : public DebugWindow {
-public:
-    ImGuiDemoWindow();
-    void render() override;
-};
 
 } // namespace debug
 } // namespace portal_core

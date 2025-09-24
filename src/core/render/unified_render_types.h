@@ -4,6 +4,12 @@
 #include <cstdint>
 #include <cstddef>
 #include <string>
+#include "core/debug/debug_config.h"
+
+// ImGui 前向声明和类型定义 (条件编译)
+#if defined(PORTAL_DEBUG_GUI_ENABLED) && PORTAL_DEBUG_GUI_ENABLED
+#include "imgui.h"
+#endif
 
 namespace portal_core {
 namespace render {
@@ -34,6 +40,12 @@ enum class RenderCommandType : uint32_t {
     DRAW_UI_SLIDER,             // UI滑动条
     DRAW_UI_PROGRESS_BAR,       // UI进度条
     DRAW_UI_GRAPH_LINE,         // UI图表线条
+    
+    // ImGui 专用渲染命令 (条件编译)
+#if defined(PORTAL_DEBUG_GUI_ENABLED) && PORTAL_DEBUG_GUI_ENABLED
+    DRAW_IMGUI_VERTICES = 0x3000,   // ImGui顶点数据
+    DRAW_IMGUI_TEXTURE,             // ImGui纹理
+#endif
     
     // 自定义命令
     CUSTOM_COMMAND = 0x8000     // 自定义命令
@@ -155,6 +167,63 @@ struct UILineData {
     UILineData(const Vector2& s, const Vector2& e, const Color4f& c, float t = 1.0f)
         : start(s), end(e), color(c), thickness(t) {}
 };
+
+// ImGui 专用数据结构 (条件编译)
+#if defined(PORTAL_DEBUG_GUI_ENABLED) && PORTAL_DEBUG_GUI_ENABLED
+
+// ImGui 顶点数据
+struct ImGuiVertex {
+    Vector2 pos;
+    Vector2 uv;
+    uint32_t col;  // RGBA packed as uint32_t
+    
+    ImGuiVertex() : col(0xFFFFFFFF) {}
+    ImGuiVertex(const Vector2& position, const Vector2& texture_uv, uint32_t color)
+        : pos(position), uv(texture_uv), col(color) {}
+};
+
+// ImGui 网格数据
+struct ImGuiMeshData {
+    const ImGuiVertex* vertices;
+    const uint16_t* indices;
+    uint32_t vertex_count;
+    uint32_t index_count;
+    ImTextureID texture_id;  // ImGui纹理ID
+    Vector2 clip_rect_min;
+    Vector2 clip_rect_max;
+    bool use_clipping;
+    
+    ImGuiMeshData() 
+        : vertices(nullptr), indices(nullptr)
+        , vertex_count(0), index_count(0)
+        , texture_id(ImTextureID_Invalid), use_clipping(false) {}
+        
+    ImGuiMeshData(const ImGuiVertex* vtx, const uint16_t* idx, 
+                  uint32_t vtx_count, uint32_t idx_count, ImTextureID tex_id)
+        : vertices(vtx), indices(idx)
+        , vertex_count(vtx_count), index_count(idx_count)
+        , texture_id(tex_id), use_clipping(false) {}
+};
+
+// ImGui 纹理数据
+struct ImGuiTextureData {
+    ImTextureID texture_id;
+    Vector2 position;
+    Vector2 size;
+    Vector2 uv_min;
+    Vector2 uv_max;
+    uint32_t tint_color;
+    
+    ImGuiTextureData()
+        : texture_id(ImTextureID_Invalid), tint_color(0xFFFFFFFF) {}
+        
+    ImGuiTextureData(ImTextureID tex_id, const Vector2& pos, const Vector2& sz)
+        : texture_id(tex_id), position(pos), size(sz)
+        , uv_min(0.0f, 0.0f), uv_max(1.0f, 1.0f)
+        , tint_color(0xFFFFFFFF) {}
+};
+
+#endif // PORTAL_DEBUG_GUI_ENABLED
 
 // 统一渲染命令结构
 struct UnifiedRenderCommand {

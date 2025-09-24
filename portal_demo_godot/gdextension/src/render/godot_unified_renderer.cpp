@@ -2,6 +2,7 @@
 #include "render/godot_renderer_3d.h"
 #include "render/godot_renderer_ui.h"
 #include <godot_cpp/variant/utility_functions.hpp>
+#include "core/debug/portal_build_config.h"
 #include <algorithm>
 #include <chrono>
 
@@ -13,7 +14,14 @@ namespace render {
 GodotUnifiedRenderer::GodotUnifiedRenderer() 
     : enabled_(true) {
     renderer_3d_ = std::make_unique<GodotRenderer3D>();
-    renderer_ui_ = memnew(GodotRendererUI);  // 使用memnew创建Godot对象
+    
+    // 使用memnew创建Godot对象，并添加错误检查
+    renderer_ui_ = memnew(GodotRendererUI);
+    if (!renderer_ui_) {
+        UtilityFunctions::printerr("GodotUnifiedRenderer: Failed to create GodotRendererUI with memnew");
+    } else {
+        UtilityFunctions::print("GodotUnifiedRenderer: GodotRendererUI created successfully");
+    }
 }
 
 GodotUnifiedRenderer::~GodotUnifiedRenderer() {
@@ -33,12 +41,33 @@ bool GodotUnifiedRenderer::initialize(godot::Node3D* world_node, godot::Control*
     }
     
     // 初始化UI渲染器
-    if (ui_node) {
-        // 如果提供了UI节点，将UI渲染器添加为子节点
-        ui_node->add_child(renderer_ui_);
+    if (!renderer_ui_) {
+        // 如果UI渲染器为空，重新创建
+        renderer_ui_ = memnew(GodotRendererUI);
+        if (renderer_ui_) {
+            UtilityFunctions::print("GodotUnifiedRenderer: UI renderer recreated successfully");
+        } else {
+            UtilityFunctions::printerr("GodotUnifiedRenderer: Failed to recreate UI renderer");
+            return false;
+        }
+    }
+    
+    if (renderer_ui_) {
+        if (ui_node && ui_node->is_inside_tree()) {
+            // 如果提供了UI节点且在场景树中，延迟添加UI渲染器为子节点
+            ui_node->call_deferred("add_child", renderer_ui_);
+            UtilityFunctions::print("GodotUnifiedRenderer: UI renderer will be added to UI node (deferred)");
+        } else if (world_node && world_node->is_inside_tree()) {
+            // 否则延迟添加到世界节点
+            world_node->call_deferred("add_child", renderer_ui_);
+            UtilityFunctions::print("GodotUnifiedRenderer: UI renderer will be added to world node (deferred)");
+        } else {
+            UtilityFunctions::printerr("GodotUnifiedRenderer: No valid parent node for UI renderer");
+            return false;
+        }
     } else {
-        // 否则添加到世界节点
-        world_node->add_child(renderer_ui_);
+        UtilityFunctions::printerr("GodotUnifiedRenderer: UI renderer is null after recreation attempt");
+        return false;
     }
     
     UtilityFunctions::print("GodotUnifiedRenderer initialized successfully");
@@ -190,6 +219,13 @@ bool GodotUnifiedRenderer::supports_command_type(portal_core::render::RenderComm
         case portal_core::render::RenderCommandType::DRAW_UI_TEXT:
         case portal_core::render::RenderCommandType::DRAW_UI_LINE:
             return true;
+
+#ifdef PORTAL_DEBUG_GUI_ENABLED
+        // ImGui命令
+        case portal_core::render::RenderCommandType::DRAW_IMGUI_VERTICES:
+        case portal_core::render::RenderCommandType::DRAW_IMGUI_TEXTURE:
+            return true;
+#endif
             
         default:
             return false;
@@ -232,6 +268,7 @@ bool GodotUnifiedRenderer::is_3d_command(portal_core::render::RenderCommandType 
 
 bool GodotUnifiedRenderer::is_ui_command(portal_core::render::RenderCommandType type) const {
     uint32_t type_value = static_cast<uint32_t>(type);
+    // UI命令范围：0x2000-0x7FFF（包括ImGui命令0x3000）
     return type_value >= 0x2000 && type_value < 0x8000;
 }
 

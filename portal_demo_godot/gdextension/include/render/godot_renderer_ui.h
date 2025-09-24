@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/render/unified_render_types.h"
+#include "core/debug/portal_build_config.h"
 #include <godot_cpp/classes/control.hpp>
 #include <godot_cpp/classes/canvas_item.hpp>
 #include <godot_cpp/variant/vector2.hpp>
@@ -47,6 +48,12 @@ private:
     void render_ui_rect(const portal_core::render::UIRectData& data);
     void render_ui_text(const portal_core::render::UITextData& data);
     void render_ui_line(const portal_core::render::UILineData& data);
+    
+#ifdef PORTAL_DEBUG_GUI_ENABLED
+    // ImGui渲染方法
+    void render_imgui_mesh(const portal_core::render::ImGuiMeshData& data);
+    void render_imgui_texture(const portal_core::render::ImGuiTextureData& data);
+#endif
     
     // 转换辅助函数
     godot::Vector2 to_godot_vector2(const portal_core::Vector2& vec) const;

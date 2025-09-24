@@ -57,6 +57,20 @@ void GodotRendererUI::_draw() {
                     render_ui_line(*static_cast<const portal_core::render::UILineData*>(command.data));
                 }
                 break;
+
+#ifdef PORTAL_DEBUG_GUI_ENABLED
+            case portal_core::render::RenderCommandType::DRAW_IMGUI_VERTICES:
+                if (command.data && command.data_size == sizeof(portal_core::render::ImGuiMeshData)) {
+                    render_imgui_mesh(*static_cast<const portal_core::render::ImGuiMeshData*>(command.data));
+                }
+                break;
+                
+            case portal_core::render::RenderCommandType::DRAW_IMGUI_TEXTURE:
+                if (command.data && command.data_size == sizeof(portal_core::render::ImGuiTextureData)) {
+                    render_imgui_texture(*static_cast<const portal_core::render::ImGuiTextureData*>(command.data));
+                }
+                break;
+#endif
                 
             default:
                 // 不支持的UI命令类型，忽略
@@ -186,5 +200,110 @@ void GodotRendererUI::draw_text_with_font(const Vector2& position, const String&
     
     draw_string(font, draw_position, text, HORIZONTAL_ALIGNMENT_LEFT, -1, static_cast<int>(font_size), color);
 }
+
+#ifdef PORTAL_DEBUG_GUI_ENABLED
+void GodotRendererUI::render_imgui_mesh(const portal_core::render::ImGuiMeshData& data) {
+    if (!data.vertices || data.vertex_count == 0 || !data.indices || data.index_count == 0) {
+        return;
+    }
+    
+    // 设置裁剪区域
+    if (data.use_clipping) {
+        Vector2 clip_pos(data.clip_rect_min.x, data.clip_rect_min.y);
+        Vector2 clip_size(data.clip_rect_max.x - data.clip_rect_min.x, data.clip_rect_max.y - data.clip_rect_min.y);
+        Rect2 clip_rect(clip_pos, clip_size);
+        
+        // 应用裁剪
+        set_clip_contents(true);
+        // 注意：Godot的裁剪是基于节点的，这里我们需要手动检查每个顶点是否在裁剪区域内
+    }
+    
+    // 将ImGui顶点转换为Godot格式并绘制三角形
+    for (uint32_t i = 0; i < data.index_count; i += 3) {
+        if (i + 2 >= data.index_count) break;
+        
+        // 获取三角形的三个顶点索引
+        uint16_t idx0 = data.indices[i];
+        uint16_t idx1 = data.indices[i + 1];
+        uint16_t idx2 = data.indices[i + 2];
+        
+        if (idx0 >= data.vertex_count || idx1 >= data.vertex_count || idx2 >= data.vertex_count) {
+            continue;
+        }
+        
+        // 获取顶点数据
+        const auto& v0 = data.vertices[idx0];
+        const auto& v1 = data.vertices[idx1];
+        const auto& v2 = data.vertices[idx2];
+        
+        // 转换为Godot格式
+        Vector2 p0(v0.pos.x, v0.pos.y);
+        Vector2 p1(v1.pos.x, v1.pos.y);
+        Vector2 p2(v2.pos.x, v2.pos.y);
+        
+        Color c0(
+            ((v0.col >> 0) & 0xFF) / 255.0f,   // R
+            ((v0.col >> 8) & 0xFF) / 255.0f,   // G
+            ((v0.col >> 16) & 0xFF) / 255.0f,  // B
+            ((v0.col >> 24) & 0xFF) / 255.0f   // A
+        );
+        Color c1(
+            ((v1.col >> 0) & 0xFF) / 255.0f,   // R
+            ((v1.col >> 8) & 0xFF) / 255.0f,   // G
+            ((v1.col >> 16) & 0xFF) / 255.0f,  // B
+            ((v1.col >> 24) & 0xFF) / 255.0f   // A
+        );
+        Color c2(
+            ((v2.col >> 0) & 0xFF) / 255.0f,   // R
+            ((v2.col >> 8) & 0xFF) / 255.0f,   // G
+            ((v2.col >> 16) & 0xFF) / 255.0f,  // B
+            ((v2.col >> 24) & 0xFF) / 255.0f   // A
+        );
+        
+        // 绘制三角形
+        if (data.texture_id != ImTextureID_Invalid) {
+            // 有纹理，绘制带纹理的三角形
+            PackedVector2Array triangle_points;
+            PackedColorArray triangle_colors;
+            triangle_points.push_back(p0);
+            triangle_points.push_back(p1);
+            triangle_points.push_back(p2);
+            triangle_colors.push_back(c0);
+            triangle_colors.push_back(c1);
+            triangle_colors.push_back(c2);
+            
+            draw_polygon(triangle_points, triangle_colors);
+        } else {
+            // 无纹理，直接绘制彩色三角形
+            PackedVector2Array triangle_points;
+            PackedColorArray triangle_colors;
+            triangle_points.push_back(p0);
+            triangle_points.push_back(p1);
+            triangle_points.push_back(p2);
+            triangle_colors.push_back(c0);
+            triangle_colors.push_back(c1);
+            triangle_colors.push_back(c2);
+            
+            draw_polygon(triangle_points, triangle_colors);
+        }
+    }
+    
+    // 重置裁剪
+    set_clip_contents(false);
+}
+
+void GodotRendererUI::render_imgui_texture(const portal_core::render::ImGuiTextureData& data) {
+    // 这个方法用于处理纯纹理绘制命令（如果需要的话）
+    // 目前ImGui的纹理绘制主要通过render_imgui_mesh处理
+    // 这里可以作为扩展点，用于特殊的纹理处理需求
+    
+    if (data.texture_id == ImTextureID_Invalid) {
+        return;
+    }
+    
+    // TODO: 根据texture_id获取Godot纹理并绘制
+    // 这需要实现纹理管理系统来映射ImGui纹理ID到Godot纹理
+}
+#endif
 
 }} // namespace portal_gdext::render

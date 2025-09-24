@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/debug/portal_build_config.h"
 #include <godot_cpp/classes/node3d.hpp>
 #include "../render/godot_unified_renderer.h"
 #include <memory>
@@ -58,8 +59,10 @@ public:
     void shutdown_renderer();
     bool is_initialized() const { return initialized_; }
     
+    // 重新初始化方法
+    bool reinitialize_renderer();
+    
     // 便利方法，供GDScript调用
-    void draw_test_content();
     void clear_all_debug();
     void toggle_renderer(bool enabled);
     
@@ -77,8 +80,6 @@ public:
     void hide_all_gui_windows();
     void toggle_gui_window(const godot::String& window_id);
     void print_gui_stats();
-    void create_test_gui_data();
-    void add_performance_sample(float frame_time_ms);
     
     // 获取调试GUI系统（供其他C++代码使用）
     portal_core::debug::DebugGUISystem* get_debug_gui_system();

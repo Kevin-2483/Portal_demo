@@ -1,6 +1,6 @@
 #pragma once
 
-#include "debug_config.h"
+#include "core/debug/debug_config.h"
 
 #ifdef PORTAL_DEBUG_ENABLED
 

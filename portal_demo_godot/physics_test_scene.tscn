@@ -516,27 +516,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Instructions" type="Label" parent="UI"]
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 10.0
-offset_top = -345.0
-offset_right = 600.0
-offset_bottom = -10.0
-grow_vertical = 0
-text = "物理測試場景
-
-說明：
-1. 地面和平台 - 適合設置為 Static 物理體
-2. 球體、盒子、膠囊、圓柱 - 適合設置為 Dynamic 物理體
-3. 選擇任意 ECSNode，在檢查器中添加 PhysicsBodyComponentResource
-4. 配置物理屬性後運行場景觀察物理模擬效果
-5. 可選添加 PhysicsCommandComponentResource 來測試物理命令
-
-提示：
-- 記得為地面設置較大的盒子形狀
-- 為動態物體設置適當的質量和阻尼
-- 可以嘗試不同的摩擦力和彈性值"
-autowrap_mode = 2
+[node name="UnifiedDebugRenderBridge" type="UnifiedDebugRenderBridge" parent="." node_paths=PackedStringArray("world_node", "ui_node")]
+world_node = NodePath("..")
+ui_node = NodePath("../UI")
+process_mode = 3

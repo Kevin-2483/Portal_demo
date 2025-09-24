@@ -33,7 +33,7 @@ namespace portal_gdext
             // 创建MeshInstance3D节点
             mesh_instance_ = memnew(MeshInstance3D);
             mesh_instance_->set_name("DebugMeshInstance3D");
-            world_node_->add_child(mesh_instance_);
+            world_node_->call_deferred("add_child", mesh_instance_);
 
             setup_mesh();
 
