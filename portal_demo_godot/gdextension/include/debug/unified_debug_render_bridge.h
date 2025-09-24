@@ -67,22 +67,26 @@ public:
     void toggle_renderer(bool enabled);
     
 #ifdef PORTAL_DEBUG_GUI_ENABLED
-    // Debug GUI控制方法
-    bool initialize_debug_gui();
+    // Debug GUI 控制方法
+    bool initialize_debug_gui(const godot::String& font_resource_path = "");
     void shutdown_debug_gui();
     bool is_debug_gui_initialized() const { return debug_gui_initialized_; }
     
     void set_debug_gui_enabled(bool enabled);
     bool get_debug_gui_enabled() const { return debug_gui_enabled_; }
     
-    // 便利方法
+    // GUI窗口管理
     void show_all_gui_windows();
     void hide_all_gui_windows();
     void toggle_gui_window(const godot::String& window_id);
     void print_gui_stats();
     
-    // 获取调试GUI系统（供其他C++代码使用）
+    // 获取调试GUI系统实例
     portal_core::debug::DebugGUISystem* get_debug_gui_system();
+    
+private:
+    // 资源路径解析辅助方法
+    std::string resolve_resource_path(const godot::String& resource_path);
 #endif
     
     // 获取渲染器（供其他C++代码使用）

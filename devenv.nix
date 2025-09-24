@@ -14,6 +14,7 @@
     just
     python3
     scons
+    bear
   ];
   enterShell = ''
     export PATH=$PATH:/Applications/Godot.app/Contents/MacOS

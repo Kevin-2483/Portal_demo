@@ -15,6 +15,7 @@ from SCons.Script import (
     Alias,
     Clean,
     Exit,
+    AddOption,
     GetOption,
     File,
 )
@@ -91,6 +92,13 @@ def check_include_collisions(cpp_path_nodes, ignored_files=None):
 # 确保 SCons 和 Python 版本
 EnsureSConsVersion(4, 0)
 EnsurePythonVersion(3, 8)
+
+AddOption('--use-asan',
+          dest='use_asan',
+          type='string',
+          default='no',
+          help='Enable AddressSanitizer (yes/no)')
+
 
 print("=== Portal Demo 项目编译系统 (优化版) ===")
 print(f"项目根目录: {Dir('#').abspath}")
@@ -225,46 +233,71 @@ if library_nodes and not GetOption("clean"):
                 print(f"    - 位于: {path}")
             print("")  # 加一个空行分隔
 
-    ### [修改] 使用平台判断来设置正确的 C++ 标准标志，统一禁用异常处理
+    # ==============================================================================
+    # 阶段 2.3: 平台特定的编译和链接标志 (最终修正版)
+    # ==============================================================================
     if env_plugin["platform"] == "windows":
         # 禁用异常处理以与其他平台保持一致
         env_plugin.Append(CXXFLAGS=["/std:c++17", "/utf-8"])
         env_plugin.Append(CPPDEFINES=[("_HAS_EXCEPTIONS", 0)])
         print("  - C++ 标准设置为 C++17 (MSVC)，异常处理已禁用。")
-    else:
-        env_plugin.Append(CXXFLAGS=["-std=c++17", "-fno-exceptions"])
-        print("  - C++ 标准设置为 C++17，异常处理已禁用。")
+        
+        # AddressSanitizer 配置 (Windows/MSVC)
+        if GetOption("use_asan") == "yes":
+            env_plugin.Append(CXXFLAGS=["/fsanitize=address"])
+            env_plugin.Append(LINKFLAGS=["/fsanitize=address"])
+            print("  - AddressSanitizer 已启用 (MSVC)。")
+        
+        # Windows 调试信息
+        if env_plugin.get("target") == "template_debug":
+            env_plugin.Append(LINKFLAGS=["/DEBUG"])
+            env_plugin.Append(CXXFLAGS=['/Zi', '/Od'])
+            print("  - 已为 Windows 调试模式添加调试符号。")
+
+    else: # macOS 和 Linux
+        # --- [最终尝试] 强制重写调试标志 ---
+        if env_plugin.get("target") == "template_debug":
+            # 基础编译标志
+            cxx_flags = [
+                "-g3",                              # 最详细的调试信息
+                "-O0",                              # 关闭所有优化
+                "-fno-exceptions",                  # 禁用异常
+                "-std=c++17",                       # C++ 标准
+            ]
+            
+            # 如果启用了 ASan，也把它的标志加进来
+            if GetOption("use_asan") == "yes":
+                cxx_flags.extend(["-fsanitize=address", "-fno-omit-frame-pointer"])
+
+            # 针对 macOS 的特殊链接标志
+            link_flags = []
+            if env_plugin["platform"] == "macos":
+                link_flags.extend(["-stdlib=libc++", "-Wl,-undefined,dynamic_lookup"])
+            
+            if GetOption("use_asan") == "yes":
+                link_flags.append("-fsanitize=address")
+
+            # 强制覆盖环境中的设置
+            env_plugin.Replace(
+                CXXFLAGS=cxx_flags,
+                LINKFLAGS=link_flags
+            )
+            print("  - [强制覆盖] 已设置调试标志: ", " ".join(cxx_flags))
+            print("  - [强制覆盖] 已设置链接标志: ", " ".join(link_flags))
+        else:
+             # 非调试构建的默认设置
+            env_plugin.Append(CXXFLAGS=["-std=c++17", "-fno-exceptions"])
+            if env_plugin["platform"] == "macos":
+                 env_plugin.Append(LINKFLAGS=["-stdlib=libc++", "-Wl,-undefined,dynamic_lookup"])
+            print("  - C++ 标准设置为 C++17，异常处理已禁用。")
 
 
-    # --- 2.3 (关键步骤): 配置链接器以使用 godot-cpp 库 ---
+    # --- 2.4 (关键步骤): 配置链接器以使用 godot-cpp 库 ---
     godot_cpp_bin_path = os.path.join(
         Dir("#portal_demo_godot/gdextension/godot-cpp/bin").abspath
     )
     env_plugin.Append(LIBPATH=[godot_cpp_bin_path])
-    # # 从我们自己构建的节点获取库名 - 修复：正确处理库名称提取
-    # # godot_cpp_library.name 是完整的文件名，如 "libgodot-cpp.macos.template_debug.arm64.a"
-    # # 我们需要移除前缀 "lib" 和后缀 ".a" 来得到链接器需要的库名
-    # godot_cpp_lib_name = godot_cpp_library.name
-    # if godot_cpp_lib_name.startswith("lib"):
-    #     godot_cpp_lib_name = godot_cpp_lib_name[3:]  # 移除 "lib" 前缀
-    # if godot_cpp_lib_name.endswith(".a"):
-    #     godot_cpp_lib_name = godot_cpp_lib_name[:-2]  # 移除 ".a" 后缀
     env_plugin.Append(LIBS=[godot_cpp_library])
-    # print(f"  - 配置链接器以使用库: {godot_cpp_lib_name}")
-    # print(f"  - 完整库文件名: {godot_cpp_library.name}")
-    # print(f"  - 库文件路径: {godot_cpp_bin_path}")
-
-    ### [修改] 针对不同平台的环境微调
-    if env_plugin["platform"] == "macos":
-        env_plugin.Append(LINKFLAGS=["-stdlib=libc++", "-Wl,-undefined,dynamic_lookup"])
-        print("  - 已为 macOS 添加链接器标志。")
-    elif env_plugin["platform"] == "windows":
-        # MSVC 通常需要定义这个宏来正确链接 Windows API
-        env_plugin.Append(CPPDEFINES=["WINDOWS_ENABLED", "TYPED_METHOD_BIND"])
-        # 如果需要调试信息
-        if env_plugin.get("target") == "template_debug":
-            env_plugin.Append(LINKFLAGS=["/DEBUG"])
-        print("  - 已为 Windows 添加编译和链接设置。")
 
 
     # --- 2.5：收集 *只属于插件* 的源文件 ---
@@ -296,6 +329,56 @@ if library_nodes and not GetOption("clean"):
     
     # 添加ImGui源文件到插件源文件
     plugin_sources.extend([File(src) for src in imgui_sources])
+    
+    # 自动下载并复制字体文件到Godot项目目录
+    godot_font_dir = "portal_demo_godot/assets/fonts"
+    godot_font_target = f"{godot_font_dir}/SourceHanSerifSC-Regular.otf"
+    font_zip_url = "https://github.com/adobe-fonts/source-han-serif/releases/download/2.003R/09_SourceHanSerifSC.zip"
+    
+    # 创建Godot项目字体目录
+    if not os.path.exists(godot_font_dir):
+        os.makedirs(godot_font_dir, exist_ok=True)
+    
+    # 检查字体文件是否存在，不存在则下载
+    if not os.path.exists(godot_font_target):
+        print(f"  - 正在下载中文字体包到Godot项目: {font_zip_url}")
+        try:
+            import urllib.request
+            import zipfile
+            import tempfile
+            
+            # 下载ZIP文件到临时目录
+            with tempfile.NamedTemporaryFile(suffix='.zip', delete=False) as temp_zip:
+                urllib.request.urlretrieve(font_zip_url, temp_zip.name)
+                
+                # 解压ZIP文件并查找Regular字体
+                with zipfile.ZipFile(temp_zip.name, 'r') as zip_ref:
+                    # 查找Regular字体文件
+                    for file_name in zip_ref.namelist():
+                        if 'Regular.otf' in file_name and 'SourceHanSerifSC' in file_name:
+                            # 提取字体文件
+                            zip_ref.extract(file_name, godot_font_dir)
+                            # 重命名为目标文件名
+                            extracted_path = os.path.join(godot_font_dir, file_name)
+                            if os.path.exists(extracted_path):
+                                os.rename(extracted_path, godot_font_target)
+                                print(f"  - 中文字体文件下载成功: {godot_font_target}")
+                                break
+                    else:
+                        print(f"  - 警告: 在ZIP包中未找到Regular字体文件")
+                        print(f"  - 将使用默认字体，中文可能无法正确显示")
+                
+                # 清理临时文件
+                os.unlink(temp_zip.name)
+                
+        except Exception as e:
+            print(f"  - 警告: 中文字体文件下载失败: {e}")
+            print(f"  - 将使用默认字体，中文可能无法正确显示")
+    else:
+        print(f"  - 中文字体文件已存在: {godot_font_target}")
+    
+    # 复制字体文件到构建目录（如果需要的话）
+    # 注意：现在字体文件已经在Godot项目中，不需要额外复制到构建目录
 
     # 收集所有 Jolt Physics 源文件（遞歸搜尋所有子目錄）
     import os

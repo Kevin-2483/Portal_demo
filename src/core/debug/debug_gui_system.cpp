@@ -9,6 +9,7 @@
 #include <chrono>
 #include <sstream>
 #include <iomanip>
+#include <fstream>
 #include "portal_debug_logging.h"
 
 namespace portal_core {
@@ -23,7 +24,7 @@ DebugGUISystem& DebugGUISystem::instance() {
     return instance;
 }
 
-bool DebugGUISystem::initialize() {
+bool DebugGUISystem::initialize(const std::string& font_path) {
     if (initialized_) {
         PORTAL_DEBUG_LOG("DebugGUISystem: Already initialized");
         return true;
@@ -31,7 +32,7 @@ bool DebugGUISystem::initialize() {
     
     PORTAL_DEBUG_LOG("DebugGUISystem: Initializing...");
     
-    if (!initialize_imgui()) {
+    if (!initialize_imgui(font_path)) {
         PORTAL_DEBUG_ERROR("DebugGUISystem: Failed to initialize ImGui");
         return false;
     }
@@ -71,7 +72,7 @@ void DebugGUISystem::shutdown() {
     PORTAL_DEBUG_LOG("DebugGUISystem: Shutdown completed");
 }
 
-bool DebugGUISystem::initialize_imgui() {
+bool DebugGUISystem::initialize_imgui(const std::string& font_path) {
     // 创建ImGui上下文
     imgui_context_ = ImGui::CreateContext();
     if (!imgui_context_) {
@@ -90,8 +91,47 @@ bool DebugGUISystem::initialize_imgui() {
     // 设置后端标志，表明我们有纹理支持
     io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
     
-    // 设置字体（可选，使用默认字体）
-    io.Fonts->AddFontDefault();
+    // 设置字体 - 添加中文字体支持
+    ImFontConfig font_config;
+    font_config.MergeMode = false;
+    
+    // 添加默认字体
+    io.Fonts->AddFontDefault(&font_config);
+    
+    // 尝试加载中文字体
+    std::string chinese_font_path = font_path.empty() ? "src/assets/fonts/SourceHanSerifSC-Regular.otf" : font_path;
+    if (std::ifstream(chinese_font_path).good()) {
+        // 配置中文字体
+        ImFontConfig chinese_font_config;
+        chinese_font_config.MergeMode = true;  // 合并到默认字体
+        chinese_font_config.FontDataOwnedByAtlas = false;  // 不让ImGui管理字体数据
+        
+        // 添加中文字符范围
+        static const ImWchar chinese_ranges[] = {
+            0x0020, 0x00FF, // Basic Latin + Latin Supplement
+            0x2000, 0x206F, // General Punctuation
+            0x3000, 0x30FF, // CJK Symbols and Punctuations, Hiragana, Katakana
+            0x31F0, 0x31FF, // Katakana Phonetic Extensions
+            0xFF00, 0xFFEF, // Half-width characters
+            0x4e00, 0x9FAF, // CJK Ideograms
+            0,
+        };
+        
+        ImFont* chinese_font = io.Fonts->AddFontFromFileTTF(
+            chinese_font_path.c_str(), 
+            16.0f, 
+            &chinese_font_config, 
+            chinese_ranges
+        );
+        
+        if (chinese_font) {
+            PORTAL_DEBUG_LOG("DebugGUISystem: Chinese font loaded successfully from " << chinese_font_path);
+        } else {
+            PORTAL_DEBUG_LOG("DebugGUISystem: Failed to load Chinese font, using default font only");
+        }
+    } else {
+        PORTAL_DEBUG_LOG("DebugGUISystem: Chinese font file not found at " << chinese_font_path << ", using default font only");
+    }
     
     // 构建字体图集 - 这是关键步骤！
     unsigned char* pixels;
@@ -246,8 +286,6 @@ void DebugGUISystem::flush_to_unified_renderer() {
     // 获取统一渲染管理器
     auto& render_manager = portal_core::render::UnifiedRenderManager::instance();
     
-
-    
     // 遍历所有命令列表
     for (int cmd_list_idx = 0; cmd_list_idx < draw_data->CmdListsCount; cmd_list_idx++) {
         const ImDrawList* cmd_list = draw_data->CmdLists[cmd_list_idx];
@@ -276,31 +314,59 @@ void DebugGUISystem::flush_to_unified_renderer() {
                 continue;
             }
             
-            // 创建网格数据
-            portal_core::render::ImGuiMeshData mesh_data;
-            mesh_data.vertices = vertices.data();
-            mesh_data.indices = &cmd_list->IdxBuffer[idx_offset];
-            mesh_data.vertex_count = static_cast<uint32_t>(vertices.size());
-            mesh_data.index_count = pcmd.ElemCount;
-            mesh_data.texture_id = pcmd.GetTexID();
+            // 计算需要的顶点和索引数据大小
+            size_t vertex_data_size = vertices.size() * sizeof(portal_core::render::ImGuiVertex);
+            size_t index_data_size = pcmd.ElemCount * sizeof(ImDrawIdx);
+            size_t total_data_size = sizeof(portal_core::render::ImGuiMeshData) + vertex_data_size + index_data_size;
+            
+            // 创建包含所有数据的缓冲区 - 使用静态存储确保生命周期
+            static std::vector<std::unique_ptr<uint8_t[]>> static_buffers;
+            auto data_buffer = std::make_unique<uint8_t[]>(total_data_size);
+            uint8_t* current_ptr = data_buffer.get();
+            
+            // 在缓冲区开头放置ImGuiMeshData
+            portal_core::render::ImGuiMeshData* mesh_data = 
+                reinterpret_cast<portal_core::render::ImGuiMeshData*>(current_ptr);
+            current_ptr += sizeof(portal_core::render::ImGuiMeshData);
+            
+            // 拷贝顶点数据
+            portal_core::render::ImGuiVertex* vertex_data = 
+                reinterpret_cast<portal_core::render::ImGuiVertex*>(current_ptr);
+            std::memcpy(vertex_data, vertices.data(), vertex_data_size);
+            current_ptr += vertex_data_size;
+            
+            // 拷贝索引数据
+            ImDrawIdx* index_data = reinterpret_cast<ImDrawIdx*>(current_ptr);
+            std::memcpy(index_data, &cmd_list->IdxBuffer[idx_offset], index_data_size);
+            
+            // 设置mesh_data的字段，指向缓冲区内的数据
+            mesh_data->vertices = vertex_data;
+            mesh_data->indices = index_data;
+            mesh_data->vertex_count = static_cast<uint32_t>(vertices.size());
+            mesh_data->index_count = pcmd.ElemCount;
+            mesh_data->texture_id = pcmd.GetTexID();
+            mesh_data->use_clipping = false;
             
             // 设置裁剪区域
             if (pcmd.ClipRect.x < pcmd.ClipRect.z && pcmd.ClipRect.y < pcmd.ClipRect.w) {
-                mesh_data.use_clipping = true;
-                mesh_data.clip_rect_min = portal_core::Vector2(pcmd.ClipRect.x, pcmd.ClipRect.y);
-                mesh_data.clip_rect_max = portal_core::Vector2(pcmd.ClipRect.z, pcmd.ClipRect.w);
+                mesh_data->use_clipping = true;
+                mesh_data->clip_rect_min = portal_core::Vector2(pcmd.ClipRect.x, pcmd.ClipRect.y);
+                mesh_data->clip_rect_max = portal_core::Vector2(pcmd.ClipRect.z, pcmd.ClipRect.w);
             }
             
-            // 创建渲染命令
-            portal_core::render::UnifiedRenderCommand command(
-                portal_core::render::RenderCommandType::DRAW_IMGUI_VERTICES,
-                mesh_data,
-                static_cast<uint32_t>(portal_core::render::RenderLayer::UI_OVERLAY),
-                portal_core::render::RENDER_FLAG_ALPHA_BLEND
-            );
-            command.duration = 0.1f;
+            // 创建渲染命令，直接传递数据缓冲区
+            portal_core::render::UnifiedRenderCommand command;
+            command.type = portal_core::render::RenderCommandType::DRAW_IMGUI_VERTICES;
+            command.data = data_buffer.get();
+            command.data_size = total_data_size;
+            command.layer = static_cast<uint32_t>(portal_core::render::RenderLayer::UI_OVERLAY);
+            command.flags = portal_core::render::RENDER_FLAG_ALPHA_BLEND | portal_core::render::RENDER_FLAG_ONE_FRAME;
+            command.duration = -1.0f;  // 使用负值表示不基于时间清理，而是基于帧标志
             
-            // 提交命令
+            // 将缓冲区移动到静态存储中，确保生命周期
+            static_buffers.push_back(std::move(data_buffer));
+            
+            // 提交命令（UnifiedRenderManager会创建数据的深拷贝）
             render_manager.submit_command(command);
             
             idx_offset += pcmd.ElemCount;

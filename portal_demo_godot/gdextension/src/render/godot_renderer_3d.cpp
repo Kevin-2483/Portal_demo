@@ -45,8 +45,10 @@ namespace portal_gdext
         {
             if (mesh_instance_ && world_node_)
             {
+                // 从场景树中移除节点，让 Godot 自动管理其生命周期
                 world_node_->remove_child(mesh_instance_);
-                memdelete(mesh_instance_);
+                // 不再手动 delete，避免 double-free 问题
+                // memdelete(mesh_instance_); // <-- 移除这行，让 Godot 自动释放
                 mesh_instance_ = nullptr;
             }
 

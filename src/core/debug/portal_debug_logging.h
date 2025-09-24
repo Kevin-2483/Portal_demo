@@ -5,7 +5,7 @@
 #include "portal_build_config.h"
 
 // 只有在调试模式开启时，才包含 iostream 并定义有效的日志宏
-#if defined(PORTAL_DEBUG_ENABLED) && PORTAL_DEBUG_ENABLED
+#if defined(PORTAL_DEBUG_ENABLED) && PORTAL_DEBUG_ENABLED && 1 == 0
 
   #include <iostream>
 

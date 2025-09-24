@@ -8,6 +8,7 @@
 #include <godot_cpp/classes/viewport.hpp>
 #include <godot_cpp/classes/canvas_layer.hpp>
 #include <godot_cpp/classes/scene_tree.hpp>
+#include <godot_cpp/classes/project_settings.hpp>
 
 #ifdef PORTAL_DEBUG_GUI_ENABLED
 #include "core/debug/debug_gui_system.h"
@@ -42,7 +43,7 @@ void UnifiedDebugRenderBridge::_bind_methods() {
     
 #ifdef PORTAL_DEBUG_GUI_ENABLED
     // Debug GUI 控制方法绑定
-    ClassDB::bind_method(D_METHOD("initialize_debug_gui"), &UnifiedDebugRenderBridge::initialize_debug_gui);
+    ClassDB::bind_method(D_METHOD("initialize_debug_gui", "font_resource_path"), &UnifiedDebugRenderBridge::initialize_debug_gui, DEFVAL(""));
     ClassDB::bind_method(D_METHOD("shutdown_debug_gui"), &UnifiedDebugRenderBridge::shutdown_debug_gui);
     ClassDB::bind_method(D_METHOD("is_debug_gui_initialized"), &UnifiedDebugRenderBridge::is_debug_gui_initialized);
     
@@ -141,43 +142,43 @@ void UnifiedDebugRenderBridge::_ready() {
 }
 
 void UnifiedDebugRenderBridge::_process(double delta) {
-    if (!initialized_ || !unified_renderer_) return;
-    
-    float delta_f = static_cast<float>(delta);
-    
+  if (!initialized_ || !unified_renderer_) return;
+  
+  float delta_f = static_cast<float>(delta);
+  auto& render_manager = portal_core::render::UnifiedRenderManager::instance();
+  
+  // 1. (清理) 首先，更新渲染管理器，这将清理掉上一帧或更早的、已经渲染完毕的指令。
+  // 这是最关键的改动：将 update 调用从末尾移到开头。
+  render_manager.update(delta_f);
+  
+  // 2. (推进) 将帧计数器推进到当前帧。
+  render_manager.advance_frame();
+  
 #ifdef PORTAL_DEBUG_GUI_ENABLED
-    // 更新调试GUI系统
-    if (debug_gui_initialized_ && debug_gui_enabled_) {
-        frame_accumulator_ += delta_f;
-        frame_count_++;
-        
-        auto& gui_system = portal_core::debug::DebugGUISystem::instance();
-        gui_system.update(delta_f);
-        gui_system.render();
-        gui_system.flush_to_unified_renderer();
-        
-        // 每秒更新一次性能数据
-        if (frame_accumulator_ >= 1.0f) {
-            // 性能采样功能已移除，仅重置计数器
-            frame_accumulator_ = 0.0f;
-            frame_count_ = 0;
-        }
-    }
+  // 3. (提交) 现在为当前帧提交新的GUI渲染指令。
+  if (debug_gui_initialized_ && debug_gui_enabled_) {
+      frame_accumulator_ += delta_f;
+      frame_count_++;
+      
+      auto& gui_system = portal_core::debug::DebugGUISystem::instance();
+      gui_system.update(delta_f);
+      gui_system.render();
+      gui_system.flush_to_unified_renderer(); // 在这里提交新指令
+      
+      if (frame_accumulator_ >= 1.0f) {
+          frame_accumulator_ = 0.0f;
+          frame_count_ = 0;
+      }
+  }
 #endif
-    
-    // 更新渲染器
-    unified_renderer_->update(delta_f);
-    
-    // 分发命令到渲染器（在清理过期命令之前）
-    auto& render_manager = portal_core::render::UnifiedRenderManager::instance();
-    render_manager.flush_commands();
-    
-    // 更新渲染管理器（清理过期命令）
-    render_manager.update(delta_f);
-    
-    // 推进帧
-    render_manager.advance_frame();
+  
+  // 4. (更新Godot侧) 更新 Godot 渲染器本身的状态。
+  unified_renderer_->update(delta_f);
+  
+  // 5. (分发) 将当前帧所有待处理的指令（包括刚刚提交的GUI指令）分发出去，准备渲染。
+  render_manager.flush_commands();
 }
+
 
 void UnifiedDebugRenderBridge::_exit_tree() {
 #ifdef PORTAL_DEBUG_GUI_ENABLED
@@ -302,7 +303,7 @@ void UnifiedDebugRenderBridge::unregister_from_manager() {
 
 #ifdef PORTAL_DEBUG_GUI_ENABLED
 
-bool UnifiedDebugRenderBridge::initialize_debug_gui() {
+bool UnifiedDebugRenderBridge::initialize_debug_gui(const godot::String& font_resource_path) {
     if (debug_gui_initialized_) {
         UtilityFunctions::print("UnifiedDebugRenderBridge: Debug GUI already initialized");
         return true;
@@ -310,8 +311,16 @@ bool UnifiedDebugRenderBridge::initialize_debug_gui() {
     
     UtilityFunctions::print("UnifiedDebugRenderBridge: Initializing debug GUI system...");
     
+    // 解析字体资源路径
+    std::string absolute_font_path = resolve_resource_path(font_resource_path);
+    
+    // 如果提供了字体路径但解析失败，记录警告
+    if (!font_resource_path.is_empty() && absolute_font_path.empty()) {
+        UtilityFunctions::print("Warning: Failed to resolve font resource path: ", font_resource_path);
+    }
+    
     auto& gui_system = portal_core::debug::DebugGUISystem::instance();
-    if (!gui_system.initialize()) {
+    if (!gui_system.initialize(absolute_font_path)) {
         UtilityFunctions::printerr("UnifiedDebugRenderBridge: Failed to initialize debug GUI system");
         return false;
     }
@@ -415,6 +424,25 @@ void UnifiedDebugRenderBridge::print_gui_stats() {
 portal_core::debug::DebugGUISystem* UnifiedDebugRenderBridge::get_debug_gui_system() {
     if (!debug_gui_initialized_) return nullptr;
     return &portal_core::debug::DebugGUISystem::instance();
+}
+
+std::string UnifiedDebugRenderBridge::resolve_resource_path(const godot::String& resource_path) {
+    if (resource_path.is_empty()) {
+        return "";
+    }
+    
+    // 检查是否为Godot资源路径
+    if (resource_path.begins_with("res://")) {
+        // 使用ProjectSettings.globalize_path转换为绝对路径
+        godot::ProjectSettings* project_settings = godot::ProjectSettings::get_singleton();
+        if (project_settings) {
+            godot::String absolute_path = project_settings->globalize_path(resource_path);
+            return std::string(absolute_path.utf8().get_data());
+        }
+    }
+    
+    // 如果不是res://路径，直接返回原路径
+    return std::string(resource_path.utf8().get_data());
 }
 
 #endif // PORTAL_DEBUG_GUI_ENABLED

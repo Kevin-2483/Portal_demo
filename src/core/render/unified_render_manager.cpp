@@ -141,13 +141,14 @@ void UnifiedRenderManager::clear_expired_commands(float delta_time) {
     auto now = std::chrono::steady_clock::now();
     
     auto it = std::remove_if(command_queue_.begin(), command_queue_.end(),
-        [now](const StoredRenderCommand& cmd) {
-            // 检查一次性命令（ONE_FRAME标志）
+        [now, this](const StoredRenderCommand& cmd) {
+            // 检查一次性命令（ONE_FRAME标志）- 只有在渲染完成后才清理
             if (cmd.command.flags & RENDER_FLAG_ONE_FRAME) {
-                return true;
+                // 确保命令至少存活一帧，避免在同一帧内提交和清理
+                return cmd.command.frame_id < current_frame_id_;
             }
             
-            // 检查持续时间
+            // 检查持续时间（只有当duration >= 0时才基于时间清理）
             if (cmd.command.duration >= 0.0f) {
                 auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - cmd.created_time).count() / 1000.0f;
                 return elapsed >= cmd.command.duration;

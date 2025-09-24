@@ -34,7 +34,7 @@ class DebugGUISystem {
 public:
     // 系统生命周期
     static DebugGUISystem& instance();
-    bool initialize();
+    bool initialize(const std::string& font_path = "");
     void shutdown();
     
     // 更新和渲染
@@ -72,8 +72,8 @@ private:
     DebugGUISystem(const DebugGUISystem&) = delete;
     DebugGUISystem& operator=(const DebugGUISystem&) = delete;
     
-    // 初始化子系统
-    bool initialize_imgui();
+    // 内部方法
+    bool initialize_imgui(const std::string& font_path = "");
     void setup_imgui_style();
     
     // 内部状态

@@ -23,6 +23,13 @@ CMakeCache.txt
 src/core/portal_core/lib/build_*/
 src/core/portal_core/lib/.sconsign.dblite
 
+# Font assets (downloaded automatically)
+src/assets/fonts/
+*.otf
+*.ttf
+*.woff
+*.woff2
+
 # macOS
 .DS_Store
 **/.DS_Store

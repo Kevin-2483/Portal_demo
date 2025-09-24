@@ -60,7 +60,7 @@ void GodotRendererUI::_draw() {
 
 #ifdef PORTAL_DEBUG_GUI_ENABLED
             case portal_core::render::RenderCommandType::DRAW_IMGUI_VERTICES:
-                if (command.data && command.data_size == sizeof(portal_core::render::ImGuiMeshData)) {
+                if (command.data && command.data_size >= sizeof(portal_core::render::ImGuiMeshData)) {
                     render_imgui_mesh(*static_cast<const portal_core::render::ImGuiMeshData*>(command.data));
                 }
                 break;
@@ -241,6 +241,45 @@ void GodotRendererUI::render_imgui_mesh(const portal_core::render::ImGuiMeshData
         Vector2 p1(v1.pos.x, v1.pos.y);
         Vector2 p2(v2.pos.x, v2.pos.y);
         
+        // 数据有效性检查
+        // 1. 检查坐标是否为有效数值
+        if (!Math::is_finite(p0.x) || !Math::is_finite(p0.y) ||
+            !Math::is_finite(p1.x) || !Math::is_finite(p1.y) ||
+            !Math::is_finite(p2.x) || !Math::is_finite(p2.y)) {
+            continue; // 跳过无效坐标
+        }
+        
+        // 2. 检查坐标是否在合理范围内（避免极大值导致的渲染问题）
+        const float MAX_COORD = 100000.0f;
+        if (Math::abs(p0.x) > MAX_COORD || Math::abs(p0.y) > MAX_COORD ||
+            Math::abs(p1.x) > MAX_COORD || Math::abs(p1.y) > MAX_COORD ||
+            Math::abs(p2.x) > MAX_COORD || Math::abs(p2.y) > MAX_COORD) {
+            continue; // 跳过超出范围的坐标
+        }
+        
+        // 3. 检查是否为退化三角形（三点共线或重合）
+        Vector2 edge1 = p1 - p0;
+        Vector2 edge2 = p2 - p0;
+        float cross_product = edge1.x * edge2.y - edge1.y * edge2.x;
+        const float MIN_AREA = 0.01f; // 最小三角形面积阈值
+        if (Math::abs(cross_product) < MIN_AREA) {
+            continue; // 跳过退化三角形
+        }
+        
+        // 4. 应用裁剪检查（如果启用了裁剪）
+        if (data.use_clipping) {
+            Vector2 clip_min(data.clip_rect_min.x, data.clip_rect_min.y);
+            Vector2 clip_max(data.clip_rect_max.x, data.clip_rect_max.y);
+            
+            // 检查三角形是否完全在裁剪区域外
+            if ((p0.x < clip_min.x && p1.x < clip_min.x && p2.x < clip_min.x) ||
+                (p0.x > clip_max.x && p1.x > clip_max.x && p2.x > clip_max.x) ||
+                (p0.y < clip_min.y && p1.y < clip_min.y && p2.y < clip_min.y) ||
+                (p0.y > clip_max.y && p1.y > clip_max.y && p2.y > clip_max.y)) {
+                continue; // 跳过完全在裁剪区域外的三角形
+            }
+        }
+        
         Color c0(
             ((v0.col >> 0) & 0xFF) / 255.0f,   // R
             ((v0.col >> 8) & 0xFF) / 255.0f,   // G
@@ -260,30 +299,27 @@ void GodotRendererUI::render_imgui_mesh(const portal_core::render::ImGuiMeshData
             ((v2.col >> 24) & 0xFF) / 255.0f   // A
         );
         
+        // 5. 检查颜色透明度，跳过完全透明的三角形
+        if (c0.a <= 0.0f && c1.a <= 0.0f && c2.a <= 0.0f) {
+            continue;
+        }
+        
+        // 准备绘制数据
+        PackedVector2Array triangle_points;
+        PackedColorArray triangle_colors;
+        triangle_points.push_back(p0);
+        triangle_points.push_back(p1);
+        triangle_points.push_back(p2);
+        triangle_colors.push_back(c0);
+        triangle_colors.push_back(c1);
+        triangle_colors.push_back(c2);
+        
         // 绘制三角形
         if (data.texture_id != ImTextureID_Invalid) {
             // 有纹理，绘制带纹理的三角形
-            PackedVector2Array triangle_points;
-            PackedColorArray triangle_colors;
-            triangle_points.push_back(p0);
-            triangle_points.push_back(p1);
-            triangle_points.push_back(p2);
-            triangle_colors.push_back(c0);
-            triangle_colors.push_back(c1);
-            triangle_colors.push_back(c2);
-            
             draw_polygon(triangle_points, triangle_colors);
         } else {
             // 无纹理，直接绘制彩色三角形
-            PackedVector2Array triangle_points;
-            PackedColorArray triangle_colors;
-            triangle_points.push_back(p0);
-            triangle_points.push_back(p1);
-            triangle_points.push_back(p2);
-            triangle_colors.push_back(c0);
-            triangle_colors.push_back(c1);
-            triangle_colors.push_back(c2);
-            
             draw_polygon(triangle_points, triangle_colors);
         }
     }
