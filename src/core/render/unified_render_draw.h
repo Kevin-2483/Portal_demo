@@ -3,10 +3,10 @@
 #include "unified_render_manager.h"
 
 namespace portal_core {
-namespace debug {
+namespace render {
 
-// 便利API类，简化常用调试绘制操作
-class UnifiedDebugDraw {
+// 便利API类，简化常用渲染绘制操作
+class UnifiedRenderDraw {
 public:
     // ========== 3D 世界空间绘制 API ==========
     
@@ -59,7 +59,7 @@ public:
     
     // 自定义命令提交
     template<typename T>
-    static void submit_custom_command(const T& data, uint32_t custom_type, uint32_t layer = static_cast<uint32_t>(render::RenderLayer::WORLD_DEBUG), uint32_t flags = render::RENDER_FLAG_NONE);
+    static void submit_custom_command(const T& data, uint32_t custom_type, uint32_t layer = static_cast<uint32_t>(render::RenderLayer::WORLD_OVERLAY), uint32_t flags = render::RENDER_FLAG_NONE);
     
     // ========== 系统控制 ==========
     
@@ -83,6 +83,6 @@ private:
 };
 
 // 便利宏定义
-#define UNIFIED_DEBUG_DRAW portal_core::debug::UnifiedDebugDraw
+#define UNIFIED_RENDER_DRAW portal_core::render::UnifiedRenderDraw
 
-}} // namespace portal_core::debug
+}} // namespace portal_core::render

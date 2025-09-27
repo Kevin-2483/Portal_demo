@@ -1,4 +1,5 @@
-#pragma once
+#ifndef UNIFIED_RENDER_BRIDGE_H
+#define UNIFIED_RENDER_BRIDGE_H
 
 #include "core/debug/portal_build_config.h"
 #include <godot_cpp/classes/node3d.hpp>
@@ -10,14 +11,14 @@
 #endif
 
 namespace portal_gdext {
-namespace debug {
+namespace render {
 
 /**
- * Godot统一调试渲染桥接节点
+ * Godot统一渲染桥接节点
  * 用于在Godot场景中集成统一渲染系统
  */
-class UnifiedDebugRenderBridge : public godot::Node3D {
-    GDCLASS(UnifiedDebugRenderBridge, godot::Node3D)
+class UnifiedRenderBridge : public godot::Node3D {
+    GDCLASS(UnifiedRenderBridge, godot::Node3D)
     
 private:
     std::unique_ptr<render::GodotUnifiedRenderer> unified_renderer_;
@@ -34,8 +35,8 @@ private:
 #endif
     
 public:
-    UnifiedDebugRenderBridge();
-    ~UnifiedDebugRenderBridge();
+    UnifiedRenderBridge();
+    ~UnifiedRenderBridge();
     
     // Godot方法
     void _ready() override;
@@ -97,4 +98,6 @@ private:
     void unregister_from_manager();
 };
 
-}} // namespace portal_gdext::debug
+}} // namespace portal_gdext::render
+
+#endif // UNIFIED_RENDER_BRIDGE_H

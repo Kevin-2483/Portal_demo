@@ -7,7 +7,7 @@
 
 // 直接使用统一渲染接口进行调试绘制
 #ifdef GDEXTENSION_BUILD
-#include "core/render/unified_debug_draw.h"
+#include "core/render/unified_render_draw.h"
 #endif
 
 #include <iostream>
@@ -650,10 +650,10 @@ namespace portal_core
     using namespace portal_core::render;
 
     // 清空上一帧的调试绘制（每帧重新绘制）
-    UnifiedDebugDraw::clear_3d();
+    UnifiedRenderDraw::clear_3d();
 
     // 绘制原点坐标轴
-    UnifiedDebugDraw::draw_coordinate_axes(Vector3(0, 0, 0), 1.0f);
+    UnifiedRenderDraw::draw_coordinate_axes(Vector3(0, 0, 0), 1.0f);
 
     // 遍历所有有物理体的实体，绘制调试信息
     registry.view<PhysicsBodyComponent, TransformComponent>().each(
@@ -667,82 +667,65 @@ namespace portal_core
           }
 
           JPH::BodyID body_id = it->second;
+          JPH::BodyInterface &body_interface = physics_world_->GetBodyInterface();
 
-          // 从物理世界获取实际位置
-          auto &body_interface = physics_world_->get_body_interface();
-          JPH::Vec3 position = body_interface.GetPosition(body_id);
-          JPH::Quat rotation = body_interface.GetRotation(body_id);
+          // 获取物理体位置
+          JPH::Vec3 jolt_pos = body_interface.GetPosition(body_id);
+          Vector3 pos(jolt_pos.GetX(), jolt_pos.GetY(), jolt_pos.GetZ());
 
-          Vector3 pos(position.GetX(), position.GetY(), position.GetZ());
-
-          // 根据物理体类型绘制不同颜色的调试信息
+          // 根据物理体类型绘制不同颜色的标记
           switch (physics_body.body_type)
           {
           case PhysicsBodyType::STATIC:
-            // 静态物体 - 蓝色十字
-            UnifiedDebugDraw::draw_cross(pos, 0.2f, Color4f::BLUE);
-            UnifiedDebugDraw::draw_line(pos, Vector3(pos.GetX(), pos.GetY() + 0.5f, pos.GetZ()), Color4f::BLUE);
+            UnifiedRenderDraw::draw_cross(pos, 0.2f, Color4f::BLUE);
+            UnifiedRenderDraw::draw_line(pos, Vector3(pos.GetX(), pos.GetY() + 0.5f, pos.GetZ()), Color4f::BLUE);
             break;
 
           case PhysicsBodyType::KINEMATIC:
-            // 运动学物体 - 绿色十字
-            UnifiedDebugDraw::draw_cross(pos, 0.2f, Color4f::GREEN);
-            UnifiedDebugDraw::draw_line(pos, Vector3(pos.GetX(), pos.GetY() + 0.5f, pos.GetZ()), Color4f::GREEN);
+            UnifiedRenderDraw::draw_cross(pos, 0.2f, Color4f::GREEN);
+            UnifiedRenderDraw::draw_line(pos, Vector3(pos.GetX(), pos.GetY() + 0.5f, pos.GetZ()), Color4f::GREEN);
             break;
 
           case PhysicsBodyType::DYNAMIC:
-            // 动态物体 - 红色十字
-            UnifiedDebugDraw::draw_cross(pos, 0.2f, Color4f::RED);
-            UnifiedDebugDraw::draw_line(pos, Vector3(pos.GetX(), pos.GetY() + 0.5f, pos.GetZ()), Color4f::RED);
-
-            // 如果物体在运动，绘制速度向量
-            JPH::Vec3 velocity = body_interface.GetLinearVelocity(body_id);
-            if (velocity.LengthSq() > 0.01f)
-            {
-              Vector3 vel_end(pos.GetX() + velocity.GetX() * 0.1f,
-                              pos.GetY() + velocity.GetY() * 0.1f,
-                              pos.GetZ() + velocity.GetZ() * 0.1f);
-              UnifiedDebugDraw::draw_line(pos, vel_end, Color4f::YELLOW); // 黄色速度向量
-            }
+            UnifiedRenderDraw::draw_cross(pos, 0.2f, Color4f::RED);
+            UnifiedRenderDraw::draw_line(pos, Vector3(pos.GetX(), pos.GetY() + 0.5f, pos.GetZ()), Color4f::RED);
             break;
+          }
 
-          case PhysicsBodyType::TRIGGER:
-            // 触发器 - 洋红色十字
-            UnifiedDebugDraw::draw_cross(pos, 0.2f, Color4f(1.0f, 0.0f, 1.0f, 1.0f));
-            UnifiedDebugDraw::draw_line(pos, Vector3(pos.GetX(), pos.GetY() + 0.5f, pos.GetZ()), Color4f(1.0f, 0.0f, 1.0f, 1.0f));
-            break;
+          // 绘制速度向量（仅对动态物体）
+          if (physics_body.body_type == PhysicsBodyType::DYNAMIC)
+          {
+            JPH::Vec3 jolt_vel = body_interface.GetLinearVelocity(body_id);
+            Vector3 vel_end = pos + Vector3(jolt_vel.GetX(), jolt_vel.GetY(), jolt_vel.GetZ()) * 0.5f;
+            UnifiedRenderDraw::draw_line(pos, vel_end, Color4f::YELLOW); // 黄色速度向量
+          }
+
+          // 绘制传感器（触发器）
+          if (physics_body.is_sensor)
+          {
+            UnifiedRenderDraw::draw_cross(pos, 0.2f, Color4f(1.0f, 0.0f, 1.0f, 1.0f));
+            UnifiedRenderDraw::draw_line(pos, Vector3(pos.GetX(), pos.GetY() + 0.5f, pos.GetZ()), Color4f(1.0f, 0.0f, 1.0f, 1.0f));
           }
         });
 
-    // 添加一个旋转的测试图案，验证动态绘制
-    static float test_time = 0.0f;
-    test_time += 0.016f; // 假设60fps
-
-    Vector3 test_center(0, 3, 0);
-    float radius = 1.5f;
-    for (int i = 0; i < 6; ++i)
+    // 绘制一些测试线条（彩虹色）
+    Vector3 test_center(0, 2, 0);
+    for (int i = 0; i < 8; ++i)
     {
-      float angle = test_time + i * 3.14159f / 3.0f;
-      Vector3 point(test_center.GetX() + cos(angle) * radius,
-                    test_center.GetY(),
-                    test_center.GetZ() + sin(angle) * radius);
+      float angle = i * 3.14159f / 4.0f;
+      Vector3 point = test_center + Vector3(std::cos(angle), 0, std::sin(angle)) * 2.0f;
 
-      // 彩色旋转线段
-      float r = 0.5f + 0.5f * sin(angle);
-      float g = 0.5f + 0.5f * cos(angle * 2.0f);
-      float b = 0.5f + 0.5f * sin(angle * 3.0f);
+      float r = (i & 1) ? 1.0f : 0.0f;
+      float g = (i & 2) ? 1.0f : 0.0f;
+      float b = (i & 4) ? 1.0f : 0.0f;
 
-      UnifiedDebugDraw::draw_line(test_center, point, Color4f(r, g, b, 1.0f));
+      UnifiedRenderDraw::draw_line(test_center, point, Color4f(r, g, b, 1.0f));
     }
 
-    // 输出调试信息
-    static int frame_count = 0;
-    if (++frame_count % 120 == 0)
-    { // 每2秒输出一次
-      auto stats = UnifiedDebugDraw::get_stats();
-      PORTAL_DEBUG_LOG("PhysicsSystem: Drew debug elements, render stats: " 
+    // 输出统计信息
+    auto stats = UnifiedRenderDraw::get_stats();
+    PORTAL_DEBUG_LOG("PhysicsSystem: Drew debug elements, render stats: " 
                 << stats.total_commands << " commands");
-    }
 #else
     // 在测试环境中，只输出简单的调试信息
     static int frame_count = 0;

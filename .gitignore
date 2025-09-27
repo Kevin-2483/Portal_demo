@@ -15,6 +15,7 @@ CMakeCache.txt
 # SCons build files
 *.os
 *.o
+*.pdb
 .scons_node_count
 .sconf_temp
 .sconsign.dblite

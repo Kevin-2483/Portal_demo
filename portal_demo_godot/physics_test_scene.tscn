@@ -516,7 +516,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="UnifiedDebugRenderBridge" type="UnifiedDebugRenderBridge" parent="." node_paths=PackedStringArray("world_node", "ui_node")]
+[node name="UnifiedRenderBridge" type="UnifiedRenderBridge" parent="." node_paths=PackedStringArray("world_node", "ui_node")]
 world_node = NodePath("..")
 ui_node = NodePath("../UI")
 process_mode = 3

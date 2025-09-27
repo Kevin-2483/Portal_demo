@@ -3,7 +3,7 @@
 #ifdef PORTAL_DEBUG_GUI_ENABLED
 
 #include "../render/unified_render_manager.h"
-#include "../render/unified_debug_draw.h"
+#include "../render/unified_render_draw.h"
 #include "../render/unified_render_types.h"
 #include <iostream>
 #include <chrono>

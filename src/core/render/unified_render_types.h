@@ -55,7 +55,7 @@ enum class RenderCommandType : uint32_t {
 enum class RenderLayer : uint32_t {
     BACKGROUND = 0,
     WORLD_GEOMETRY = 100,
-    WORLD_DEBUG = 200,
+    WORLD_OVERLAY = 200,
     UI_BACKGROUND = 1000,
     UI_CONTENT = 1100,
     UI_OVERLAY = 1200,
@@ -239,14 +239,14 @@ struct UnifiedRenderCommand {
         : type(RenderCommandType::CUSTOM_COMMAND)
         , data(nullptr)
         , data_size(0)
-        , layer(static_cast<uint32_t>(RenderLayer::WORLD_DEBUG))
+        , layer(static_cast<uint32_t>(RenderLayer::WORLD_OVERLAY))
         , flags(RENDER_FLAG_NONE)
         , duration(-1.0f)
         , frame_id(0) {}
         
     // 便利构造函数
     template<typename T>
-    UnifiedRenderCommand(RenderCommandType cmd_type, const T& cmd_data, uint32_t cmd_layer = static_cast<uint32_t>(RenderLayer::WORLD_DEBUG), uint32_t cmd_flags = RENDER_FLAG_NONE)
+    UnifiedRenderCommand(RenderCommandType cmd_type, const T& cmd_data, uint32_t cmd_layer = static_cast<uint32_t>(RenderLayer::WORLD_OVERLAY), uint32_t cmd_flags = RENDER_FLAG_NONE)
         : type(cmd_type)
         , data(const_cast<T*>(&cmd_data))
         , data_size(sizeof(T))

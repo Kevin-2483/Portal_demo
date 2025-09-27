@@ -10,7 +10,7 @@
 #include "universal_preset_inspector_plugin.h"
 
 // 调试系统
-#include "debug/unified_debug_render_bridge.h"
+#include "render_bridge/unified_render_bridge.h"
 #include "render/godot_renderer_ui.h"
 
 #include <gdextension_interface.h>
@@ -32,7 +32,7 @@ void initialize_gdextension_module(ModuleInitializationLevel p_level)
     ClassDB::register_class<ECSNode>();
 
     // 注册调试系统
-    ClassDB::register_class<portal_gdext::debug::UnifiedDebugRenderBridge>();
+    ClassDB::register_class<portal_gdext::render::UnifiedRenderBridge>();
     ClassDB::register_class<portal_gdext::render::GodotRendererUI>();
 
     // ✅ 在这里，安全地执行所有延迟的注册！

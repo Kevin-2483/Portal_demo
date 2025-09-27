@@ -123,6 +123,8 @@ print(f"--- 已自动设置平台为: {detected_platform} ---")
 # setdefault 仍然用于其他参数，因为它们可能需要手动更改
 ARGUMENTS.setdefault("arch", default_arch)
 ARGUMENTS.setdefault("target", "template_debug")
+# 为了避免优化标志冲突，在调试模式下强制使用 debug 优化级别
+ARGUMENTS.setdefault("optimize", "debug")
 
 # ==============================================================================
 # 阶段一：调用 godot-cpp 构建脚本
@@ -239,20 +241,40 @@ if library_nodes and not GetOption("clean"):
     if env_plugin["platform"] == "windows":
         # 禁用异常处理以与其他平台保持一致
         env_plugin.Append(CXXFLAGS=["/std:c++17", "/utf-8"])
+        env_plugin.Append(CXXFLAGS=["/FS"])
         env_plugin.Append(CPPDEFINES=[("_HAS_EXCEPTIONS", 0)])
         print("  - C++ 标准设置为 C++17 (MSVC)，异常处理已禁用。")
         
         # AddressSanitizer 配置 (Windows/MSVC)
         if GetOption("use_asan") == "yes":
             env_plugin.Append(CXXFLAGS=["/fsanitize=address"])
-            env_plugin.Append(LINKFLAGS=["/fsanitize=address"])
             print("  - AddressSanitizer 已启用 (MSVC)。")
         
-        # Windows 调试信息
+        # Windows 调试信息和优化标志
         if env_plugin.get("target") == "template_debug":
-            env_plugin.Append(LINKFLAGS=["/DEBUG"])
-            env_plugin.Append(CXXFLAGS=['/Zi', '/Od'])
-            print("  - 已为 Windows 调试模式添加调试符号。")
+            # 清除可能从godot-cpp继承的优化标志，避免/Od与/O2冲突
+            if 'CXXFLAGS' in env_plugin:
+                # 移除所有优化相关的标志
+                cxxflags = env_plugin['CXXFLAGS']
+                if isinstance(cxxflags, list):
+                    cxxflags = [flag for flag in cxxflags if flag not in ['/O1', '/O2', '/Ox', '/Od']]
+                    env_plugin.Replace(CXXFLAGS=cxxflags)
+            
+            # 清除CCFLAGS中的优化标志（godot-cpp可能在这里设置）
+            if 'CCFLAGS' in env_plugin:
+                ccflags = env_plugin['CCFLAGS']
+                if isinstance(ccflags, list):
+                    ccflags = [flag for flag in ccflags if flag not in ['/O1', '/O2', '/Ox', '/Od']]
+                    env_plugin.Replace(CCFLAGS=ccflags)
+            
+            # 设置调试模式的编译和链接标志
+            env_plugin.Append(CXXFLAGS=['/Zi', '/Od'])  # 调试信息 + 无优化
+            env_plugin.Append(CCFLAGS=['/Od'])          # 确保CCFLAGS也设置无优化
+            env_plugin.Append(LINKFLAGS=[
+                "/DEBUG",           # 生成调试信息
+                "/IGNORE:4099",     # 忽略PDB文件缺失警告
+            ])
+            print("  - 已为 Windows 调试模式添加调试符号，并修复优化标志冲突。")
 
     else: # macOS 和 Linux
         # --- [最终尝试] 强制重写调试标志 ---
@@ -307,7 +329,7 @@ if library_nodes and not GetOption("clean"):
     plugin_sources = (
         Glob(f"{build_dir}/portal_demo_godot/gdextension/src/*.cpp")
         + Glob(f"{build_dir}/portal_demo_godot/gdextension/ecs-components/src/*.cpp")
-        + Glob(f"{build_dir}/portal_demo_godot/gdextension/src/debug/*.cpp")  # 添加调试系统
+        + Glob(f"{build_dir}/portal_demo_godot/gdextension/src/render_bridge/*.cpp")  # 添加渲染桥接系统
         + Glob(f"{build_dir}/portal_demo_godot/gdextension/src/render/*.cpp")  # 添加渲染系统
         + Glob(f"{build_dir}/src/core/*.cpp")
         + Glob(f"{build_dir}/src/core/systems/*.cpp")
@@ -464,7 +486,7 @@ if library_nodes and not GetOption("clean"):
             f"{build_dir}/src/core/physics_events/physics_event_adapter.cpp",
             f"{build_dir}/src/core/physics_events/lazy_physics_query_manager.cpp",
             f"{build_dir}/src/core/render/unified_render_manager.cpp",
-            f"{build_dir}/src/core/render/unified_debug_draw.cpp",
+            f"{build_dir}/src/core/render/unified_render_draw.cpp",
             f"{build_dir}/src/core/debug/debug_gui_system.cpp",
             f"{build_dir}/src/core/debug/debuggable_registry.cpp",
         ]

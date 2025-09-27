@@ -1,33 +1,33 @@
-#include "unified_debug_draw.h"
+#include "unified_render_draw.h"
 #include <cmath>
 
 namespace portal_core {
-namespace debug {
+namespace render {
 
 // ========== 3D 世界空间绘制实现 ==========
 
-void UnifiedDebugDraw::draw_line(const Vector3& start, const Vector3& end, const render::Color4f& color, float thickness) {
+void UnifiedRenderDraw::draw_line(const Vector3& start, const Vector3& end, const render::Color4f& color, float thickness) {
     render::Line3DData data(start, end, color, thickness);
     render::UnifiedRenderCommand cmd(render::RenderCommandType::DRAW_LINE_3D, data, 
-                                   static_cast<uint32_t>(render::RenderLayer::WORLD_DEBUG));
+                                   static_cast<uint32_t>(render::RenderLayer::WORLD_OVERLAY));
     get_manager().submit_command(cmd);
 }
 
-void UnifiedDebugDraw::draw_box(const Vector3& center, const Vector3& size, const render::Color4f& color, bool filled) {
+void UnifiedRenderDraw::draw_box(const Vector3& center, const Vector3& size, const render::Color4f& color, bool filled) {
     render::Box3DData data(center, size, color, filled);
     render::UnifiedRenderCommand cmd(render::RenderCommandType::DRAW_BOX_3D, data,
-                                   static_cast<uint32_t>(render::RenderLayer::WORLD_DEBUG));
+                                   static_cast<uint32_t>(render::RenderLayer::WORLD_OVERLAY));
     get_manager().submit_command(cmd);
 }
 
-void UnifiedDebugDraw::draw_sphere(const Vector3& center, float radius, const render::Color4f& color, int segments, bool filled) {
+void UnifiedRenderDraw::draw_sphere(const Vector3& center, float radius, const render::Color4f& color, int segments, bool filled) {
     render::Sphere3DData data(center, radius, color, segments, filled);
     render::UnifiedRenderCommand cmd(render::RenderCommandType::DRAW_SPHERE_3D, data,
-                                   static_cast<uint32_t>(render::RenderLayer::WORLD_DEBUG));
+                                   static_cast<uint32_t>(render::RenderLayer::WORLD_OVERLAY));
     get_manager().submit_command(cmd);
 }
 
-void UnifiedDebugDraw::draw_cross(const Vector3& center, float size, const render::Color4f& color) {
+void UnifiedRenderDraw::draw_cross(const Vector3& center, float size, const render::Color4f& color) {
     float half_size = size * 0.5f;
     
     // X轴
@@ -46,7 +46,7 @@ void UnifiedDebugDraw::draw_cross(const Vector3& center, float size, const rende
               render::Color4f::BLUE);
 }
 
-void UnifiedDebugDraw::draw_coordinate_axes(const Vector3& origin, float size) {
+void UnifiedRenderDraw::draw_coordinate_axes(const Vector3& origin, float size) {
     // X轴 - 红色
     draw_line(origin, Vector3(origin.GetX() + size, origin.GetY(), origin.GetZ()), render::Color4f::RED, 2.0f);
     
@@ -57,7 +57,7 @@ void UnifiedDebugDraw::draw_coordinate_axes(const Vector3& origin, float size) {
     draw_line(origin, Vector3(origin.GetX(), origin.GetY(), origin.GetZ() + size), render::Color4f::BLUE, 2.0f);
 }
 
-void UnifiedDebugDraw::draw_arrow(const Vector3& start, const Vector3& end, const render::Color4f& color, float head_size) {
+void UnifiedRenderDraw::draw_arrow(const Vector3& start, const Vector3& end, const render::Color4f& color, float head_size) {
     // 主线
     draw_line(start, end, color, 2.0f);
     
@@ -89,7 +89,7 @@ void UnifiedDebugDraw::draw_arrow(const Vector3& start, const Vector3& end, cons
     draw_line(end, head_back - perpendicular2 * head_size * 0.5f, color);
 }
 
-void UnifiedDebugDraw::draw_grid(const Vector3& center, const Vector3& size, int divisions_x, int divisions_z, const render::Color4f& color) {
+void UnifiedRenderDraw::draw_grid(const Vector3& center, const Vector3& size, int divisions_x, int divisions_z, const render::Color4f& color) {
     float step_x = size.GetX() / divisions_x;
     float step_z = size.GetZ() / divisions_z;
     float half_x = size.GetX() * 0.5f;
@@ -110,47 +110,47 @@ void UnifiedDebugDraw::draw_grid(const Vector3& center, const Vector3& size, int
     }
 }
 
-void UnifiedDebugDraw::draw_aabb(const Vector3& min, const Vector3& max, const render::Color4f& color) {
+void UnifiedRenderDraw::draw_aabb(const Vector3& min, const Vector3& max, const render::Color4f& color) {
     Vector3 center = (min + max) * 0.5f;
     Vector3 size = max - min;
     draw_box(center, size, color, false);
 }
 
-void UnifiedDebugDraw::draw_obb(const Vector3& center, const Vector3& size, const Vector3& rotation, const render::Color4f& color) {
+void UnifiedRenderDraw::draw_obb(const Vector3& center, const Vector3& size, const Vector3& rotation, const render::Color4f& color) {
     // 简化版本，暂时忽略旋转，直接绘制AABB
     // 在完整实现中需要应用旋转变换
     draw_box(center, size, color, false);
 }
 
-void UnifiedDebugDraw::draw_ray(const Vector3& origin, const Vector3& direction, float length, const render::Color4f& color) {
+void UnifiedRenderDraw::draw_ray(const Vector3& origin, const Vector3& direction, float length, const render::Color4f& color) {
     Vector3 end = origin + direction * length;
     draw_arrow(origin, end, color, length * 0.1f);
 }
 
 // ========== 2D UI空间绘制实现 ==========
 
-void UnifiedDebugDraw::draw_ui_rect(const Vector2& position, const Vector2& size, const render::Color4f& color, bool filled, float border_width) {
+void UnifiedRenderDraw::draw_ui_rect(const Vector2& position, const Vector2& size, const render::Color4f& color, bool filled, float border_width) {
     render::UIRectData data(position, size, color, filled, border_width);
     render::UnifiedRenderCommand cmd(render::RenderCommandType::DRAW_UI_RECT, data,
                                    static_cast<uint32_t>(render::RenderLayer::UI_CONTENT));
     get_manager().submit_command(cmd);
 }
 
-void UnifiedDebugDraw::draw_ui_text(const Vector2& position, const std::string& text, const render::Color4f& color, float font_size, int align) {
+void UnifiedRenderDraw::draw_ui_text(const Vector2& position, const std::string& text, const render::Color4f& color, float font_size, int align) {
     render::UITextData data(position, text, color, font_size, align);
     render::UnifiedRenderCommand cmd(render::RenderCommandType::DRAW_UI_TEXT, data,
                                    static_cast<uint32_t>(render::RenderLayer::UI_CONTENT));
     get_manager().submit_command(cmd);
 }
 
-void UnifiedDebugDraw::draw_ui_line(const Vector2& start, const Vector2& end, const render::Color4f& color, float thickness) {
+void UnifiedRenderDraw::draw_ui_line(const Vector2& start, const Vector2& end, const render::Color4f& color, float thickness) {
     render::UILineData data(start, end, color, thickness);
     render::UnifiedRenderCommand cmd(render::RenderCommandType::DRAW_UI_LINE, data,
                                    static_cast<uint32_t>(render::RenderLayer::UI_CONTENT));
     get_manager().submit_command(cmd);
 }
 
-void UnifiedDebugDraw::draw_ui_circle(const Vector2& center, float radius, const render::Color4f& color, int segments, bool filled) {
+void UnifiedRenderDraw::draw_ui_circle(const Vector2& center, float radius, const render::Color4f& color, int segments, bool filled) {
     // 用线段近似绘制圆形
     float angle_step = 2.0f * 3.14159f / segments;
     
@@ -169,13 +169,13 @@ void UnifiedDebugDraw::draw_ui_circle(const Vector2& center, float radius, const
     }
 }
 
-void UnifiedDebugDraw::draw_ui_cross(const Vector2& center, float size, const render::Color4f& color) {
+void UnifiedRenderDraw::draw_ui_cross(const Vector2& center, float size, const render::Color4f& color) {
     float half_size = size * 0.5f;
     draw_ui_line(Vector2(center.x - half_size, center.y), Vector2(center.x + half_size, center.y), color);
     draw_ui_line(Vector2(center.x, center.y - half_size), Vector2(center.x, center.y + half_size), color);
 }
 
-void UnifiedDebugDraw::draw_ui_window(const Vector2& position, const Vector2& size, const std::string& title, const render::Color4f& color) {
+void UnifiedRenderDraw::draw_ui_window(const Vector2& position, const Vector2& size, const std::string& title, const render::Color4f& color) {
     // 窗口背景
     draw_ui_rect(position, size, color, true);
     
@@ -194,7 +194,7 @@ void UnifiedDebugDraw::draw_ui_window(const Vector2& position, const Vector2& si
     }
 }
 
-void UnifiedDebugDraw::draw_ui_button(const Vector2& position, const Vector2& size, const std::string& label, bool pressed, const render::Color4f& color) {
+void UnifiedRenderDraw::draw_ui_button(const Vector2& position, const Vector2& size, const std::string& label, bool pressed, const render::Color4f& color) {
     render::Color4f button_color = pressed ? 
         render::Color4f(color.r * 0.7f, color.g * 0.7f, color.b * 0.7f, color.a) : color;
     
@@ -211,7 +211,7 @@ void UnifiedDebugDraw::draw_ui_button(const Vector2& position, const Vector2& si
     }
 }
 
-void UnifiedDebugDraw::draw_ui_slider(const Vector2& position, const Vector2& size, float value, float min_val, float max_val, const std::string& label) {
+void UnifiedRenderDraw::draw_ui_slider(const Vector2& position, const Vector2& size, float value, float min_val, float max_val, const std::string& label) {
     // 滑动条背景
     draw_ui_rect(position, size, render::Color4f(0.3f, 0.3f, 0.3f, 1.0f), true);
     
@@ -232,7 +232,7 @@ void UnifiedDebugDraw::draw_ui_slider(const Vector2& position, const Vector2& si
     }
 }
 
-void UnifiedDebugDraw::draw_ui_progress_bar(const Vector2& position, const Vector2& size, float progress, const render::Color4f& bg_color, const render::Color4f& fg_color) {
+void UnifiedRenderDraw::draw_ui_progress_bar(const Vector2& position, const Vector2& size, float progress, const render::Color4f& bg_color, const render::Color4f& fg_color) {
     progress = std::max(0.0f, std::min(1.0f, progress));
     
     // 背景
@@ -251,7 +251,7 @@ void UnifiedDebugDraw::draw_ui_progress_bar(const Vector2& position, const Vecto
     draw_ui_text(text_pos, progress_text, render::Color4f::WHITE, 10.0f, 1);
 }
 
-void UnifiedDebugDraw::draw_ui_graph(const Vector2& position, const Vector2& size, const std::vector<float>& values, const render::Color4f& color, const std::string& title) {
+void UnifiedRenderDraw::draw_ui_graph(const Vector2& position, const Vector2& size, const std::vector<float>& values, const render::Color4f& color, const std::string& title) {
     if (values.empty()) return;
     
     // 图表背景
@@ -293,7 +293,7 @@ void UnifiedDebugDraw::draw_ui_graph(const Vector2& position, const Vector2& siz
     }
 }
 
-void UnifiedDebugDraw::draw_ui_histogram(const Vector2& position, const Vector2& size, const std::vector<float>& values, const render::Color4f& color, const std::string& title) {
+void UnifiedRenderDraw::draw_ui_histogram(const Vector2& position, const Vector2& size, const std::vector<float>& values, const render::Color4f& color, const std::string& title) {
     if (values.empty()) return;
     
     // 直方图背景
@@ -332,15 +332,15 @@ void UnifiedDebugDraw::draw_ui_histogram(const Vector2& position, const Vector2&
 
 // ========== 高级功能实现 ==========
 
-void UnifiedDebugDraw::draw_line_timed(const Vector3& start, const Vector3& end, float duration, const render::Color4f& color, float thickness) {
+void UnifiedRenderDraw::draw_line_timed(const Vector3& start, const Vector3& end, float duration, const render::Color4f& color, float thickness) {
     render::Line3DData data(start, end, color, thickness);
     render::UnifiedRenderCommand cmd(render::RenderCommandType::DRAW_LINE_3D, data,
-                                   static_cast<uint32_t>(render::RenderLayer::WORLD_DEBUG));
+                                   static_cast<uint32_t>(render::RenderLayer::WORLD_OVERLAY));
     cmd.duration = duration;
     get_manager().submit_command(cmd);
 }
 
-void UnifiedDebugDraw::draw_ui_text_timed(const Vector2& position, const std::string& text, float duration, const render::Color4f& color, float font_size) {
+void UnifiedRenderDraw::draw_ui_text_timed(const Vector2& position, const std::string& text, float duration, const render::Color4f& color, float font_size) {
     render::UITextData data(position, text, color, font_size, 0);
     render::UnifiedRenderCommand cmd(render::RenderCommandType::DRAW_UI_TEXT, data,
                                    static_cast<uint32_t>(render::RenderLayer::UI_OVERLAY));
@@ -348,15 +348,15 @@ void UnifiedDebugDraw::draw_ui_text_timed(const Vector2& position, const std::st
     get_manager().submit_command(cmd);
 }
 
-void UnifiedDebugDraw::draw_line_once(const Vector3& start, const Vector3& end, const render::Color4f& color, float thickness) {
+void UnifiedRenderDraw::draw_line_once(const Vector3& start, const Vector3& end, const render::Color4f& color, float thickness) {
     render::Line3DData data(start, end, color, thickness);
     render::UnifiedRenderCommand cmd(render::RenderCommandType::DRAW_LINE_3D, data,
-                                   static_cast<uint32_t>(render::RenderLayer::WORLD_DEBUG),
+                                   static_cast<uint32_t>(render::RenderLayer::WORLD_OVERLAY),
                                    render::RENDER_FLAG_ONE_FRAME);
     get_manager().submit_command(cmd);
 }
 
-void UnifiedDebugDraw::draw_ui_text_once(const Vector2& position, const std::string& text, const render::Color4f& color, float font_size) {
+void UnifiedRenderDraw::draw_ui_text_once(const Vector2& position, const std::string& text, const render::Color4f& color, float font_size) {
     render::UITextData data(position, text, color, font_size, 0);
     render::UnifiedRenderCommand cmd(render::RenderCommandType::DRAW_UI_TEXT, data,
                                    static_cast<uint32_t>(render::RenderLayer::UI_OVERLAY),
@@ -366,11 +366,11 @@ void UnifiedDebugDraw::draw_ui_text_once(const Vector2& position, const std::str
 
 // ========== 系统控制实现 ==========
 
-void UnifiedDebugDraw::clear_all() {
+void UnifiedRenderDraw::clear_all() {
     get_manager().clear_commands();
 }
 
-void UnifiedDebugDraw::clear_3d() {
+void UnifiedRenderDraw::clear_3d() {
     // 清除所有3D命令类型
     auto& manager = get_manager();
     manager.clear_commands_by_type(render::RenderCommandType::DRAW_LINE_3D);
@@ -381,7 +381,7 @@ void UnifiedDebugDraw::clear_3d() {
     manager.clear_commands_by_type(render::RenderCommandType::DRAW_COORDINATE_AXES_3D);
 }
 
-void UnifiedDebugDraw::clear_ui() {
+void UnifiedRenderDraw::clear_ui() {
     // 清除所有UI命令类型
     auto& manager = get_manager();
     manager.clear_commands_by_type(render::RenderCommandType::DRAW_UI_RECT);
@@ -396,29 +396,29 @@ void UnifiedDebugDraw::clear_ui() {
     manager.clear_commands_by_type(render::RenderCommandType::DRAW_UI_GRAPH_LINE);
 }
 
-void UnifiedDebugDraw::clear_layer(uint32_t layer) {
+void UnifiedRenderDraw::clear_layer(uint32_t layer) {
     get_manager().clear_commands_by_layer(layer);
 }
 
-void UnifiedDebugDraw::set_enabled(bool enabled) {
+void UnifiedRenderDraw::set_enabled(bool enabled) {
     get_manager().set_enabled(enabled);
 }
 
-bool UnifiedDebugDraw::is_enabled() {
+bool UnifiedRenderDraw::is_enabled() {
     return get_manager().is_enabled();
 }
 
-render::RenderStats UnifiedDebugDraw::get_stats() {
+render::RenderStats UnifiedRenderDraw::get_stats() {
     return get_manager().get_render_stats();
 }
 
-void UnifiedDebugDraw::print_stats() {
+void UnifiedRenderDraw::print_stats() {
     get_manager().print_stats();
 }
 
 // 模板函数的显式实例化（如果需要）
 template<typename T>
-void UnifiedDebugDraw::submit_custom_command(const T& data, uint32_t custom_type, uint32_t layer, uint32_t flags) {
+void UnifiedRenderDraw::submit_custom_command(const T& data, uint32_t custom_type, uint32_t layer, uint32_t flags) {
     render::UnifiedRenderCommand cmd;
     cmd.type = static_cast<render::RenderCommandType>(custom_type);
     cmd.data = const_cast<T*>(&data);
@@ -429,4 +429,4 @@ void UnifiedDebugDraw::submit_custom_command(const T& data, uint32_t custom_type
     get_manager().submit_command(cmd);
 }
 
-}} // namespace portal_core::debug
+}} // namespace portal_core::render
